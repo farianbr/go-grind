@@ -1,6 +1,6 @@
 import { StreamChat } from "stream-chat";
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 
 //POTENTIAL BUG --> might need a dotenv/config import here
 
@@ -19,5 +19,15 @@ export const upsertStreamUser = async (userData) => {
     return userData;
   } catch (error) {
     console.error("Error upserting stream user", error);
+  }
+};
+
+export const generateStreamToken = (userId) => {
+  try {
+    // ensure userId is a string
+    const userIdStr = userId.toString();
+    return streamClient.createToken(userIdStr);
+  } catch (error) {
+    console.error("Error generating Stream token:", error);
   }
 };

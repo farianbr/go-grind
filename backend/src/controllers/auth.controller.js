@@ -3,6 +3,9 @@ import User from "../models/User.model.js";
 import jwt from "jsonwebtoken";
 
 export async function signup(req, res) {
+
+  //TODO --> welcome email on signup
+
   const { email, password, fullName } = req.body;
 
   try {
