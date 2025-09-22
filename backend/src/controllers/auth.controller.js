@@ -3,7 +3,6 @@ import User from "../models/User.model.js";
 import jwt from "jsonwebtoken";
 
 export async function signup(req, res) {
-
   //TODO --> welcome email on signup
 
   const { email, password, fullName } = req.body;
@@ -31,10 +30,14 @@ export async function signup(req, res) {
         .json({ message: "Email already exists, please use a different one" });
     }
 
+    const idx = Math.floor(Math.random() * 100) + 1; // generate a num between 1-100
+    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
+
     const newUser = await User.create({
       email,
       fullName,
       password,
+      profilePic: randomAvatar,
     });
 
     try {
