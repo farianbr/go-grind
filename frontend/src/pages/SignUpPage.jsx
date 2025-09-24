@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShipWheelIcon } from "lucide-react";
+import { Airplay } from "lucide-react";
 import { Link } from "react-router";
 
 import useSignUp from "../hooks/useSignup";
@@ -30,10 +30,12 @@ const SignUpPage = () => {
         <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
           {/* LOGO */}
           <div className="mb-4 flex items-center justify-start gap-2">
-            <img src="/gogrind.png" alt="GoGrind Logo" className="w-48" />
-            {/* <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+            <Airplay className="size-9 text-primary" />
+            
+
+            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
               GoGrind
-            </span> */}
+            </span>
           </div>
 
           {/* ERROR MESSAGE IF ANY */}
@@ -177,7 +179,7 @@ const SignUpPage = () => {
                 Connect with learning partners worldwide
               </h2>
               <p className="opacity-70">
-                Practice , make friends, and improve your skills together
+                Practice daily, make friends, and improve your skills together
               </p>
             </div>
           </div>

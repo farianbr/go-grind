@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeftIcon,
   LoaderIcon,
   MapPinIcon,
   Airplay,
@@ -13,9 +15,10 @@ import useAuthUser from "../hooks/useAuthUser";
 import { completeOnboarding, uploadPhoto } from "../lib/api";
 import { LANGUAGES } from "../constants";
 
-const OnboardingPage = () => {
+const UpdateProfilePage = () => {
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [formState, setFormState] = useState({
     fullName: authUser?.fullName || "",
@@ -25,13 +28,13 @@ const OnboardingPage = () => {
     location: authUser?.location || "",
     profilePic: authUser?.profilePic || "/blank-pp.png",
   });
-  const [isUploading, setIsUploading] = useState(false);
 
   const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: () => {
-      toast.success("Profile onboarded successfully");
+      toast.success("Profile updated successfully");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      navigate("/");
     },
 
     onError: (error) => {
@@ -54,7 +57,6 @@ const OnboardingPage = () => {
   };
 
   const handleUpload = async (data) => {
-    setIsUploading(true);
     const img = await uploadPhoto(data);
 
     if (img?.success) {
@@ -63,15 +65,22 @@ const OnboardingPage = () => {
     } else {
       toast.error("Upload failed! Please try again.");
     }
-    setIsUploading(false);
   };
 
   return (
     <div className="min-h-screen bg-base-100 flex items-center justify-center p-4">
       <div className="card bg-base-200 w-full max-w-3xl shadow-xl">
         <div className="card-body p-6 sm:p-8">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="btn btn-ghost absolute left-4 top-4"
+          >
+            <ArrowLeftIcon className="size-5 mr-2" />
+          </button>
+
           <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6">
-            Complete Your Profile
+            Update Your Profile
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -93,7 +102,7 @@ const OnboardingPage = () => {
               </div>
 
               {/* Generate Random Avatar BTN */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
                 <button
                   type="button"
                   onClick={handleRandomAvatar}
@@ -107,11 +116,7 @@ const OnboardingPage = () => {
                   htmlFor="upload-photo"
                   className="btn btn-secondary cursor-pointer"
                 >
-                  {isUploading ? (
-                    <LoaderIcon className="animate-spin size-5 mr-2" />
-                  ) : (
-                    <UploadIcon className="size-4 mr-2" />
-                  )}
+                  <UploadIcon className="size-4 mr-2" />
                   Upload Photo
                 </label>
                 <input
@@ -245,12 +250,12 @@ const OnboardingPage = () => {
               {!isPending ? (
                 <>
                   <Airplay className="size-5 mr-2" />
-                  Complete Onboarding
+                  Save Update
                 </>
               ) : (
                 <>
                   <LoaderIcon className="animate-spin size-5 mr-2" />
-                  Onboarding...
+                  Saving...
                 </>
               )}
             </button>
@@ -261,4 +266,4 @@ const OnboardingPage = () => {
   );
 };
 
-export default OnboardingPage;
+export default UpdateProfilePage;

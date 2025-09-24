@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShipWheelIcon } from "lucide-react";
+import { Airplay } from "lucide-react";
 import { Link } from "react-router";
 
 import useLogin from "../hooks/useLogin";
@@ -27,7 +27,7 @@ const LoginPage = () => {
         <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
           {/* LOGO */}
           <div className="mb-4 flex items-center justify-start gap-2">
-            <ShipWheelIcon className="size-9 text-primary" />
+            <Airplay className="size-9 text-primary" />
             <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
               GoGrind
             </span>
@@ -46,7 +46,7 @@ const LoginPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Welcome Back</h2>
                   <p className="text-sm opacity-70">
-                    Sign in to your account to continue your language journey
+                    Sign in to your account to continue your learning journey
                   </p>
                 </div>
 
@@ -129,10 +129,10 @@ const LoginPage = () => {
 
             <div className="text-center space-y-3 mt-6">
               <h2 className="text-xl font-semibold">
-                Connect with language partners worldwide
+                Connect with learning partners worldwide
               </h2>
-              <p className="opacity-70">
-                Practice conversations, make friends, and improve your language
+              <p className="opacity-70 ">
+                Practice daily, make friends, and improve your 
                 skills together
               </p>
             </div>

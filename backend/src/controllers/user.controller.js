@@ -33,7 +33,7 @@ export async function getMyFriends(req, res) {
       .select("friends")
       .populate(
         "friends",
-        "fullName profilePic nativeLanguage learningLanguage"
+        "fullName bio location profilePic nativeLanguage learningLanguage"
       );
 
     res.status(200).json(user.friends);
@@ -166,5 +166,40 @@ export async function getOutgoingFriendRequests(req, res) {
   } catch (error) {
     console.log("Error in getOutgoingFriendReqs controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function uploadPhoto(req, res) {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
+
+    // Convert buffer to base64 string
+    const base64Image = req.file.buffer.toString("base64");
+
+    // Send to ImgBB
+    const imgbbRes = await fetch(
+      `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
+      {
+        method: "POST",
+        body: new URLSearchParams({ image: base64Image }),
+      }
+    );
+
+    const data = await imgbbRes.json();
+
+    if (data.success) {
+      return res.json({ success: true, url: data.data.url });
+    } else {
+      return res
+        .status(500)
+        .json({ success: false, message: "ImgBB upload failed" });
+    }
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 }

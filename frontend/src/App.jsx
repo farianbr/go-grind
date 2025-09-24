@@ -12,6 +12,9 @@ import useAuthUser from "./hooks/useAuthUser.js";
 import Layout from "./components/Layout.jsx";
 import { useThemeStore } from "./store/useThemeStore.js";
 import HomePage from "./pages/HomePage.jsx";
+import UpdateProfilePage from "./pages/UpdateProfilePage.jsx";
+import ChatsPage from "./pages/ChatsPage.jsx";
+import FriendsPage from "./pages/FriendsPage.jsx";
 
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
@@ -24,7 +27,7 @@ const App = () => {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="h-screen" data-theme={theme}>
+    <div className="min-h-screen" data-theme={theme}>
       <Routes>
         <Route
           path="/"
@@ -59,6 +62,30 @@ const App = () => {
           }
         />
         <Route
+          path="/friends"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <FriendsPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+         <Route
+          path="/chats"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ChatsPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
           path="/notifications"
           element={
             isAuthenticated && isOnboarded ? (
@@ -71,14 +98,20 @@ const App = () => {
           }
         />
         <Route
-          path="/call"
-          element={isAuthenticated ? <CallPage /> : <Navigate to="/login" />}
+          path="/call/:id"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <CallPage />
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
         />
         <Route
           path="/chat/:id"
           element={
             isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={false}>
+              <Layout showSidebar={true}>
                 <ChatPage />
               </Layout>
             ) : (
@@ -96,6 +129,14 @@ const App = () => {
                 <Navigate to="/" />
               )
             ) : (
+              <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/update-profile"
+          element={
+            isAuthenticated ? <UpdateProfilePage/> : (
               <Navigate to="/login" />
             )
           }

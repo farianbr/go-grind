@@ -61,3 +61,21 @@ export async function acceptFriendRequest(requestId) {
   );
   return response.data;
 }
+
+export async function getStreamToken() {
+  const response = await axiosInstance.get("/chat/token");
+  return response.data;
+}
+
+export async function uploadPhoto(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const response = await axiosInstance.post("/users/upload-photo", formData);
+    return response.data;
+  } catch (err) {
+    console.error("Frontend upload error:", err);
+    return null;
+  }
+}
