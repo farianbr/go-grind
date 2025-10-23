@@ -28,15 +28,16 @@ const FriendCard = ({ friend }) => {
             {getLanguageFlag(friend.nativeLanguage)}
             Native: {capitalize(friend.nativeLanguage)}
           </span>
-          <span className="badge badge-outline">
-            {getLanguageFlag(friend.learningLanguage)}
-            Learning: {capitalize(friend.learningLanguage)}
-          </span>
+          {friend.learningSkill && (
+            <span className="badge badge-outline">
+              📚 Learning: {capitalize(friend.learningSkill)}
+            </span>
+          )}
         </div>
         {friend.bio && <p className="text-sm opacity-70">{friend.bio}</p>}
 
         <Link
-          to={`/chat/${friend._id}`}
+          to={`/chats/${friend._id}`}
           className="btn btn-outline w-full mt-4"
         >
           Message

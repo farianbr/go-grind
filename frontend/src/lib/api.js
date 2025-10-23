@@ -62,8 +62,77 @@ export async function acceptFriendRequest(requestId) {
   return response.data;
 }
 
+export async function declineFriendRequest(requestId) {
+  const response = await axiosInstance.delete(
+    `/users/friend-request/${requestId}/decline`
+  );
+  return response.data;
+}
+
+export async function cancelFriendRequest(requestId) {
+  const response = await axiosInstance.delete(
+    `/users/friend-request/${requestId}/cancel`
+  );
+  return response.data;
+}
+
+export async function markNotificationsSeen() {
+  const response = await axiosInstance.put("/users/notifications/mark-seen");
+  return response.data;
+}
+
 export async function getStreamToken() {
   const response = await axiosInstance.get("/chat/token");
+  return response.data;
+}
+
+// Spaces API
+export async function createSpace(spaceData) {
+  const response = await axiosInstance.post("/spaces", spaceData);
+  return response.data;
+}
+
+export async function getAllSpaces() {
+  const response = await axiosInstance.get("/spaces");
+  return response.data;
+}
+
+export async function getMySpaces() {
+  const response = await axiosInstance.get("/spaces/my-spaces");
+  return response.data;
+}
+
+export async function getSpaceById(spaceId) {
+  const response = await axiosInstance.get(`/spaces/${spaceId}`);
+  return response.data;
+}
+
+export async function requestToJoinSpace(spaceId) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/request-join`);
+  return response.data;
+}
+
+export async function approveJoinRequest(spaceId, userId) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/approve`, {
+    userId,
+  });
+  return response.data;
+}
+
+export async function rejectJoinRequest(spaceId, userId) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/reject`, {
+    userId,
+  });
+  return response.data;
+}
+
+export async function leaveSpace(spaceId) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}/leave`);
+  return response.data;
+}
+
+export async function deleteSpace(spaceId) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}`);
   return response.data;
 }
 

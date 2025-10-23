@@ -3,10 +3,13 @@ import multer from "multer";
 
 import {
   acceptFriendRequest,
+  cancelFriendRequest,
+  declineFriendRequest,
   getFriendRequests,
   getMyFriends,
   getOutgoingFriendRequests,
   getRecommendedUsers,
+  markNotificationsSeen,
   sendFriendRequest,
   uploadPhoto,
 } from "../controllers/user.controller.js";
@@ -14,8 +17,6 @@ import { protectRoute } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() }); // handle file uploads in memory
-
-//TODO --> reject friend request
 
 router.use(protectRoute);
 
@@ -25,8 +26,11 @@ router.get("/friends", getMyFriends);
 router.post("/upload-photo", upload.single("image"), uploadPhoto);
 router.post("/friend-request/:id", sendFriendRequest);
 router.put("/friend-request/:id/accept", acceptFriendRequest);
+router.delete("/friend-request/:id/decline", declineFriendRequest);
+router.delete("/friend-request/:id/cancel", cancelFriendRequest);
 
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendRequests);
+router.put("/notifications/mark-seen", markNotificationsSeen);
 
 export default router;

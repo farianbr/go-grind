@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { BellIcon, HomeIcon, UsersIcon, MessagesSquare } from "lucide-react";
+import { BellIcon, HomeIcon, UsersIcon, MessagesSquare, Shapes } from "lucide-react";
 
 const NavLinks = () => {
   const location = useLocation();
@@ -17,6 +17,16 @@ const NavLinks = () => {
       </Link>
 
       <Link
+        to="/spaces"
+        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+          currentPath === "/spaces" || currentPath.startsWith("/spaces/") ? "btn-active" : ""
+        }`}
+      >
+        <Shapes className="size-5 text-base-content opacity-70" />
+        <span>Spaces</span>
+      </Link>
+
+      <Link
         to="/friends"
         className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
           currentPath === "/friends" ? "btn-active" : ""
@@ -29,7 +39,7 @@ const NavLinks = () => {
       <Link
         to="/chats"
         className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
-          currentPath === "/chats" ? "btn-active" : ""
+          currentPath === "/chats" || currentPath.startsWith("/chats/") ? "btn-active" : ""
         }`}
       >
         <MessagesSquare className="size-5 text-base-content opacity-70" />

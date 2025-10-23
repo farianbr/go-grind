@@ -13,7 +13,7 @@ import {
 
 import useAuthUser from "../hooks/useAuthUser";
 import { completeOnboarding, uploadPhoto } from "../lib/api";
-import { LANGUAGES } from "../constants";
+import { LANGUAGES, SKILLS } from "../constants";
 
 const UpdateProfilePage = () => {
   const { authUser } = useAuthUser();
@@ -24,7 +24,7 @@ const UpdateProfilePage = () => {
     fullName: authUser?.fullName || "",
     bio: authUser?.bio || "",
     nativeLanguage: authUser?.nativeLanguage || "",
-    learningLanguage: authUser?.learningLanguage || "",
+    learningSkill: authUser?.learningSkill || "",
     location: authUser?.location || "",
     profilePic: authUser?.profilePic || "/blank-pp.png",
   });
@@ -167,7 +167,7 @@ const UpdateProfilePage = () => {
               />
             </div>
 
-            {/* LANGUAGES */}
+            {/* LANGUAGES AND SKILLS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* NATIVE LANGUAGE */}
               <div className="form-control">
@@ -194,26 +194,26 @@ const UpdateProfilePage = () => {
                 </select>
               </div>
 
-              {/* LEARNING LANGUAGE */}
+              {/* LEARNING SKILL */}
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Learning Language</span>
+                  <span className="label-text">Learning Skill</span>
                 </label>
                 <select
-                  name="learningLanguage"
-                  value={formState.learningLanguage}
+                  name="learningSkill"
+                  value={formState.learningSkill}
                   onChange={(e) =>
                     setFormState({
                       ...formState,
-                      learningLanguage: e.target.value,
+                      learningSkill: e.target.value,
                     })
                   }
                   className="select select-bordered w-full"
                 >
-                  <option value="">Select language you're learning</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`learning-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
+                  <option value="">Select skill you're learning</option>
+                  {SKILLS.map((skill) => (
+                    <option key={`learning-${skill}`} value={skill.toLowerCase()}>
+                      {skill}
                     </option>
                   ))}
                 </select>

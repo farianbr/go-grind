@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptFriendRequest, getFriendRequests } from "../lib/api";
-import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon } from "lucide-react";
+import { useEffect } from "react";
+import { acceptFriendRequest, declineFriendRequest, getFriendRequests, markNotificationsSeen } from "../lib/api";
+import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon, X } from "lucide-react";
 import NoNotificationsFound from "../components/NoNotificationsFound";
 import { capitalize } from "../lib/utils";
 import { getLanguageFlag } from "../components/FriendCard";
+import toast from "react-hot-toast";
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
@@ -13,11 +15,40 @@ const NotificationsPage = () => {
     queryFn: getFriendRequests,
   });
 
-  const { mutate: acceptRequestMutation, isPending } = useMutation({
-    mutationFn: acceptFriendRequest,
+  const { mutate: markSeenMutation } = useMutation({
+    mutationFn: markNotificationsSeen,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+    },
+  });
+
+  // Mark notifications as seen when page is visited
+  useEffect(() => {
+    const hasAcceptedRequests = friendRequests?.acceptedRequests?.length > 0;
+    if (hasAcceptedRequests) {
+      // Use a timeout to mark as seen after a brief moment
+      const timer = setTimeout(() => {
+        markSeenMutation();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [friendRequests?.acceptedRequests?.length, markSeenMutation]);
+
+  const { mutate: acceptRequestMutation, isPending: isAccepting } = useMutation({
+    mutationFn: acceptFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request accepted!");
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
+    },
+  });
+
+  const { mutate: declineRequestMutation, isPending: isDeclining } = useMutation({
+    mutationFn: declineFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request declined");
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
     },
   });
 
@@ -62,21 +93,32 @@ const NotificationsPage = () => {
                                   {getLanguageFlag(request.sender.nativeLanguage)}
                                   Native: {capitalize(request.sender.nativeLanguage)}
                                 </span>
-                                <span className="badge badge-outline">
-                                  {getLanguageFlag(request.sender.learningLanguage)}
-                                  Learning: {capitalize(request.sender.learningLanguage)}
-                                </span>
+                                {request.sender.learningSkill && (
+                                  <span className="badge badge-outline">
+                                    📚 Learning: {capitalize(request.sender.learningSkill)}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => acceptRequestMutation(request._id)}
-                            disabled={isPending}
-                          >
-                            Accept
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => acceptRequestMutation(request._id)}
+                              disabled={isAccepting}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm btn-circle"
+                              onClick={() => declineRequestMutation(request._id)}
+                              disabled={isDeclining}
+                              aria-label="Decline request"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>

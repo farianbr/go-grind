@@ -1,9 +1,11 @@
 import { Link, useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, LogOutIcon, Airplay } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";
+import { getFriendRequests } from "../lib/api";
 
 const Navbar = () => {
   const { authUser } = useAuthUser();
@@ -11,45 +13,65 @@ const Navbar = () => {
 
   const { logoutMutation } = useLogout();
 
+  const { data: friendRequests } = useQuery({
+    queryKey: ["friendRequests"],
+    queryFn: getFriendRequests,
+    enabled: !!authUser,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const notificationCount = 
+    (friendRequests?.incomingRequests?.length || 0) + 
+    (friendRequests?.acceptedRequests?.length || 0);
+
   return (
     <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-end w-full">
-          <div className="pl-5 lg:hidden">
-            <Link to="/" className="flex items-center gap-2.5">
-              <Airplay className="size-9 text-primary" />
-              <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
+      <div className="w-full px-2 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between w-full">
+          {/* Logo - visible on mobile */}
+          <div className="lg:hidden flex-shrink-0">
+            <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5">
+              <Airplay className="size-6 sm:size-9 text-primary" />
+              <span className="text-xl sm:text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
                 GoGrind
               </span>
             </Link>
           </div>
+
+          {/* Mobile sidebar toggle */}
           <FloatingSideBar />
 
-          <div className="flex items-center gap-3 sm:gap-4 lg:ml-auto">
+          {/* Right side controls */}
+          <div className="flex items-center gap-1 sm:gap-2 lg:ml-auto">
             <Link to={"/notifications"}>
-              <button className="btn btn-ghost btn-circle">
-                <BellIcon className="h-6 w-6 text-base-content opacity-70" />
+              <button className="btn btn-ghost btn-circle btn-sm sm:btn-md relative">
+                <BellIcon className="h-4 w-4 sm:h-6 sm:w-6 text-base-content opacity-70" />
+                {notificationCount > 0 && (
+                  <span className="absolute top-0 right-0 sm:top-1 sm:right-1 badge badge-primary badge-xs sm:badge-sm">
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
+                )}
               </button>
             </Link>
+
+            <ThemeSelector />
+
+            <button
+              className="btn btn-ghost btn-circle btn-sm sm:btn-md"
+              onClick={() => navigate("/update-profile")}
+            >
+              <img
+                src={authUser?.profilePic}
+                alt="User Avatar"
+                className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover"
+              />
+            </button>
+
+            {/* Logout button */}
+            <button className="btn btn-ghost btn-circle btn-sm sm:btn-md" onClick={logoutMutation}>
+              <LogOutIcon className="h-4 w-4 sm:h-6 sm:w-6 text-base-content opacity-70" />
+            </button>
           </div>
-
-          <ThemeSelector />
-
-          <button
-            className="btn btn-ghost btn-circle"
-            onClick={() => navigate("/update-profile")}
-          >
-            <img
-              src={authUser?.profilePic}
-              alt="User Avatar"
-              className="h-6 w-6 rounded-full object-cover"
-            />
-          </button>
-
-          {/* Logout button */}
-          <button className="btn btn-ghost btn-circle" onClick={logoutMutation}>
-            <LogOutIcon className="h-6 w-6 text-base-content opacity-70" />
-          </button>
         </div>
       </div>
     </nav>
