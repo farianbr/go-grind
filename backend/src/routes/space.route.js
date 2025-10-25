@@ -9,6 +9,10 @@ import {
   rejectJoinRequest,
   leaveSpace,
   deleteSpace,
+  createSession,
+  updateSessionStatus,
+  createAnnouncement,
+  deleteAnnouncement,
 } from "../controllers/space.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
@@ -25,5 +29,13 @@ router.post("/:id/approve", approveJoinRequest);
 router.post("/:id/reject", rejectJoinRequest);
 router.delete("/:id/leave", leaveSpace);
 router.delete("/:id", deleteSpace);
+
+// Sessions
+router.post("/:id/sessions", createSession);
+router.patch("/:id/sessions/:sessionId", updateSessionStatus);
+
+// Announcements
+router.post("/:id/announcements", createAnnouncement);
+router.delete("/:id/announcements/:announcementId", deleteAnnouncement);
 
 export default router;

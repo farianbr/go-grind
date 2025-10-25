@@ -66,10 +66,10 @@ export async function getSpaceById(req, res) {
   try {
     const { id } = req.params;
 
-    const space = await Space.findById(id).populate(
-      "creator members pendingRequests",
-      "fullName profilePic learningSkill nativeLanguage"
-    );
+    const space = await Space.findById(id)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill nativeLanguage")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic");
 
     if (!space) {
       return res.status(404).json({ message: "Space not found" });
@@ -246,6 +246,169 @@ export async function deleteSpace(req, res) {
     res.status(200).json({ message: "Space deleted successfully" });
   } catch (error) {
     console.error("Error in deleteSpace controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Sessions Management
+export async function createSession(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const userId = req.user.id;
+    const { title, description, scheduledAt, duration } = req.body;
+
+    if (!title || !scheduledAt) {
+      return res.status(400).json({ message: "Title and scheduled time are required" });
+    }
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Only creator can create sessions
+    if (space.creator.toString() !== userId) {
+      return res.status(403).json({ message: "Only the creator can create sessions" });
+    }
+
+    const newSession = {
+      title,
+      description,
+      scheduledAt: new Date(scheduledAt),
+      duration: duration || 60,
+      host: userId,
+      status: "scheduled",
+    };
+
+    space.sessions.push(newSession);
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic");
+
+    res.status(201).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in createSession controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function updateSessionStatus(req, res) {
+  try {
+    const { id: spaceId, sessionId } = req.params;
+    const userId = req.user.id;
+    const { status, streamUrl } = req.body;
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Only creator can update session status
+    if (space.creator.toString() !== userId) {
+      return res.status(403).json({ message: "Only the creator can update sessions" });
+    }
+
+    const session = space.sessions.id(sessionId);
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    if (status) session.status = status;
+    if (streamUrl) session.streamUrl = streamUrl;
+
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in updateSessionStatus controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Announcements Management
+export async function createAnnouncement(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const userId = req.user.id;
+    const { title, content } = req.body;
+
+    if (!title || !content) {
+      return res.status(400).json({ message: "Title and content are required" });
+    }
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Only creator can create announcements
+    if (space.creator.toString() !== userId) {
+      return res.status(403).json({ message: "Only the creator can create announcements" });
+    }
+
+    const newAnnouncement = {
+      title,
+      content,
+      createdBy: userId,
+    };
+
+    space.announcements.unshift(newAnnouncement); // Add to beginning
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic");
+
+    res.status(201).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in createAnnouncement controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function deleteAnnouncement(req, res) {
+  try {
+    const { id: spaceId, announcementId } = req.params;
+    const userId = req.user.id;
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Only creator can delete announcements
+    if (space.creator.toString() !== userId) {
+      return res.status(403).json({ message: "Only the creator can delete announcements" });
+    }
+
+    space.announcements = space.announcements.filter(
+      (announcement) => announcement._id.toString() !== announcementId
+    );
+
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in deleteAnnouncement controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

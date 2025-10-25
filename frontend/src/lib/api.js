@@ -136,6 +136,28 @@ export async function deleteSpace(spaceId) {
   return response.data;
 }
 
+// Sessions
+export async function createSession(spaceId, sessionData) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/sessions`, sessionData);
+  return response.data;
+}
+
+export async function updateSessionStatus(spaceId, sessionId, statusData) {
+  const response = await axiosInstance.patch(`/spaces/${spaceId}/sessions/${sessionId}`, statusData);
+  return response.data;
+}
+
+// Announcements
+export async function createAnnouncement(spaceId, announcementData) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/announcements`, announcementData);
+  return response.data;
+}
+
+export async function deleteAnnouncement(spaceId, announcementId) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}/announcements/${announcementId}`);
+  return response.data;
+}
+
 export async function uploadPhoto(file) {
   const formData = new FormData();
   formData.append("image", file);

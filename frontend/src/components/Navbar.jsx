@@ -20,9 +20,10 @@ const Navbar = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const notificationCount = 
-    (friendRequests?.incomingRequests?.length || 0) + 
-    (friendRequests?.acceptedRequests?.length || 0);
+  // Only count unseen notifications for badge
+  const unseenCount = 
+    (friendRequests?.incomingRequests?.filter(req => !req.isNotificationSeen)?.length || 0) + 
+    (friendRequests?.acceptedRequests?.filter(req => !req.isNotificationSeen)?.length || 0);
 
   return (
     <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">
@@ -46,9 +47,9 @@ const Navbar = () => {
             <Link to={"/notifications"}>
               <button className="btn btn-ghost btn-circle btn-sm sm:btn-md relative">
                 <BellIcon className="h-4 w-4 sm:h-6 sm:w-6 text-base-content opacity-70" />
-                {notificationCount > 0 && (
+                {unseenCount > 0 && (
                   <span className="absolute top-0 right-0 sm:top-1 sm:right-1 badge badge-primary badge-xs sm:badge-sm">
-                    {notificationCount > 9 ? "9+" : notificationCount}
+                    {unseenCount > 9 ? "9+" : unseenCount}
                   </span>
                 )}
               </button>
