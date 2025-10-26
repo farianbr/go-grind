@@ -89,7 +89,7 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
     return (
       <div className="flex flex-col items-center justify-center h-full p-4 text-center">
         <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-xl font-semibold mb-2">No chats yet</h3>
+        <h3 className="text-xl font-semibold mb-2 text-base-content">No chats yet</h3>
         <p className="text-base-content/60">
           Start a conversation with your friends!
         </p>

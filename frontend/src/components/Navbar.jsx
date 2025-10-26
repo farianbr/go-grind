@@ -5,7 +5,7 @@ import { BellIcon, LogOutIcon, Airplay } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";
-import { getFriendRequests } from "../lib/api";
+import { getNotifications } from "../lib/api";
 
 const Navbar = () => {
   const { authUser } = useAuthUser();
@@ -13,17 +13,15 @@ const Navbar = () => {
 
   const { logoutMutation } = useLogout();
 
-  const { data: friendRequests } = useQuery({
-    queryKey: ["friendRequests"],
-    queryFn: getFriendRequests,
+  const { data: notifications } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: getNotifications,
     enabled: !!authUser,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  // Only count unseen notifications for badge
-  const unseenCount = 
-    (friendRequests?.incomingRequests?.filter(req => !req.isNotificationSeen)?.length || 0) + 
-    (friendRequests?.acceptedRequests?.filter(req => !req.isNotificationSeen)?.length || 0);
+  // Count unread notifications
+  const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
     <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">
@@ -47,9 +45,9 @@ const Navbar = () => {
             <Link to={"/notifications"}>
               <button className="btn btn-ghost btn-circle btn-sm sm:btn-md relative">
                 <BellIcon className="h-4 w-4 sm:h-6 sm:w-6 text-base-content opacity-70" />
-                {unseenCount > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute top-0 right-0 sm:top-1 sm:right-1 badge badge-primary badge-xs sm:badge-sm">
-                    {unseenCount > 9 ? "9+" : unseenCount}
+                    {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 )}
               </button>

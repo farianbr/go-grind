@@ -57,6 +57,21 @@ const spaceSchema = new mongoose.Schema(
           enum: ["scheduled", "live", "completed", "cancelled"],
           default: "scheduled",
         },
+        startedAt: Date,
+        endedAt: Date,
+        participants: [
+          {
+            user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            joinedAt: Date,
+            leftAt: Date,
+            totalMinutes: { type: Number, default: 0 },
+          },
+        ],
+        stats: {
+          totalParticipants: { type: Number, default: 0 },
+          totalHoursGrinded: { type: Number, default: 0 },
+          actualDuration: { type: Number, default: 0 }, // in minutes
+        },
         createdAt: { type: Date, default: Date.now },
       },
     ],
@@ -72,6 +87,23 @@ const spaceSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    activeStreams: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        grindingTopic: { type: String, required: true },
+        startedAt: { type: Date, default: Date.now },
+        sessionId: { type: mongoose.Schema.Types.ObjectId }, // link to active session
+        isVideoEnabled: { type: Boolean, default: false },
+        isAudioEnabled: { type: Boolean, default: false },
+      },
+    ],
+    activeSessionId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
   },
   { timestamps: true }
 );

@@ -1,5 +1,6 @@
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import ActiveStreamBanner from "./ActiveStreamBanner";
 
 const Layout = ({ children, showSidebar = false }) => {
   return (
@@ -10,6 +11,9 @@ const Layout = ({ children, showSidebar = false }) => {
         <Navbar />
 
         <main className="flex-1 overflow-y-auto">{children}</main>
+        
+        {/* Show active stream banner when user is in a stream but not on stream page */}
+        <ActiveStreamBanner />
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import {
   getRecommendedUsers,
   markNotificationsSeen,
   sendFriendRequest,
+  unfriend,
   uploadPhoto,
 } from "../controllers/user.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
@@ -28,6 +29,7 @@ router.post("/friend-request/:id", sendFriendRequest);
 router.put("/friend-request/:id/accept", acceptFriendRequest);
 router.delete("/friend-request/:id/decline", declineFriendRequest);
 router.delete("/friend-request/:id/cancel", cancelFriendRequest);
+router.delete("/unfriend/:id", unfriend);
 
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendRequests);

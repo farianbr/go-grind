@@ -30,6 +30,9 @@ import {
   updateSessionStatus,
   createAnnouncement,
   deleteAnnouncement,
+  joinStream,
+  leaveStream,
+  updateGrindingTopic,
 } from "../lib/api";
 import { capitalize } from "../lib/utils";
 import useAuthUser from "../hooks/useAuthUser";
@@ -43,6 +46,8 @@ const SpaceDetailPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [showJoinStreamModal, setShowJoinStreamModal] = useState(false);
+  const [grindingTopicInput, setGrindingTopicInput] = useState("");
   const [sessionForm, setSessionForm] = useState({
     title: "",
     description: "",
@@ -134,6 +139,29 @@ const SpaceDetailPage = () => {
         queryClient.invalidateQueries({ queryKey: ["space", id] });
       },
     }),
+    joinStream: useMutation({
+      mutationFn: ({ spaceId, grindingTopic }) => joinStream(spaceId, grindingTopic),
+      onSuccess: () => {
+        toast.success("Joined stream!");
+        queryClient.invalidateQueries({ queryKey: ["space", id] });
+        setShowJoinStreamModal(false);
+        setGrindingTopicInput("");
+      },
+    }),
+    leaveStream: useMutation({
+      mutationFn: leaveStream,
+      onSuccess: () => {
+        toast.success("Left stream");
+        queryClient.invalidateQueries({ queryKey: ["space", id] });
+      },
+    }),
+    updateGrindingTopic: useMutation({
+      mutationFn: ({ spaceId, grindingTopic }) => updateGrindingTopic(spaceId, grindingTopic),
+      onSuccess: () => {
+        toast.success("Grinding topic updated!");
+        queryClient.invalidateQueries({ queryKey: ["space", id] });
+      },
+    }),
   };
 
   if (isLoading)
@@ -215,62 +243,65 @@ const SpaceDetailPage = () => {
             <Megaphone className="size-4 mr-1" />
             Announcements
           </button>
-          {isMember && (
-            <button
-              className={`tab ${activeTab === "streams" ? "tab-active" : ""}`}
-              onClick={() => setActiveTab("streams")}
-            >
-              <Video className="size-4 mr-1" />
-              Streams
-            </button>
-          )}
         </div>
 
         {activeTab === "dashboard" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              <div className="card bg-base-200">
-                <div className="card-body">
-                  <h3 className="font-semibold text-lg mb-2">About</h3>
-                  <p className="text-base-content/70">{space.description}</p>
-                  <div className="divider"></div>
-                  <div className="flex flex-wrap gap-2">
-                    {isCreator ? (
+              {/* Currently Grinding Section - Moved to top */}
+              {isMember && (
+                <div className="card bg-base-200">
+                  <div className="card-body">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-lg">Currently Grinding</h3>
                       <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="btn btn-error gap-2"
+                        onClick={() => navigate(`/spaces/${id}/stream`)}
+                        className="btn btn-primary btn-sm gap-2"
                       >
-                        <Trash2 className="size-5" />
-                        Delete Space
+                        <Video className="size-4" />
+                        Enter Stream Room
                       </button>
-                    ) : isMember ? (
-                      <button
-                        onClick={() => mutations.leave.mutate(id)}
-                        className="btn btn-ghost gap-2"
-                      >
-                        <UserMinus className="size-5" />
-                        Leave Space
-                      </button>
-                    ) : hasPendingRequest ? (
-                      <button className="btn btn-disabled w-full">
-                        Request Pending
-                      </button>
-                    ) : isFull ? (
-                      <button className="btn btn-disabled w-full">
-                        Space Full
-                      </button>
+                    </div>
+                    {space.activeStreams && space.activeStreams.length > 0 ? (
+                      <div className="space-y-2">
+                        {space.activeStreams.map((stream) => (
+                          <div
+                            key={stream._id}
+                            className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                          >
+                            <div className="avatar">
+                              <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                                <img
+                                  src={stream.user.profilePic || "/avatar.png"}
+                                  alt={stream.user.fullName}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">
+                                {stream.user.fullName}
+                              </h4>
+                              <p className="text-xs text-base-content/60 truncate">
+                                Focusing on: {stream.grindingTopic}
+                              </p>
+                            </div>
+                            <div className="text-xs text-base-content/50">
+                              Started at: {format(new Date(stream.startedAt), "h:mm a")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <button
-                        onClick={() => mutations.requestJoin.mutate(id)}
-                        className="btn btn-primary gap-2"
-                      >
-                        <UserPlus className="size-5" />
-                        Request to Join
-                      </button>
+                      <div className="text-center py-6 text-base-content/60">
+                        <Video className="size-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No one is grinding yet</p>
+                      </div>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Members Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold text-lg mb-4">
@@ -337,6 +368,51 @@ const SpaceDetailPage = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* About Section - Moved to right sidebar */}
+              <div className="card bg-base-200">
+                <div className="card-body">
+                  <h3 className="font-semibold text-lg mb-2">About</h3>
+                  <p className="text-base-content/70">{space.description}</p>
+                  <div className="divider"></div>
+                  <div className="flex flex-wrap gap-2">
+                    {isCreator ? (
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="btn btn-error gap-2 w-full"
+                      >
+                        <Trash2 className="size-5" />
+                        Delete Space
+                      </button>
+                    ) : isMember ? (
+                      <button
+                        onClick={() => mutations.leave.mutate(id)}
+                        className="btn btn-ghost gap-2 w-full"
+                      >
+                        <UserMinus className="size-5" />
+                        Leave Space
+                      </button>
+                    ) : hasPendingRequest ? (
+                      <button className="btn btn-disabled w-full">
+                        Request Pending
+                      </button>
+                    ) : isFull ? (
+                      <button className="btn btn-disabled w-full">
+                        Space Full
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => mutations.requestJoin.mutate(id)}
+                        className="btn btn-primary gap-2 w-full"
+                      >
+                        <UserPlus className="size-5" />
+                        Request to Join
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
               {isCreator && space.pendingRequests.length > 0 && (
                 <div className="card bg-base-200">
                   <div className="card-body">
@@ -475,8 +551,25 @@ const SpaceDetailPage = () => {
                           </div>
                         )}
                         {session.status === "live" && isMember && (
-                          <button className="btn btn-primary btn-sm mt-4 w-full">
+                          <button
+                            onClick={() => navigate(`/spaces/${id}/stream`)}
+                            className="btn btn-primary btn-sm mt-4 w-full"
+                          >
                             Join Session
+                          </button>
+                        )}
+                        {isCreator && session.status === "live" && (
+                          <button
+                            onClick={() =>
+                              mutations.updateSession.mutate({
+                                spaceId: id,
+                                sessionId: session._id,
+                                data: { status: "completed" },
+                              })
+                            }
+                            className="btn btn-error btn-sm mt-2 w-full"
+                          >
+                            End Session
                           </button>
                         )}
                       </div>
@@ -492,15 +585,24 @@ const SpaceDetailPage = () => {
                   {pastSessions.map((session) => (
                     <div key={session._id} className="card bg-base-200">
                       <div className="card-body p-4">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between mb-3">
                           <div>
                             <h4 className="font-semibold">{session.title}</h4>
-                            <p className="text-sm text-base-content/60">
-                              {format(
-                                new Date(session.scheduledAt),
-                                "MMM dd, yyyy - hh:mm a"
+                            <div className="flex flex-col gap-1 mt-1">
+                              <p className="text-xs text-base-content/60">
+                                Scheduled: {format(new Date(session.scheduledAt), "MMM dd, yyyy - h:mm a")}
+                              </p>
+                              {session.startedAt && (
+                                <p className="text-xs text-base-content/60">
+                                  Started: {format(new Date(session.startedAt), "MMM dd, yyyy - h:mm a")}
+                                </p>
                               )}
-                            </p>
+                              {session.endedAt && (
+                                <p className="text-xs text-base-content/60">
+                                  Ended: {format(new Date(session.endedAt), "MMM dd, yyyy - h:mm a")}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div
                             className={`badge ${
@@ -512,6 +614,24 @@ const SpaceDetailPage = () => {
                             {session.status}
                           </div>
                         </div>
+                        
+                        {/* Session Stats */}
+                        {session.status === "completed" && session.stats && (
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                            <div className="bg-base-300 rounded p-2 text-center">
+                              <div className="text-xs text-base-content/60">Participants</div>
+                              <div className="font-bold text-lg">{session.stats.totalParticipants || 0}</div>
+                            </div>
+                            <div className="bg-base-300 rounded p-2 text-center">
+                              <div className="text-xs text-base-content/60">Hours Grinded</div>
+                              <div className="font-bold text-lg">{(session.stats.totalHoursGrinded || 0).toFixed(1)}h</div>
+                            </div>
+                            <div className="bg-base-300 rounded p-2 text-center">
+                              <div className="text-xs text-base-content/60">Duration</div>
+                              <div className="font-bold text-lg">{session.stats.actualDuration || session.duration}m</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -596,30 +716,6 @@ const SpaceDetailPage = () => {
                 <p className="text-base-content/60">No announcements yet</p>
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === "streams" && isMember && (
-          <div className="space-y-6">
-            <div className="alert alert-info">
-              <Video className="size-6" />
-              <span>
-                Live streams will appear here when sessions are active
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="card bg-base-200 border-2 border-dashed border-base-300">
-                <div className="card-body items-center text-center py-12">
-                  <Video className="size-16 opacity-50 mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">
-                    No Active Streams
-                  </h3>
-                  <p className="text-sm text-base-content/60">
-                    Streams will appear here when a session goes live
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -819,6 +915,68 @@ const SpaceDetailPage = () => {
             <div
               className="modal-backdrop"
               onClick={() => setShowAnnouncementModal(false)}
+            ></div>
+          </div>
+        )}
+
+        {showJoinStreamModal && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg mb-4">Join Stream</h3>
+              <p className="text-sm text-base-content/60 mb-4">
+                Let others know what you're working on today!
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  mutations.joinStream.mutate({
+                    spaceId: id,
+                    grindingTopic: grindingTopicInput,
+                  });
+                }}
+                className="space-y-4"
+              >
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">What are you grinding on?</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="input input-bordered"
+                    placeholder="e.g., React Hooks, Node.js APIs, DSA Problems..."
+                    value={grindingTopicInput}
+                    onChange={(e) => setGrindingTopicInput(e.target.value)}
+                    required
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      This will be visible to other members
+                    </span>
+                  </label>
+                </div>
+                <div className="modal-action">
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      setShowJoinStreamModal(false);
+                      setGrindingTopicInput("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Join Stream
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div
+              className="modal-backdrop"
+              onClick={() => {
+                setShowJoinStreamModal(false);
+                setGrindingTopicInput("");
+              }}
             ></div>
           </div>
         )}

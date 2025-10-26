@@ -175,7 +175,7 @@ const SpacesPage = () => {
                       {isCreator ? (
                         <button
                           onClick={() => navigate(`/spaces/${space._id}`)}
-                          className="btn btn-sm btn-outline w-full"
+                          className="btn btn-sm btn-outline w-full "
                         >
                           Manage Space
                         </button>

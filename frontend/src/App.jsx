@@ -16,6 +16,7 @@ import ChatsPage from "./pages/ChatsPage.jsx";
 import FriendsPage from "./pages/FriendsPage.jsx";
 import SpacesPage from "./pages/SpacesPage.jsx";
 import SpaceDetailPage from "./pages/SpaceDetailPage.jsx";
+import StreamRoomPage from "./pages/StreamRoomPage.jsx";
 
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
@@ -92,6 +93,18 @@ const App = () => {
             isAuthenticated && isOnboarded ? (
               <Layout showSidebar={true}>
                 <SpaceDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/spaces/:id/stream"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <StreamRoomPage />
               </Layout>
             ) : (
               <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />

@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.btn {
+  @apply rounded-full;
+}
+
 /* Stream Chat Theme Overrides for DaisyUI */
 .str-chat__channel {
   display: flex;
@@ -23,6 +27,7 @@
 .str-chat__list,
 .str-chat__main-panel,
 .str-chat__thread,
+.str-chat__empty-channel,
 .str-chat-channel-list {
   background-color: hsl(var(--b1)) !important;
 }
@@ -82,6 +87,49 @@
 .str-chat__message-input {
   border-top: 1px solid hsl(var(--b3)) !important;
   background-color: hsl(var(--b1)) !important;
+}
+
+.str-chat__message-input-inner {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+/* Message input textarea and container */
+.str-chat__message-textarea-container,
+.str-chat__message-textarea-react-host {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+.str-chat__message-textarea,
+.str-chat__message-textarea textarea {
+  background-color: hsl(var(--b2)) !important;
+  color: hsl(var(--bc)) !important;
+  caret-color: hsl(var(--bc)) !important;
+}
+
+.str-chat__message-textarea::placeholder,
+.str-chat__message-textarea::-webkit-input-placeholder,
+.str-chat__message-textarea::-moz-placeholder,
+.str-chat__message-textarea textarea::placeholder,
+.str-chat__message-textarea textarea::-webkit-input-placeholder,
+.str-chat__message-textarea textarea::-moz-placeholder {
+  color: hsl(var(--bc) / 0.5) !important;
+  opacity: 1 !important;
+}
+
+/* Send button and icons */
+.str-chat__send-button,
+.str-chat__fileupload-wrapper,
+.str-chat__input-emojiselect {
+  color: hsl(var(--bc) / 0.7) !important;
+}
+
+.str-chat__send-button:hover,
+.str-chat__fileupload-wrapper:hover,
+.str-chat__input-emojiselect:hover {
+  color: hsl(var(--p)) !important;
+  background-color: hsl(var(--b3)) !important;
 }
 
 /* Emoji picker */

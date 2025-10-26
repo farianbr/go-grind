@@ -1,5 +1,7 @@
 import FriendRequest from "../models/FriendRequest.model.js";
 import User from "../models/User.model.js";
+import Notification from "../models/Notification.model.js";
+import { createNotification } from "./notification.controller.js";
 
 export async function getRecommendedUsers(req, res) {
   try {
@@ -86,6 +88,17 @@ export async function sendFriendRequest(req, res) {
       recipient: recipientId,
     });
 
+    // Create notification for recipient
+    await createNotification({
+      recipient: recipientId,
+      sender: myId,
+      type: "friend_request",
+      message: `${req.user.fullName} sent you a friend request`,
+      metadata: {
+        friendRequestId: friendRequest._id.toString(),
+      },
+    });
+
     res.status(201).json(friendRequest);
   } catch (error) {
     console.error("Error in sendFriendRequest controller", error.message);
@@ -121,6 +134,22 @@ export async function acceptFriendRequest(req, res) {
 
     await User.findByIdAndUpdate(friendRequest.recipient, {
       $addToSet: { friends: friendRequest.sender },
+    });
+
+    // Create notification for the sender
+    await createNotification({
+      recipient: friendRequest.sender,
+      sender: friendRequest.recipient,
+      type: "friend_request_accepted",
+      message: `${req.user.fullName} accepted your friend request`,
+    });
+
+    // Delete the friend_request notification for the recipient
+    await Notification.deleteOne({
+      recipient: friendRequest.recipient,
+      sender: friendRequest.sender,
+      type: "friend_request",
+      "metadata.friendRequestId": requestId,
     });
 
     res.status(200).json({ message: "Friend request accepted" });
@@ -208,6 +237,14 @@ export async function declineFriendRequest(req, res) {
     // Delete the friend request
     await FriendRequest.findByIdAndDelete(requestId);
 
+    // Delete the friend_request notification for the recipient
+    await Notification.deleteOne({
+      recipient: friendRequest.recipient,
+      sender: friendRequest.sender,
+      type: "friend_request",
+      "metadata.friendRequestId": requestId,
+    });
+
     res.status(200).json({ message: "Friend request declined" });
   } catch (error) {
     console.log("Error in declineFriendRequest controller", error.message);
@@ -238,6 +275,51 @@ export async function cancelFriendRequest(req, res) {
     res.status(200).json({ message: "Friend request cancelled" });
   } catch (error) {
     console.log("Error in cancelFriendRequest controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function unfriend(req, res) {
+  try {
+    const myId = req.user.id;
+    const { id: friendId } = req.params;
+
+    if (myId === friendId) {
+      return res.status(400).json({ message: "You cannot unfriend yourself" });
+    }
+
+    // Check if they are friends
+    const myUser = await User.findById(myId);
+    const friendUser = await User.findById(friendId);
+
+    if (!friendUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!myUser.friends.includes(friendId)) {
+      return res.status(400).json({ message: "You are not friends with this user" });
+    }
+
+    // Remove from both users' friend lists
+    await User.findByIdAndUpdate(myId, {
+      $pull: { friends: friendId },
+    });
+
+    await User.findByIdAndUpdate(friendId, {
+      $pull: { friends: myId },
+    });
+
+    // Delete the friend request record
+    await FriendRequest.deleteMany({
+      $or: [
+        { sender: myId, recipient: friendId, status: "accepted" },
+        { sender: friendId, recipient: myId, status: "accepted" },
+      ],
+    });
+
+    res.status(200).json({ message: "Unfriended successfully" });
+  } catch (error) {
+    console.log("Error in unfriend controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

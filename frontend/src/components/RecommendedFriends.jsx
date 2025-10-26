@@ -51,8 +51,8 @@ const RecommendedFriends = () => {
       outgoingFriendReqs.forEach((req) => {
         requestsMap.set(req.recipient._id, req._id);
       });
-      setOutgoingRequestsMap(requestsMap);
     }
+    setOutgoingRequestsMap(requestsMap);
   }, [outgoingFriendReqs, authUser]);
   return (
     <section>

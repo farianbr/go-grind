@@ -1,5 +1,6 @@
 import Space from "../models/Space.model.js";
 import User from "../models/User.model.js";
+import { createNotification } from "./notification.controller.js";
 
 export async function createSpace(req, res) {
   try {
@@ -69,7 +70,8 @@ export async function getSpaceById(req, res) {
     const space = await Space.findById(id)
       .populate("creator members pendingRequests", "fullName profilePic learningSkill nativeLanguage")
       .populate("sessions.host", "fullName profilePic")
-      .populate("announcements.createdBy", "fullName profilePic");
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
 
     if (!space) {
       return res.status(404).json({ message: "Space not found" });
@@ -115,6 +117,15 @@ export async function requestToJoinSpace(req, res) {
     space.pendingRequests.push(userId);
     await space.save();
 
+    // Create notification for space creator
+    await createNotification({
+      recipient: space.creator,
+      sender: userId,
+      type: "space_join_request",
+      message: `${req.user.fullName} requested to join ${space.name}`,
+      relatedSpace: spaceId,
+    });
+
     res.status(200).json({ message: "Join request sent successfully" });
   } catch (error) {
     console.error("Error in requestToJoinSpace controller", error.message);
@@ -153,6 +164,15 @@ export async function approveJoinRequest(req, res) {
     space.members.push(userId);
     await space.save();
 
+    // Create notification for the user
+    await createNotification({
+      recipient: userId,
+      sender: requesterId,
+      type: "space_join_approved",
+      message: `Your request to join ${space.name} has been approved`,
+      relatedSpace: spaceId,
+    });
+
     res.status(200).json({ message: "User added to space successfully" });
   } catch (error) {
     console.error("Error in approveJoinRequest controller", error.message);
@@ -184,6 +204,15 @@ export async function rejectJoinRequest(req, res) {
       (id) => id.toString() !== userId
     );
     await space.save();
+
+    // Create notification for the user
+    await createNotification({
+      recipient: userId,
+      sender: requesterId,
+      type: "space_join_rejected",
+      message: `Your request to join ${space.name} was declined`,
+      relatedSpace: spaceId,
+    });
 
     res.status(200).json({ message: "Request rejected" });
   } catch (error) {
@@ -319,7 +348,68 @@ export async function updateSessionStatus(req, res) {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    if (status) session.status = status;
+    // Handle status transitions
+    if (status) {
+      const oldStatus = session.status;
+      session.status = status;
+
+      // Starting session
+      if (status === "live" && oldStatus === "scheduled") {
+        session.startedAt = new Date();
+        space.activeSessionId = sessionId;
+        
+        // Notify all space members about the session starting
+        const memberIds = space.members.filter(
+          (memberId) => memberId.toString() !== userId
+        );
+        
+        for (const memberId of memberIds) {
+          await createNotification({
+            recipient: memberId,
+            sender: userId,
+            type: "session_started",
+            message: `Session "${session.title}" has started in ${space.name}`,
+            relatedSpace: spaceId,
+            relatedSession: sessionId,
+          });
+        }
+      }
+
+      // Ending session
+      if ((status === "completed" || status === "cancelled") && oldStatus === "live") {
+        session.endedAt = new Date();
+        
+        // Calculate actual duration
+        if (session.startedAt) {
+          session.stats.actualDuration = Math.round(
+            (session.endedAt - session.startedAt) / (1000 * 60)
+          );
+        }
+
+        // Update any remaining active participants
+        session.participants.forEach(participant => {
+          if (!participant.leftAt) {
+            participant.leftAt = session.endedAt;
+            const minutesGrinded = Math.round(
+              (participant.leftAt - participant.joinedAt) / (1000 * 60)
+            );
+            participant.totalMinutes = minutesGrinded;
+            session.stats.totalHoursGrinded += minutesGrinded / 60;
+          }
+        });
+
+        // Clear active streams for this session
+        space.activeStreams = space.activeStreams.filter(
+          stream => stream.sessionId?.toString() !== sessionId
+        );
+
+        // Clear active session
+        if (space.activeSessionId?.toString() === sessionId) {
+          space.activeSessionId = null;
+        }
+      }
+    }
+
     if (streamUrl) session.streamUrl = streamUrl;
 
     await space.save();
@@ -327,6 +417,7 @@ export async function updateSessionStatus(req, res) {
     const populatedSpace = await Space.findById(spaceId)
       .populate("creator members pendingRequests", "fullName profilePic learningSkill")
       .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
       .populate("announcements.createdBy", "fullName profilePic");
 
     res.status(200).json(populatedSpace);
@@ -409,6 +500,304 @@ export async function deleteAnnouncement(req, res) {
     res.status(200).json(populatedSpace);
   } catch (error) {
     console.error("Error in deleteAnnouncement controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function joinStream(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const { grindingTopic, isVideoEnabled, isAudioEnabled } = req.body;
+    const userId = req.user.id;
+
+    if (!grindingTopic || grindingTopic.trim() === "") {
+      return res.status(400).json({ message: "Grinding topic is required" });
+    }
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Check if user is a member
+    if (!space.members.includes(userId)) {
+      return res.status(403).json({ message: "Only members can join the stream" });
+    }
+
+    // Find active session if any
+    const activeSession = space.activeSessionId ? space.sessions.id(space.activeSessionId) : null;
+
+    // If there's an active session, add user to participants
+    if (activeSession && activeSession.status === "live") {
+      const isParticipant = activeSession.participants.some(
+        p => p.user.toString() === userId
+      );
+
+      if (!isParticipant) {
+        activeSession.participants.push({
+          user: userId,
+          joinedAt: new Date(),
+        });
+        
+        // Update unique participant count
+        const uniqueParticipants = new Set(
+          activeSession.participants.map(p => p.user.toString())
+        );
+        activeSession.stats.totalParticipants = uniqueParticipants.size;
+      }
+    }
+
+    // Check if user is already streaming
+    const isAlreadyStreaming = space.activeStreams.some(
+      (stream) => stream.user.toString() === userId
+    );
+
+    if (isAlreadyStreaming) {
+      return res.status(400).json({ message: "You are already in the stream" });
+    }
+
+    // Add user to active streams
+    space.activeStreams.push({
+      user: userId,
+      grindingTopic: grindingTopic.trim(),
+      sessionId: space.activeSessionId || null,
+      isVideoEnabled: isVideoEnabled || false,
+      isAudioEnabled: isAudioEnabled || false,
+    });
+
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in joinStream controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function leaveStream(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const userId = req.user.id;
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Find the stream entry to get sessionId
+    const streamEntry = space.activeStreams.find(
+      (stream) => stream.user.toString() === userId
+    );
+
+    // If user was in a session, update their participation stats
+    if (streamEntry && streamEntry.sessionId) {
+      const session = space.sessions.id(streamEntry.sessionId);
+      
+      if (session) {
+        const participant = session.participants.find(
+          p => p.user.toString() === userId
+        );
+
+        if (participant && !participant.leftAt) {
+          participant.leftAt = new Date();
+          const minutesGrinded = Math.round(
+            (participant.leftAt - participant.joinedAt) / (1000 * 60)
+          );
+          participant.totalMinutes = minutesGrinded;
+          
+          // Update session stats
+          session.stats.totalHoursGrinded += minutesGrinded / 60;
+        }
+      }
+    }
+
+    // Remove user from active streams
+    space.activeStreams = space.activeStreams.filter(
+      (stream) => stream.user.toString() !== userId
+    );
+
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in leaveStream controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function updateGrindingTopic(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const { grindingTopic } = req.body;
+    const userId = req.user.id;
+
+    if (!grindingTopic || grindingTopic.trim() === "") {
+      return res.status(400).json({ message: "Grinding topic is required" });
+    }
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Find user's stream entry
+    const streamEntry = space.activeStreams.find(
+      (stream) => stream.user.toString() === userId
+    );
+
+    if (!streamEntry) {
+      return res.status(404).json({ message: "You are not currently streaming" });
+    }
+
+    // Update grinding topic
+    streamEntry.grindingTopic = grindingTopic.trim();
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in updateGrindingTopic controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function removeFromStream(req, res) {
+  try {
+    const { id: spaceId, userId: targetUserId } = req.params;
+    const requesterId = req.user.id;
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Only creator can remove users
+    if (space.creator.toString() !== requesterId) {
+      return res.status(403).json({ message: "Only the creator can remove users from stream" });
+    }
+
+    // Find the stream entry to get sessionId
+    const streamEntry = space.activeStreams.find(
+      (stream) => stream.user.toString() === targetUserId
+    );
+
+    // If user was in a session, update their participation stats
+    if (streamEntry && streamEntry.sessionId) {
+      const session = space.sessions.id(streamEntry.sessionId);
+      
+      if (session) {
+        const participant = session.participants.find(
+          p => p.user.toString() === targetUserId
+        );
+
+        if (participant && !participant.leftAt) {
+          participant.leftAt = new Date();
+          const minutesGrinded = Math.round(
+            (participant.leftAt - participant.joinedAt) / (1000 * 60)
+          );
+          participant.totalMinutes = minutesGrinded;
+          
+          // Update session stats
+          session.stats.totalHoursGrinded += minutesGrinded / 60;
+        }
+      }
+    }
+
+    // Remove user from active streams
+    space.activeStreams = space.activeStreams.filter(
+      (stream) => stream.user.toString() !== targetUserId
+    );
+
+    await space.save();
+
+    // Notify the removed user
+    await createNotification({
+      recipient: targetUserId,
+      sender: requesterId,
+      type: "removed_from_stream",
+      message: `You were removed from the stream in ${space.name}`,
+      relatedSpace: spaceId,
+    });
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in removeFromStream controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function toggleStreamMedia(req, res) {
+  try {
+    const { id: spaceId } = req.params;
+    const { isVideoEnabled, isAudioEnabled } = req.body;
+    const userId = req.user.id;
+
+    const space = await Space.findById(spaceId);
+
+    if (!space) {
+      return res.status(404).json({ message: "Space not found" });
+    }
+
+    // Find user's stream entry
+    const streamEntry = space.activeStreams.find(
+      (stream) => stream.user.toString() === userId
+    );
+
+    if (!streamEntry) {
+      return res.status(404).json({ message: "You are not currently streaming" });
+    }
+
+    // Update media settings
+    if (typeof isVideoEnabled === 'boolean') {
+      streamEntry.isVideoEnabled = isVideoEnabled;
+    }
+    if (typeof isAudioEnabled === 'boolean') {
+      streamEntry.isAudioEnabled = isAudioEnabled;
+    }
+
+    await space.save();
+
+    const populatedSpace = await Space.findById(spaceId)
+      .populate("creator members pendingRequests", "fullName profilePic learningSkill")
+      .populate("sessions.host", "fullName profilePic")
+      .populate("sessions.participants.user", "fullName profilePic")
+      .populate("announcements.createdBy", "fullName profilePic")
+      .populate("activeStreams.user", "fullName profilePic learningSkill");
+
+    res.status(200).json(populatedSpace);
+  } catch (error) {
+    console.error("Error in toggleStreamMedia controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

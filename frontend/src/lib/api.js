@@ -76,6 +76,11 @@ export async function cancelFriendRequest(requestId) {
   return response.data;
 }
 
+export async function unfriend(friendId) {
+  const response = await axiosInstance.delete(`/users/unfriend/${friendId}`);
+  return response.data;
+}
+
 export async function markNotificationsSeen() {
   const response = await axiosInstance.put("/users/notifications/mark-seen");
   return response.data;
@@ -158,6 +163,32 @@ export async function deleteAnnouncement(spaceId, announcementId) {
   return response.data;
 }
 
+// Streams
+export async function joinStream(spaceId, streamData) {
+  const response = await axiosInstance.post(`/spaces/${spaceId}/streams/join`, streamData);
+  return response.data;
+}
+
+export async function leaveStream(spaceId) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/leave`);
+  return response.data;
+}
+
+export async function updateGrindingTopic(spaceId, grindingTopic) {
+  const response = await axiosInstance.patch(`/spaces/${spaceId}/streams/topic`, { grindingTopic });
+  return response.data;
+}
+
+export async function toggleStreamMedia(spaceId, mediaSettings) {
+  const response = await axiosInstance.patch(`/spaces/${spaceId}/streams/media`, mediaSettings);
+  return response.data;
+}
+
+export async function removeFromStream(spaceId, userId) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/${userId}`);
+  return response.data;
+}
+
 export async function uploadPhoto(file) {
   const formData = new FormData();
   formData.append("image", file);
@@ -169,4 +200,30 @@ export async function uploadPhoto(file) {
     console.error("Frontend upload error:", err);
     return null;
   }
+}
+
+// Notifications API
+export async function getNotifications() {
+  const response = await axiosInstance.get("/notifications");
+  return response.data;
+}
+
+export async function getUnreadCount() {
+  const response = await axiosInstance.get("/notifications/unread-count");
+  return response.data;
+}
+
+export async function markNotificationAsRead(notificationId) {
+  const response = await axiosInstance.patch(`/notifications/${notificationId}/read`);
+  return response.data;
+}
+
+export async function markAllNotificationsAsRead() {
+  const response = await axiosInstance.patch("/notifications/read-all");
+  return response.data;
+}
+
+export async function deleteNotification(notificationId) {
+  const response = await axiosInstance.delete(`/notifications/${notificationId}`);
+  return response.data;
 }
