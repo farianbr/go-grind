@@ -1,8 +1,14 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getSpaceById, getStreamToken, joinStream, leaveStream, removeFromStream } from "../lib/api";
+import {
+  getSpaceById,
+  getStreamToken,
+  joinStream,
+  leaveStream,
+  removeFromStream,
+} from "../lib/api";
 
 import {
   StreamVideo,
@@ -17,7 +23,16 @@ import {
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import toast from "react-hot-toast";
 import PageLoader from "../components/PageLoader";
-import { Video, VideoOff, Mic, MicOff, Users, Clock, LogOut, UserX } from "lucide-react";
+import {
+  Video,
+  VideoOff,
+  Mic,
+  MicOff,
+  Users,
+  Clock,
+  LogOut,
+  UserX,
+} from "lucide-react";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -25,13 +40,10 @@ const StreamRoomPage = () => {
   const { id: spaceId } = useParams();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
-  const [isConnecting, setIsConnecting] = useState(true);
   const [showJoinModal, setShowJoinModal] = useState(true);
   const [grindingTopic, setGrindingTopic] = useState("");
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const clientRef = useRef(null);
-  const hasInitializedRef = useRef(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -56,10 +68,8 @@ const StreamRoomPage = () => {
     mutationFn: ({ spaceId, grindingTopic, isVideoEnabled, isAudioEnabled }) =>
       joinStream(spaceId, { grindingTopic, isVideoEnabled, isAudioEnabled }),
     onSuccess: () => {
-      toast.success("Joined the stream!");
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
       setShowJoinModal(false);
-      hasInitializedRef.current = false; // Reset so video initialization can run
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Failed to join stream");
@@ -71,7 +81,6 @@ const StreamRoomPage = () => {
     mutationFn: ({ spaceId, userId }) => removeFromStream(spaceId, userId),
     onSuccess: (data) => {
       toast.success("User removed from stream");
-      // Update the cache immediately with the response data
       queryClient.setQueryData(["space", spaceId], data);
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
     },
@@ -80,9 +89,10 @@ const StreamRoomPage = () => {
     },
   });
 
-  // Check if user is already in stream - MUST BE BEFORE useEffect hooks
+  // Check if user is already in stream
   const isUserInStream = space?.activeStreams?.some(
-    (stream) => stream.user?._id === authUser?._id || stream.user === authUser?._id
+    (stream) =>
+      stream.user?._id === authUser?._id || stream.user === authUser?._id
   );
 
   // Check if user is creator
@@ -93,119 +103,85 @@ const StreamRoomPage = () => {
     (session) => session._id === space.activeSessionId
   );
 
-  // Check localStorage for active stream state
+  // Check localStorage for active stream state and manage join modal
   useEffect(() => {
     if (authUser && spaceId) {
       const storageKey = `stream_${authUser._id}_${spaceId}`;
       const storedState = localStorage.getItem(storageKey);
-      
-      if (storedState === 'active' && isUserInStream) {
-        console.log("Found active stream in localStorage, skipping join modal");
+
+      if (storedState === "active" && isUserInStream) {
+        setShowJoinModal(false);
+      } else if (isUserInStream) {
         setShowJoinModal(false);
       }
     }
   }, [authUser, spaceId, isUserInStream]);
 
-  // Set showJoinModal to false if user is already in stream (for rejoin/refresh)
+  // Initialize StreamVideoClient - following best practices
   useEffect(() => {
-    if (isUserInStream && showJoinModal) {
-      console.log("User already in stream, skipping join modal");
-      setShowJoinModal(false);
+    if (!tokenData?.token || !authUser || showJoinModal) {
+      return;
     }
-  }, [isUserInStream, showJoinModal]);
 
-  // Initialize video call
-  useEffect(() => {
-    let mounted = true;
-
-    const initCall = async () => {
-      // Don't initialize if still showing join modal or if user not in stream
-      if (showJoinModal || !isUserInStream) {
-        setIsConnecting(false);
-        return;
-      }
-
-      if (!tokenData?.token || !authUser || !spaceId) {
-        setIsConnecting(false);
-        return;
-      }
-
-      try {
-        console.log("Initializing Stream video client...");
-        
-        const user = {
-          id: authUser._id,
-          name: authUser.fullName,
-          image: authUser.profilePic,
-        };
-
-        // Use getOrCreateInstance to reuse existing client
-        let videoClient = clientRef.current;
-        
-        if (!videoClient) {
-          console.log("Creating new StreamVideoClient instance");
-          videoClient = StreamVideoClient.getOrCreateInstance({
-            apiKey: STREAM_API_KEY,
-            user,
-            token: tokenData.token,
-          });
-          clientRef.current = videoClient;
-        } else {
-          console.log("Reusing existing StreamVideoClient instance");
-        }
-
-        // Get the call instance
-        const callInstance = videoClient.call("default", spaceId);
-        
-        // Check if we're already in this specific call by checking the SDK state
-        const existingCall = videoClient.state.calls.find(c => c.id === spaceId);
-        const isAlreadyInCall = existingCall && existingCall.state.callingState !== CallingState.LEFT;
-        
-        if (isAlreadyInCall) {
-          console.log("Already in this call, reusing existing connection");
-          // Use the existing call from state instead of creating new one
-        } else {
-          console.log("Joining call...");
-          await callInstance.join({ create: true });
-          console.log("Successfully joined call");
-        }
-
-        if (mounted) {
-          console.log("Setting client and call state");
-          setClient(videoClient);
-          setCall(callInstance);
-          hasInitializedRef.current = true;
-          
-          // Store active stream state in localStorage
-          const storageKey = `stream_${authUser._id}_${spaceId}`;
-          localStorage.setItem(storageKey, 'active');
-          
-          // Small delay to ensure call state is ready before showing UI
-          setTimeout(() => {
-            if (mounted) {
-              console.log("Hiding loader, showing video UI");
-              setIsConnecting(false);
-            }
-          }, 500);
-        }
-      } catch (error) {
-        console.error("Error joining call:", error);
-        hasInitializedRef.current = false; // Reset on error so user can retry
-        if (mounted) {
-          toast.error("Could not join the video call. Please try again.");
-          setIsConnecting(false);
-        }
-      }
+    const user = {
+      id: authUser._id,
+      name: authUser.fullName,
+      image: authUser.profilePic,
     };
 
-    initCall();
+    // Use getOrCreateInstance to ensure only one client instance
+    const videoClient = StreamVideoClient.getOrCreateInstance({
+      apiKey: STREAM_API_KEY,
+      user,
+      token: tokenData.token,
+    });
 
+    setClient(videoClient);
+
+    // Cleanup function - disconnect user when component unmounts
     return () => {
-      mounted = false;
+      videoClient
+        .disconnectUser()
+        .catch((err) => console.error("Error disconnecting user:", err));
+      setClient(null);
     };
-  }, [tokenData, authUser, spaceId, showJoinModal, isUserInStream]);
+  }, [tokenData, authUser, showJoinModal]);
 
+  // Initialize and join call
+  useEffect(() => {
+    if (!client || !spaceId || !isUserInStream || showJoinModal) {
+      return;
+    }
 
+    const callInstance = client.call("default", spaceId);
+
+    // Join the call
+    callInstance
+      .join({ create: true })
+      .then(() => {
+        console.log("Successfully joined call");
+        setCall(callInstance);
+        toast.success("Joined the stream!");
+
+        // Store active stream state in localStorage
+        if (authUser) {
+          const storageKey = `stream_${authUser._id}_${spaceId}`;
+          localStorage.setItem(storageKey, "active");
+        }
+      })
+      .catch((error) => {
+        console.error("Error joining call:", error);
+        toast.error("Could not join the video call. Please try again.");
+      });
+
+    // Cleanup function - leave call when component unmounts
+    return () => {
+      callInstance
+        .leave()
+        .catch((err) => console.error("Error leaving call:", err));
+      setCall(null);
+    };
+  }, [client, spaceId, isUserInStream, showJoinModal, authUser]);
 
   // Handle join stream
   const handleJoinStream = () => {
@@ -222,7 +198,7 @@ const StreamRoomPage = () => {
     });
   };
 
-  // Handle leave stream - integrate with Stream SDK's end call
+  // Handle leave stream
   const handleLeaveStream = async () => {
     try {
       // Leave the video call
@@ -232,18 +208,13 @@ const StreamRoomPage = () => {
 
       // Leave backend stream
       await leaveStream(spaceId);
-      
-      // Reset state for potential rejoin
-      setClient(null);
-      setCall(null);
-      hasInitializedRef.current = false;
-      
+
       // Clear localStorage
       if (authUser) {
         const storageKey = `stream_${authUser._id}_${spaceId}`;
         localStorage.removeItem(storageKey);
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
       queryClient.invalidateQueries({ queryKey: ["mySpaces"] });
       toast.success("Left the stream");
@@ -257,46 +228,25 @@ const StreamRoomPage = () => {
 
   // Handle remove user
   const handleRemoveUser = (userId) => {
-    if (window.confirm("Are you sure you want to remove this user from the stream?")) {
+    if (
+      window.confirm(
+        "Are you sure you want to remove this user from the stream?"
+      )
+    ) {
       removeUserMutation({ spaceId, userId });
     }
   };
 
-  // Prevent page reload when user is in stream
-  useEffect(() => {
-    if (isUserInStream) {
-      const handleBeforeUnload = (e) => {
-        e.preventDefault();
-        e.returnValue = '';
-      };
-
-      window.addEventListener('beforeunload', handleBeforeUnload);
-
-      return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-      };
-    }
-  }, [isUserInStream]);
-
-  // Clean up localStorage if user is no longer in stream
-  useEffect(() => {
-    if (authUser && spaceId && !isUserInStream) {
-      const storageKey = `stream_${authUser._id}_${spaceId}`;
-      const storedState = localStorage.getItem(storageKey);
-      
-      if (storedState === 'active') {
-        console.log("User no longer in stream, clearing localStorage");
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [authUser, spaceId, isUserInStream]);
-
-  if (authLoading || spaceLoading) return <PageLoader />;
+  if (authLoading || spaceLoading || (!showJoinModal && !call))
+    return <PageLoader />;
 
   // Join Modal
   if (showJoinModal && !isUserInStream) {
     return (
-      <div className="flex items-center justify-center bg-base-200" style={{ height: 'calc(100vh - 64px)' }}>
+      <div
+        className="flex items-center justify-center bg-base-200"
+        style={{ height: "calc(100vh - 64px)" }}
+      >
         <div className="card w-full max-w-lg bg-base-100 shadow-xl">
           <div className="card-body">
             <h2 className="card-title text-2xl">Join Stream Room</h2>
@@ -309,7 +259,9 @@ const StreamRoomPage = () => {
                   <h3 className="font-bold">{activeSession.title}</h3>
                   <div className="text-sm mt-1">
                     <p>Duration: {activeSession.duration} minutes</p>
-                    <p>Participants: {activeSession.participants?.length || 0}</p>
+                    <p>
+                      Participants: {activeSession.participants?.length || 0}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -381,19 +333,20 @@ const StreamRoomPage = () => {
     );
   }
 
-  if (isConnecting) return <PageLoader />;
-
   return (
-    <div className="flex flex-col bg-base-200" style={{ height: 'calc(100vh - 64px)' }}>
+    <div
+      className="flex flex-col bg-base-200"
+      style={{ height: "calc(100vh - 64px)" }}
+    >
       {/* Video Call Area - Full width, no sidebar */}
       <div className="flex-1 overflow-auto bg-base-300">
         {client && call ? (
           <StreamVideo client={client}>
             <StreamCall call={call}>
-              <CallContent 
-                space={space} 
-                authUser={authUser} 
-                isCreator={isCreator} 
+              <CallContent
+                space={space}
+                authUser={authUser}
+                isCreator={isCreator}
                 removeUser={handleRemoveUser}
                 activeSession={activeSession}
                 onLeaveStream={handleLeaveStream}
@@ -402,7 +355,10 @@ const StreamRoomPage = () => {
           </StreamVideo>
         ) : (
           <div className="flex items-center justify-center h-full">
-            <p>Could not initialize video call. Please refresh or try again later.</p>
+            <p>
+              Could not initialize video call. Please refresh or try again
+              later.
+            </p>
           </div>
         )}
       </div>
@@ -410,13 +366,26 @@ const StreamRoomPage = () => {
   );
 };
 
-const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, onLeaveStream }) => {
-  const { useCallCallingState, useParticipants, useMicrophoneState, useCameraState } = useCallStateHooks();
+const CallContent = ({
+  space,
+  authUser,
+  isCreator,
+  removeUser,
+  activeSession,
+  onLeaveStream,
+}) => {
+  const {
+    useCallCallingState,
+    useParticipants,
+    useMicrophoneState,
+    useCameraState,
+  } = useCallStateHooks();
   const callingState = useCallCallingState();
   const participants = useParticipants();
   const { microphone, isMute: isMicMuted } = useMicrophoneState();
   const { camera, isMute: isCamMuted } = useCameraState();
 
+  // Toggle microphone with proper error handling
   const toggleMicrophone = async () => {
     try {
       if (isMicMuted) {
@@ -425,11 +394,12 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
         await microphone.disable();
       }
     } catch (error) {
-      console.error('Error toggling microphone:', error);
-      toast.error('Failed to toggle microphone');
+      console.error("Error toggling microphone:", error);
+      toast.error("Failed to toggle microphone");
     }
   };
 
+  // Toggle camera with proper error handling
   const toggleCamera = async () => {
     try {
       if (isCamMuted) {
@@ -438,12 +408,37 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
         await camera.disable();
       }
     } catch (error) {
-      console.error('Error toggling camera:', error);
-      toast.error('Failed to toggle camera');
+      console.error("Error toggling camera:", error);
+      toast.error("Failed to toggle camera");
     }
   };
 
-  if (callingState === CallingState.LEFT) return null;
+  // Handle calling state - show appropriate UI
+  if (callingState === CallingState.LEFT) {
+    return null;
+  }
+
+  if (callingState === CallingState.JOINING) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg"></span>
+          <p className="mt-4">Joining call...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (callingState === CallingState.RECONNECTING) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="alert alert-warning max-w-md">
+          <span className="loading loading-spinner"></span>
+          <span>Reconnecting to the call...</span>
+        </div>
+      </div>
+    );
+  }
 
   // Calculate grid layout based on participant count
   const getGridLayout = (count) => {
@@ -459,11 +454,23 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
 
   // Get grinding info for each participant from space.activeStreams
   const getGrindingInfo = (participantUserId) => {
-    const stream = space?.activeStreams?.find(s => 
-      s.user?._id === participantUserId || s.user === participantUserId
+    const stream = space?.activeStreams?.find(
+      (s) => s.user?._id === participantUserId || s.user === participantUserId
     );
-    return stream?.grindingTopic || '';
+    return stream?.grindingTopic || "";
   };
+
+  // Only render UI when in JOINED state
+  if (callingState !== CallingState.JOINED) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg"></span>
+          <p className="mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <StreamTheme className="h-full w-full flex flex-col">
@@ -483,9 +490,7 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
             {/* Participant Count */}
             <div className="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm">
               <Users size={18} />
-              <span className="font-semibold">
-                {participants.length}
-              </span>
+              <span className="font-semibold">{participants.length}</span>
             </div>
 
             {/* Session Duration */}
@@ -499,8 +504,10 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
             {/* Camera Toggle */}
             <button
               onClick={toggleCamera}
-              className={`btn btn-sm sm:btn-md ${isCamMuted ? 'btn-error' : 'btn-ghost'}`}
-              title={isCamMuted ? 'Turn on camera' : 'Turn off camera'}
+              className={`btn btn-sm sm:btn-md ${
+                isCamMuted ? "btn-error" : "btn-ghost"
+              }`}
+              title={isCamMuted ? "Turn on camera" : "Turn off camera"}
             >
               {isCamMuted ? <VideoOff size={18} /> : <Video size={18} />}
             </button>
@@ -508,8 +515,10 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
             {/* Microphone Toggle */}
             <button
               onClick={toggleMicrophone}
-              className={`btn btn-sm sm:btn-md ${isMicMuted ? 'btn-error' : 'btn-ghost'}`}
-              title={isMicMuted ? 'Unmute' : 'Mute'}
+              className={`btn btn-sm sm:btn-md ${
+                isMicMuted ? "btn-error" : "btn-ghost"
+              }`}
+              title={isMicMuted ? "Unmute" : "Mute"}
             >
               {isMicMuted ? <MicOff size={18} /> : <Mic size={18} />}
             </button>
@@ -528,39 +537,40 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
 
       {/* Responsive Grid Layout for participants - aligned to top */}
       <div className="flex-1 overflow-auto bg-base-300 p-2 sm:p-4">
-        <div 
+        <div
           className="w-full max-w-7xl mx-auto grid gap-2 sm:gap-3 md:gap-4 content-start"
           style={{
             gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
-            minHeight: 'min-content',
+            minHeight: "min-content",
           }}
         >
           {participants.map((participant) => {
             const grindingTopic = getGrindingInfo(participant.userId);
             const isMe = participant.userId === authUser?._id;
-            const hasVideo = participant.videoStream !== undefined || participant.isVideoEnabled;
-            const hasAudio = participant.audioStream !== undefined || participant.isAudioEnabled;
-            
+            // Use SDK's built-in state for media status
+            const hasVideo = participant.publishedTracks.includes("video");
+            const hasAudio = participant.publishedTracks.includes("audio");
+
             return (
-              <div 
-                key={participant.sessionId} 
+              <div
+                key={participant.sessionId}
                 className="relative bg-base-300 rounded-lg overflow-hidden shadow-xl"
                 style={{
-                  aspectRatio: '16/9',
-                  maxHeight: participants.length === 1 ? '600px' : '350px',
-                  width: '100%',
+                  aspectRatio: "16/9",
+                  maxHeight: participants.length === 1 ? "600px" : "350px",
+                  width: "100%",
                 }}
               >
-                <ParticipantView 
+                <ParticipantView
                   participant={participant}
                   ParticipantViewUI={null}
                 />
-                
+
                 {/* Top overlay - Name and grinding topic */}
                 <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2">
                   <div className="bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
                     <p className="text-sm font-bold text-base-content truncate">
-                      {participant.name || 'Anonymous'}
+                      {participant.name || "Anonymous"}
                       {isMe && <span className="text-primary ml-1">(You)</span>}
                     </p>
                     {grindingTopic && (
@@ -569,7 +579,7 @@ const CallContent = ({ space, authUser, isCreator, removeUser, activeSession, on
                       </p>
                     )}
                   </div>
-                  
+
                   {/* Remove button for creator */}
                   {isCreator && !isMe && (
                     <button
