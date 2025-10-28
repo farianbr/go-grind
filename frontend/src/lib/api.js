@@ -184,8 +184,10 @@ export async function toggleStreamMedia(spaceId, mediaSettings) {
   return response.data;
 }
 
-export async function removeFromStream(spaceId, userId) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/${userId}`);
+export async function removeFromStream(spaceId, userId, reason) {
+  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/${userId}`, {
+    data: { reason }
+  });
   return response.data;
 }
 

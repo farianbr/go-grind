@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router";
 import { BellIcon, HomeIcon, UsersIcon, MessagesSquare, Shapes } from "lucide-react";
 import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
+import { useNotificationUnreadCount } from "../hooks/useNotificationUnreadCount";
 
 const NavLinks = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const unreadChatCount = useChatUnreadCount();
+  const unreadNotificationCount = useNotificationUnreadCount();
   
   return (
     <>
@@ -63,7 +65,14 @@ const NavLinks = () => {
         }`}
       >
         <BellIcon className="size-5 text-base-content opacity-70" />
-        <span>Notifications</span>
+        <div className="flex items-center gap-2">
+          <span>Notifications</span>
+          {unreadNotificationCount > 0 && (
+            <span className="badge badge-primary badge-sm">
+              {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+            </span>
+          )}
+        </div>
       </Link>
     </>
   );

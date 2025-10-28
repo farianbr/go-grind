@@ -1,11 +1,10 @@
 import { Link, useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
 import useAuthUser from "../hooks/useAuthUser";
 import { BellIcon, LogOutIcon, Airplay } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";
-import { getNotifications } from "../lib/api";
+import { useNotificationUnreadCount } from "../hooks/useNotificationUnreadCount";
 
 const Navbar = () => {
   const { authUser } = useAuthUser();
@@ -13,15 +12,8 @@ const Navbar = () => {
 
   const { logoutMutation } = useLogout();
 
-  const { data: notifications } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: getNotifications,
-    enabled: !!authUser,
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
-  // Count unread notifications
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  // Use the unread count hook
+  const unreadCount = useNotificationUnreadCount();
 
   return (
     <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">

@@ -44,6 +44,10 @@ const spaceSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    streamInitialized: {
+      type: Boolean,
+      default: false,
+    },
     sessions: [
       {
         title: { type: String, required: true },

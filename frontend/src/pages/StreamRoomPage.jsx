@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,8 @@ import {
   CallingState,
   useCallStateHooks,
   ParticipantView,
+  hasAudio,
+  hasVideo,
 } from "@stream-io/video-react-sdk";
 
 import "@stream-io/video-react-sdk/dist/css/styles.css";
@@ -44,6 +46,10 @@ const StreamRoomPage = () => {
   const [grindingTopic, setGrindingTopic] = useState("");
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
+  const [showKickModal, setShowKickModal] = useState(false);
+  const [kickTargetUser, setKickTargetUser] = useState(null);
+  const [kickReason, setKickReason] = useState("");
+  const wasKickedRef = useRef(false); // Track if user was kicked to prevent duplicate leave calls
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -68,6 +74,16 @@ const StreamRoomPage = () => {
     mutationFn: ({ spaceId, grindingTopic, isVideoEnabled, isAudioEnabled }) =>
       joinStream(spaceId, { grindingTopic, isVideoEnabled, isAudioEnabled }),
     onSuccess: () => {
+      const storageKey = `stream_${authUser._id}_${spaceId}_active`;
+      localStorage.setItem(storageKey, "active");
+      localStorage.setItem(
+        `stream_${authUser._id}_${spaceId}_audio`,
+        audioEnabled ? "active" : "inactive"
+      );
+      localStorage.setItem(
+        `stream_${authUser._id}_${spaceId}_video`,
+        videoEnabled ? "active" : "inactive"
+      );
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
       setShowJoinModal(false);
     },
@@ -77,12 +93,18 @@ const StreamRoomPage = () => {
   });
 
   // Remove from stream mutation (admin only)
-  const { mutate: removeUserMutation } = useMutation({
-    mutationFn: ({ spaceId, userId }) => removeFromStream(spaceId, userId),
+  const { mutate: removeUserMutation, isPending: isRemoving } = useMutation({
+    mutationFn: ({ spaceId, userId, reason }) =>
+      removeFromStream(spaceId, userId, reason),
     onSuccess: (data) => {
       toast.success("User removed from stream");
       queryClient.setQueryData(["space", spaceId], data);
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["stream", spaceId] });
+
+      setShowKickModal(false);
+      setKickTargetUser(null);
+      setKickReason("");
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Failed to remove user");
@@ -106,7 +128,7 @@ const StreamRoomPage = () => {
   // Check localStorage for active stream state and manage join modal
   useEffect(() => {
     if (authUser && spaceId) {
-      const storageKey = `stream_${authUser._id}_${spaceId}`;
+      const storageKey = `stream_${authUser._id}_${spaceId}_active`;
       const storedState = localStorage.getItem(storageKey);
 
       if (storedState === "active" && isUserInStream) {
@@ -154,6 +176,22 @@ const StreamRoomPage = () => {
     }
 
     const callInstance = client.call("default", spaceId);
+    const kickedRef = wasKickedRef; // Capture the ref itself for cleanup
+
+    // Disable speaking while muted notification
+    callInstance.microphone.disableSpeakingWhileMutedNotification();
+
+    // Set initial media states based on user preferences
+    const videoStorageKey = `stream_${authUser._id}_${spaceId}_video`;
+    const audioStorageKey = `stream_${authUser._id}_${spaceId}_audio`;
+
+    if (localStorage.getItem(videoStorageKey) === "inactive") {
+      callInstance.camera.disable();
+    }
+
+    if (localStorage.getItem(audioStorageKey) === "inactive") {
+      callInstance.microphone.disable();
+    }
 
     // Join the call
     callInstance
@@ -165,29 +203,60 @@ const StreamRoomPage = () => {
 
         // Store active stream state in localStorage
         if (authUser) {
-          const storageKey = `stream_${authUser._id}_${spaceId}`;
+          const storageKey = `stream_${authUser._id}_${spaceId}_active`;
           localStorage.setItem(storageKey, "active");
         }
       })
       .catch((error) => {
         console.error("Error joining call:", error);
         toast.error("Could not join the video call. Please try again.");
+        navigate(`/spaces/${spaceId}`);
       });
 
     // Cleanup function - leave call when component unmounts
     return () => {
-      callInstance
-        .leave()
-        .catch((err) => console.error("Error leaving call:", err));
+      // Only leave if the call hasn't already been left and user wasn't kicked
+      try {
+        const callingState = callInstance?.state?.callingState;
+        if (!kickedRef.current && callingState !== CallingState.LEFT) {
+          callInstance.leave().catch((err) => {
+            console.error("Error leaving call:", err);
+          });
+        }
+      } catch {
+        // Defensive: ignore any errors during cleanup
+      }
       setCall(null);
     };
-  }, [client, spaceId, isUserInStream, showJoinModal, authUser]);
+  }, [client, spaceId, isUserInStream, showJoinModal, authUser, navigate]);
 
   // Handle join stream
   const handleJoinStream = () => {
     if (!grindingTopic.trim()) {
       toast.error("Please enter what you're grinding");
       return;
+    }
+
+    // Check if user is already in another stream room
+    const allActiveStreamKeys = Object.keys(localStorage).filter(
+      (key) =>
+        key.startsWith(`stream_${authUser._id}_`) &&
+        key.endsWith("_active") &&
+        localStorage.getItem(key) === "active"
+    );
+
+    if (allActiveStreamKeys.length > 0) {
+      // Extract space ID from the key
+      const existingStreamSpaceId = allActiveStreamKeys[0]
+        .replace(`stream_${authUser._id}_`, "")
+        .replace("_active", "");
+
+      if (existingStreamSpaceId !== spaceId) {
+        toast.error(
+          "You are already in another stream room. Please leave that room first."
+        );
+        return;
+      }
     }
 
     joinStreamMutation({
@@ -201,18 +270,14 @@ const StreamRoomPage = () => {
   // Handle leave stream
   const handleLeaveStream = async () => {
     try {
-      // Leave the video call
-      if (call) {
-        await call.leave();
-      }
-
       // Leave backend stream
       await leaveStream(spaceId);
 
       // Clear localStorage
       if (authUser) {
-        const storageKey = `stream_${authUser._id}_${spaceId}`;
-        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
+        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
+        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_audio`);
       }
 
       queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
@@ -226,19 +291,55 @@ const StreamRoomPage = () => {
     }
   };
 
-  // Handle remove user
-  const handleRemoveUser = (userId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to remove this user from the stream?"
-      )
-    ) {
-      removeUserMutation({ spaceId, userId });
-    }
+  // Handle remove user - open modal
+  const handleRemoveUser = (userId, userName) => {
+    setKickTargetUser({ id: userId, name: userName });
+    setShowKickModal(true);
   };
 
-  if (authLoading || spaceLoading || (!showJoinModal && !call))
+  // Confirm kick with reason
+  const handleConfirmKick = async () => {
+    if (!kickTargetUser) return;
+
+    await call.kickUser({ user_id: kickTargetUser.id });
+    removeUserMutation({
+      spaceId,
+      userId: kickTargetUser.id,
+      reason: kickReason.trim() || "No reason provided",
+    });
+  };
+
+  // Detect if current user was kicked from stream
+  useEffect(() => {
+    if (!authUser || !spaceId) return;
+
+    const wasInStream =
+      localStorage.getItem(`stream_${authUser._id}_${spaceId}_active`) ===
+      "active";
+
+    if (wasInStream && !isUserInStream && space) {
+      // User was in stream but is no longer - they were kicked
+      wasKickedRef.current = true; // Set flag to prevent duplicate leave call
+
+      // Clear localStorage
+      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
+      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
+      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_audio`);
+
+      // Show toast and navigate
+      toast.error("You have been removed from the stream");
+      navigate(`/spaces/${spaceId}`);
+    }
+  }, [isUserInStream, authUser, spaceId, space, navigate]);
+
+  if (
+    authLoading ||
+    spaceLoading ||
+    (!showJoinModal && !call) ||
+    (wasKickedRef.current && !isUserInStream)
+  ) {
     return <PageLoader />;
+  }
 
   // Join Modal
   if (showJoinModal && !isUserInStream) {
@@ -251,6 +352,32 @@ const StreamRoomPage = () => {
           <div className="card-body">
             <h2 className="card-title text-2xl">Join Stream Room</h2>
             <p className="text-base-content/60">Space: {space?.name}</p>
+
+            {/* Stream not initialized warning for non-creators */}
+            {!isCreator && !space?.streamInitialized && (
+              <div className="alert alert-warning mt-4">
+                <div>
+                  <p className="font-semibold">Stream Room Not Ready</p>
+                  <p className="text-sm mt-1">
+                    The creator needs to enter the stream room first to
+                    initialize it.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Creator first-time message */}
+            {isCreator && !space?.streamInitialized && (
+              <div className="alert alert-info mt-4">
+                <div>
+                  <p className="font-semibold">Initialize Stream Room</p>
+                  <p className="text-sm mt-1">
+                    You're entering the stream room for the first time. This
+                    will make it available for all members.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Active Session Info */}
             {activeSession && (
@@ -289,7 +416,9 @@ const StreamRoomPage = () => {
                     type="checkbox"
                     className="toggle toggle-primary"
                     checked={videoEnabled}
-                    onChange={(e) => setVideoEnabled(e.target.checked)}
+                    onChange={(e) => {
+                      setVideoEnabled(e.target.checked);
+                    }}
                   />
                 </label>
               </div>
@@ -302,7 +431,9 @@ const StreamRoomPage = () => {
                     type="checkbox"
                     className="toggle toggle-primary"
                     checked={audioEnabled}
-                    onChange={(e) => setAudioEnabled(e.target.checked)}
+                    onChange={(e) => {
+                      setAudioEnabled(e.target.checked);
+                    }}
                   />
                 </label>
               </div>
@@ -318,7 +449,9 @@ const StreamRoomPage = () => {
               <button
                 className="btn btn-primary"
                 onClick={handleJoinStream}
-                disabled={isJoining}
+                disabled={
+                  isJoining || (!isCreator && !space?.streamInitialized)
+                }
               >
                 {isJoining ? (
                   <span className="loading loading-spinner"></span>
@@ -334,35 +467,91 @@ const StreamRoomPage = () => {
   }
 
   return (
-    <div
-      className="flex flex-col bg-base-200"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
-      {/* Video Call Area - Full width, no sidebar */}
-      <div className="flex-1 overflow-auto bg-base-300">
-        {client && call ? (
-          <StreamVideo client={client}>
-            <StreamCall call={call}>
-              <CallContent
-                space={space}
-                authUser={authUser}
-                isCreator={isCreator}
-                removeUser={handleRemoveUser}
-                activeSession={activeSession}
-                onLeaveStream={handleLeaveStream}
-              />
-            </StreamCall>
-          </StreamVideo>
-        ) : (
-          <div className="flex items-center justify-center h-full">
-            <p>
-              Could not initialize video call. Please refresh or try again
-              later.
+    <>
+      {/* Kick User Modal - Simple fixed overlay */}
+      {showKickModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-base-100 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="font-bold text-lg mb-4">Remove User from Stream</h3>
+            <p className="mb-4">
+              Are you sure you want to remove{" "}
+              <span className="font-semibold">{kickTargetUser?.name}</span> from
+              the stream?
             </p>
+
+            <div className="form-control mb-4">
+              <label className="label">
+                <span className="label-text">Reason (optional)</span>
+              </label>
+              <textarea
+                className="textarea textarea-bordered h-24"
+                placeholder="e.g., Disruptive behavior, inappropriate content, etc."
+                value={kickReason}
+                onChange={(e) => setKickReason(e.target.value)}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowKickModal(false);
+                  setKickTargetUser(null);
+                  setKickReason("");
+                }}
+                disabled={isRemoving}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={handleConfirmKick}
+                disabled={isRemoving}
+              >
+                {isRemoving ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Removing...
+                  </>
+                ) : (
+                  "Remove User"
+                )}
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
+
+      <div
+        className="flex flex-col bg-base-200"
+        style={{ height: "calc(100vh - 64px)" }}
+      >
+        {/* Video Call Area - Full width, no sidebar */}
+        <div className="flex-1 overflow-auto bg-base-300">
+          {client && call ? (
+            <StreamVideo client={client}>
+              <StreamCall call={call}>
+                <CallContent
+                  space={space}
+                  authUser={authUser}
+                  isCreator={isCreator}
+                  removeUser={handleRemoveUser}
+                  activeSession={activeSession}
+                  onLeaveStream={handleLeaveStream}
+                />
+              </StreamCall>
+            </StreamVideo>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p>
+                Could not initialize video call. Please refresh or try again
+                later.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -384,33 +573,65 @@ const CallContent = ({
   const participants = useParticipants();
   const { microphone, isMute: isMicMuted } = useMicrophoneState();
   const { camera, isMute: isCamMuted } = useCameraState();
+  const [isTogglingMic, setIsTogglingMic] = useState(false);
+  const [isTogglingCam, setIsTogglingCam] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Toggle microphone with proper error handling
   const toggleMicrophone = async () => {
+    if (isTogglingMic) return;
+    setIsTogglingMic(true);
     try {
       if (isMicMuted) {
         await microphone.enable();
+        localStorage.setItem(
+          `stream_${authUser._id}_${space._id}_audio`,
+          "active"
+        );
       } else {
         await microphone.disable();
+        localStorage.setItem(
+          `stream_${authUser._id}_${space._id}_audio`,
+          "inactive"
+        );
       }
     } catch (error) {
       console.error("Error toggling microphone:", error);
       toast.error("Failed to toggle microphone");
+    } finally {
+      setIsTogglingMic(false);
     }
   };
 
   // Toggle camera with proper error handling
   const toggleCamera = async () => {
+    if (isTogglingCam) return;
+    setIsTogglingCam(true);
     try {
       if (isCamMuted) {
         await camera.enable();
+        localStorage.setItem(
+          `stream_${authUser._id}_${space._id}_video`,
+          "active"
+        );
       } else {
         await camera.disable();
+        localStorage.setItem(
+          `stream_${authUser._id}_${space._id}_video`,
+          "inactive"
+        );
       }
     } catch (error) {
       console.error("Error toggling camera:", error);
       toast.error("Failed to toggle camera");
+    } finally {
+      setIsTogglingCam(false);
     }
+  };
+
+  const handleLeave = async () => {
+    setIsLeaving(true);
+    await onLeaveStream();
   };
 
   // Handle calling state - show appropriate UI
@@ -508,8 +729,15 @@ const CallContent = ({
                 isCamMuted ? "btn-error" : "btn-ghost"
               }`}
               title={isCamMuted ? "Turn on camera" : "Turn off camera"}
+              disabled={isTogglingCam}
             >
-              {isCamMuted ? <VideoOff size={18} /> : <Video size={18} />}
+              {isTogglingCam ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : isCamMuted ? (
+                <VideoOff size={18} />
+              ) : (
+                <Video size={18} />
+              )}
             </button>
 
             {/* Microphone Toggle */}
@@ -519,17 +747,34 @@ const CallContent = ({
                 isMicMuted ? "btn-error" : "btn-ghost"
               }`}
               title={isMicMuted ? "Unmute" : "Mute"}
+              disabled={isTogglingMic}
             >
-              {isMicMuted ? <MicOff size={18} /> : <Mic size={18} />}
+              {isTogglingMic ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : isMicMuted ? (
+                <MicOff size={18} />
+              ) : (
+                <Mic size={18} />
+              )}
             </button>
 
             {/* Leave Button */}
             <button
               className="btn btn-error btn-sm sm:btn-md gap-2"
-              onClick={onLeaveStream}
+              onClick={handleLeave}
+              disabled={isLeaving}
             >
-              <LogOut size={18} />
-              <span className="hidden sm:inline">Leave Stream</span>
+              {isLeaving ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  <span className="hidden sm:inline">Leaving...</span>
+                </>
+              ) : (
+                <>
+                  <LogOut size={18} />
+                  <span className="hidden sm:inline">Leave Stream</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -547,14 +792,13 @@ const CallContent = ({
           {participants.map((participant) => {
             const grindingTopic = getGrindingInfo(participant.userId);
             const isMe = participant.userId === authUser?._id;
-            // Use SDK's built-in state for media status
-            const hasVideo = participant.publishedTracks.includes("video");
-            const hasAudio = participant.publishedTracks.includes("audio");
+            const hasVideoOn = hasVideo(participant);
+            const hasAudioOn = hasAudio(participant);
 
             return (
               <div
                 key={participant.sessionId}
-                className="relative bg-base-300 rounded-lg overflow-hidden shadow-xl"
+                className="relative bg-base-300 rounded-lg overflow-hidden shadow-xl group"
                 style={{
                   aspectRatio: "16/9",
                   maxHeight: participants.length === 1 ? "600px" : "350px",
@@ -568,38 +812,53 @@ const CallContent = ({
 
                 {/* Top overlay - Name and grinding topic */}
                 <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2">
-                  <div className="bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
-                    <p className="text-sm font-bold text-base-content truncate">
-                      {participant.name || "Anonymous"}
-                      {isMe && <span className="text-primary ml-1">(You)</span>}
-                    </p>
-                    {grindingTopic && (
-                      <p className="text-xs text-base-content/70 truncate mt-1">
-                        Focusing on: {grindingTopic}
+                  <div className="flex justify-between bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
+                    <div>
+                      <p className="text-sm font-bold text-base-content truncate">
+                        {participant.name || "Anonymous"}
+                        {isMe && (
+                          <span className="text-primary ml-1">(You)</span>
+                        )}
                       </p>
+                      {grindingTopic && (
+                        <p className="text-xs text-base-content/70 truncate mt-1">
+                          Focusing on: {grindingTopic}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Remove button for creator - only show on hover */}
+                    {isCreator && !isMe && (
+                      <button
+                        onClick={() =>
+                          removeUser(participant.userId, participant.name)
+                        }
+                        className="btn btn-error btn-sm gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                        title="Remove from stream"
+                      >
+                        <UserX size={16} />
+                        <span className="hidden sm:inline text-xs">Remove</span>
+                      </button>
                     )}
                   </div>
-
-                  {/* Remove button for creator */}
-                  {isCreator && !isMe && (
-                    <button
-                      onClick={() => removeUser(participant.userId)}
-                      className="btn btn-error btn-xs btn-circle shadow-lg"
-                      title="Remove from stream"
-                    >
-                      <UserX size={14} />
-                    </button>
-                  )}
                 </div>
 
                 {/* Bottom overlay - Media status indicators */}
                 <div className="absolute bottom-2 left-2 flex items-center gap-2">
-                  {!hasVideo && (
+                  {hasVideoOn ? (
+                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                      <Video size={16} />
+                    </div>
+                  ) : (
                     <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
                       <VideoOff size={16} className="text-error" />
                     </div>
                   )}
-                  {!hasAudio && (
+                  {hasAudioOn ? (
+                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                      <Mic size={16} />
+                    </div>
+                  ) : (
                     <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
                       <MicOff size={16} className="text-error" />
                     </div>

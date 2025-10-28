@@ -31,8 +31,6 @@ import {
   createAnnouncement,
   deleteAnnouncement,
   joinStream,
-  leaveStream,
-  updateGrindingTopic,
 } from "../lib/api";
 import { capitalize } from "../lib/utils";
 import useAuthUser from "../hooks/useAuthUser";
@@ -148,20 +146,6 @@ const SpaceDetailPage = () => {
         setGrindingTopicInput("");
       },
     }),
-    leaveStream: useMutation({
-      mutationFn: leaveStream,
-      onSuccess: () => {
-        toast.success("Left stream");
-        queryClient.invalidateQueries({ queryKey: ["space", id] });
-      },
-    }),
-    updateGrindingTopic: useMutation({
-      mutationFn: ({ spaceId, grindingTopic }) => updateGrindingTopic(spaceId, grindingTopic),
-      onSuccess: () => {
-        toast.success("Grinding topic updated!");
-        queryClient.invalidateQueries({ queryKey: ["space", id] });
-      },
-    }),
   };
 
   if (isLoading)
@@ -262,6 +246,26 @@ const SpaceDetailPage = () => {
                         Enter Stream Room
                       </button>
                     </div>
+                    
+                    {/* Stream initialization notice */}
+                    {!space.streamInitialized && !isCreator && (
+                      <div className="alert alert-warning mb-4">
+                        <div className="text-sm">
+                          <p className="font-semibold">Stream room not ready yet</p>
+                          <p className="text-xs mt-1">Waiting for the creator to initialize the stream room...</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!space.streamInitialized && isCreator && (
+                      <div className="alert alert-info mb-4">
+                        <div className="text-sm">
+                          <p className="font-semibold">Initialize your stream room</p>
+                          <p className="text-xs mt-1">Click "Enter Stream Room" to make it available for all members!</p>
+                        </div>
+                      </div>
+                    )}
+                    
                     {space.activeStreams && space.activeStreams.length > 0 ? (
                       <div className="space-y-2">
                         {space.activeStreams.map((stream) => (
@@ -369,7 +373,7 @@ const SpaceDetailPage = () => {
                 </div>
               </div>
               
-              {/* About Section - Moved to right sidebar */}
+              {/* About Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold text-lg mb-2">About</h3>

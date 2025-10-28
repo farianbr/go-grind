@@ -525,6 +525,20 @@ export async function joinStream(req, res) {
       return res.status(403).json({ message: "Only members can join the stream" });
     }
 
+    const isCreator = space.creator.toString() === userId;
+
+    // If stream hasn't been initialized and user is not creator, prevent joining
+    if (!space.streamInitialized && !isCreator) {
+      return res.status(403).json({ 
+        message: "The stream room hasn't been initialized yet. The creator must enter first." 
+      });
+    }
+
+    // If creator is joining for the first time, initialize the stream
+    if (isCreator && !space.streamInitialized) {
+      space.streamInitialized = true;
+    }
+
     // Find active session if any
     const activeSession = space.activeSessionId ? space.sessions.id(space.activeSessionId) : null;
 
@@ -688,6 +702,7 @@ export async function removeFromStream(req, res) {
   try {
     const { id: spaceId, userId: targetUserId } = req.params;
     const requesterId = req.user.id;
+    const { reason } = req.body; // Get reason from request body
 
     const space = await Space.findById(spaceId);
 
@@ -732,14 +747,19 @@ export async function removeFromStream(req, res) {
       (stream) => stream.user.toString() !== targetUserId
     );
 
+
     await space.save();
 
-    // Notify the removed user
+    // Notify the removed user with reason
+    const notificationMessage = reason 
+      ? `You were removed from the stream in ${space.name}. Reason: ${reason}`
+      : `You were removed from the stream in ${space.name}`;
+    
     await createNotification({
       recipient: targetUserId,
       sender: requesterId,
       type: "removed_from_stream",
-      message: `You were removed from the stream in ${space.name}`,
+      message: notificationMessage,
       relatedSpace: spaceId,
     });
 

@@ -37,6 +37,7 @@ const NotificationsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["unreadCount"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
     },
   });
 
@@ -46,6 +47,7 @@ const NotificationsPage = () => {
       toast.success("All notifications marked as read");
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["unreadCount"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
     },
   });
 
@@ -55,6 +57,7 @@ const NotificationsPage = () => {
       toast.success("Notification deleted");
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["unreadCount"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
     },
   });
 
@@ -69,6 +72,7 @@ const NotificationsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
     },
   });
 
@@ -82,6 +86,7 @@ const NotificationsPage = () => {
       );
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
     },
   });
 
