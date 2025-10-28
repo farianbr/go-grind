@@ -30,7 +30,6 @@ import {
   updateSessionStatus,
   createAnnouncement,
   deleteAnnouncement,
-  joinStream,
 } from "../lib/api";
 import { capitalize } from "../lib/utils";
 import useAuthUser from "../hooks/useAuthUser";
@@ -44,8 +43,6 @@ const SpaceDetailPage = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
-  const [showJoinStreamModal, setShowJoinStreamModal] = useState(false);
-  const [grindingTopicInput, setGrindingTopicInput] = useState("");
   const [sessionForm, setSessionForm] = useState({
     title: "",
     description: "",
@@ -135,15 +132,6 @@ const SpaceDetailPage = () => {
       onSuccess: () => {
         toast.success("Announcement deleted");
         queryClient.invalidateQueries({ queryKey: ["space", id] });
-      },
-    }),
-    joinStream: useMutation({
-      mutationFn: ({ spaceId, grindingTopic }) => joinStream(spaceId, grindingTopic),
-      onSuccess: () => {
-        toast.success("Joined stream!");
-        queryClient.invalidateQueries({ queryKey: ["space", id] });
-        setShowJoinStreamModal(false);
-        setGrindingTopicInput("");
       },
     }),
   };
@@ -919,68 +907,6 @@ const SpaceDetailPage = () => {
             <div
               className="modal-backdrop"
               onClick={() => setShowAnnouncementModal(false)}
-            ></div>
-          </div>
-        )}
-
-        {showJoinStreamModal && (
-          <div className="modal modal-open">
-            <div className="modal-box">
-              <h3 className="font-bold text-lg mb-4">Join Stream</h3>
-              <p className="text-sm text-base-content/60 mb-4">
-                Let others know what you're working on today!
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  mutations.joinStream.mutate({
-                    spaceId: id,
-                    grindingTopic: grindingTopicInput,
-                  });
-                }}
-                className="space-y-4"
-              >
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">What are you grinding on?</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="input input-bordered"
-                    placeholder="e.g., React Hooks, Node.js APIs, DSA Problems..."
-                    value={grindingTopicInput}
-                    onChange={(e) => setGrindingTopicInput(e.target.value)}
-                    required
-                  />
-                  <label className="label">
-                    <span className="label-text-alt">
-                      This will be visible to other members
-                    </span>
-                  </label>
-                </div>
-                <div className="modal-action">
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => {
-                      setShowJoinStreamModal(false);
-                      setGrindingTopicInput("");
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary">
-                    Join Stream
-                  </button>
-                </div>
-              </form>
-            </div>
-            <div
-              className="modal-backdrop"
-              onClick={() => {
-                setShowJoinStreamModal(false);
-                setGrindingTopicInput("");
-              }}
             ></div>
           </div>
         )}
