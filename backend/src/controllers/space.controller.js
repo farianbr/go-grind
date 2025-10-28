@@ -507,11 +507,15 @@ export async function deleteAnnouncement(req, res) {
 export async function joinStream(req, res) {
   try {
     const { id: spaceId } = req.params;
-    const { grindingTopic, isVideoEnabled, isAudioEnabled } = req.body;
+    const { grindingTopic, targetDuration, tasks, isVideoEnabled, isAudioEnabled } = req.body;
     const userId = req.user.id;
 
     if (!grindingTopic || grindingTopic.trim() === "") {
       return res.status(400).json({ message: "Grinding topic is required" });
+    }
+
+    if (!targetDuration || targetDuration < 5) {
+      return res.status(400).json({ message: "Target duration must be at least 5 minutes" });
     }
 
     const space = await Space.findById(spaceId);
@@ -539,6 +543,33 @@ export async function joinStream(req, res) {
       space.streamInitialized = true;
     }
 
+    // Check if user is already streaming
+    const isAlreadyStreaming = space.activeStreams.some(
+      (stream) => stream.user.toString() === userId
+    );
+
+    if (isAlreadyStreaming) {
+      return res.status(400).json({ message: "You are already in the stream" });
+    }
+
+    // Import Session model
+    const Session = (await import("../models/Session.model.js")).default;
+
+    // Create a new session for this user
+    const newSession = new Session({
+      user: userId,
+      space: spaceId,
+      grindingTopic: grindingTopic.trim(),
+      targetDuration: targetDuration,
+      tasks: tasks || [],
+      mediaUsage: {
+        videoEnabled: isVideoEnabled || false,
+        audioEnabled: isAudioEnabled || false,
+      },
+    });
+
+    await newSession.save();
+
     // Find active session if any
     const activeSession = space.activeSessionId ? space.sessions.id(space.activeSessionId) : null;
 
@@ -562,20 +593,11 @@ export async function joinStream(req, res) {
       }
     }
 
-    // Check if user is already streaming
-    const isAlreadyStreaming = space.activeStreams.some(
-      (stream) => stream.user.toString() === userId
-    );
-
-    if (isAlreadyStreaming) {
-      return res.status(400).json({ message: "You are already in the stream" });
-    }
-
-    // Add user to active streams
+    // Add user to active streams with session reference
     space.activeStreams.push({
       user: userId,
       grindingTopic: grindingTopic.trim(),
-      sessionId: space.activeSessionId || null,
+      sessionId: newSession._id,
       isVideoEnabled: isVideoEnabled || false,
       isAudioEnabled: isAudioEnabled || false,
     });
@@ -612,7 +634,26 @@ export async function leaveStream(req, res) {
       (stream) => stream.user.toString() === userId
     );
 
-    // If user was in a session, update their participation stats
+    // Import Session model
+    const Session = (await import("../models/Session.model.js")).default;
+
+    // If user has a personal session, complete it
+    if (streamEntry && streamEntry.sessionId) {
+      const userSession = await Session.findById(streamEntry.sessionId);
+      
+      if (userSession && !userSession.isCompleted) {
+        userSession.endTime = new Date();
+        userSession.isCompleted = true;
+        
+        // Calculate actual duration in minutes
+        const durationMs = userSession.endTime - userSession.startTime;
+        userSession.actualDuration = Math.round(durationMs / (1000 * 60));
+        
+        await userSession.save();
+      }
+    }
+
+    // If user was in a space session, update their participation stats
     if (streamEntry && streamEntry.sessionId) {
       const session = space.sessions.id(streamEntry.sessionId);
       
@@ -719,6 +760,25 @@ export async function removeFromStream(req, res) {
     const streamEntry = space.activeStreams.find(
       (stream) => stream.user.toString() === targetUserId
     );
+
+    // Import Session model
+    const Session = (await import("../models/Session.model.js")).default;
+
+    // If user has a personal session, complete it
+    if (streamEntry && streamEntry.sessionId) {
+      const userSession = await Session.findById(streamEntry.sessionId);
+      
+      if (userSession && !userSession.isCompleted) {
+        userSession.endTime = new Date();
+        userSession.isCompleted = true;
+        
+        // Calculate actual duration in minutes
+        const durationMs = userSession.endTime - userSession.startTime;
+        userSession.actualDuration = Math.round(durationMs / (1000 * 60));
+        
+        await userSession.save();
+      }
+    }
 
     // If user was in a session, update their participation stats
     if (streamEntry && streamEntry.sessionId) {

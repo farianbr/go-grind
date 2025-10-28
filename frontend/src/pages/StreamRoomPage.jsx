@@ -25,6 +25,7 @@ import {
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import toast from "react-hot-toast";
 import PageLoader from "../components/PageLoader";
+import SessionSidebar from "../components/SessionSidebar";
 import {
   Video,
   VideoOff,
@@ -44,6 +45,9 @@ const StreamRoomPage = () => {
   const [call, setCall] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(true);
   const [grindingTopic, setGrindingTopic] = useState("");
+  const [targetDuration, setTargetDuration] = useState(60);
+  const [tasks, setTasks] = useState([]);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [showKickModal, setShowKickModal] = useState(false);
@@ -71,8 +75,8 @@ const StreamRoomPage = () => {
 
   // Join stream mutation
   const { mutate: joinStreamMutation, isPending: isJoining } = useMutation({
-    mutationFn: ({ spaceId, grindingTopic, isVideoEnabled, isAudioEnabled }) =>
-      joinStream(spaceId, { grindingTopic, isVideoEnabled, isAudioEnabled }),
+    mutationFn: ({ spaceId, grindingTopic, targetDuration, tasks, isVideoEnabled, isAudioEnabled }) =>
+      joinStream(spaceId, { grindingTopic, targetDuration, tasks, isVideoEnabled, isAudioEnabled }),
     onSuccess: () => {
       const storageKey = `stream_${authUser._id}_${spaceId}_active`;
       localStorage.setItem(storageKey, "active");
@@ -230,10 +234,30 @@ const StreamRoomPage = () => {
     };
   }, [client, spaceId, isUserInStream, showJoinModal, authUser, navigate]);
 
+  // Add task handler
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim()) {
+      toast.error("Please enter a task title");
+      return;
+    }
+    setTasks([...tasks, { title: newTaskTitle.trim() }]);
+    setNewTaskTitle("");
+  };
+
+  // Remove task handler
+  const handleRemoveTask = (index) => {
+    setTasks(tasks.filter((_, i) => i !== index));
+  };
+
   // Handle join stream
   const handleJoinStream = () => {
     if (!grindingTopic.trim()) {
       toast.error("Please enter what you're grinding");
+      return;
+    }
+
+    if (!targetDuration || targetDuration < 5) {
+      toast.error("Target duration must be at least 5 minutes");
       return;
     }
 
@@ -262,6 +286,8 @@ const StreamRoomPage = () => {
     joinStreamMutation({
       spaceId,
       grindingTopic: grindingTopic.trim(),
+      targetDuration,
+      tasks,
       isVideoEnabled: videoEnabled,
       isAudioEnabled: audioEnabled,
     });
@@ -407,6 +433,90 @@ const StreamRoomPage = () => {
               />
             </div>
 
+            <div className="form-control mt-4">
+              <label className="label">
+                <span className="label-text">Target Duration</span>
+              </label>
+              
+              {/* Quick Select Buttons */}
+              <div className="flex flex-wrap gap-2 mb-2">
+                {[5, 15, 30, 60, 120, 180].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    className={`btn btn-sm ${
+                      targetDuration === mins ? "btn-primary" : "btn-outline"
+                    }`}
+                    onClick={() => setTargetDuration(mins)}
+                  >
+                    {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Duration Input */}
+              <input
+                type="number"
+                placeholder="Or enter custom minutes"
+                className="input input-bordered"
+                value={targetDuration}
+                onChange={(e) => setTargetDuration(parseInt(e.target.value) || 5)}
+                min="5"
+                step="5"
+              />
+              <label className="label">
+                <span className="label-text-alt">Minimum 5 minutes</span>
+              </label>
+            </div>
+
+            <div className="form-control mt-4">
+              <label className="label">
+                <span className="label-text">Session Tasks (Optional)</span>
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a task for this session"
+                  className="input input-bordered flex-1"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddTask();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddTask}
+                >
+                  Add
+                </button>
+              </div>
+              
+              {tasks.length > 0 && (
+                <div className="mt-3 space-y-2 max-h-32 overflow-y-auto pr-2">
+                  {tasks.map((task, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
+                    >
+                      <span className="flex-1 text-sm break-words">{task.title}</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+                        onClick={() => handleRemoveTask(index)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-4 mt-4">
               <div className="form-control">
                 <label className="label cursor-pointer gap-2">
@@ -523,11 +633,11 @@ const StreamRoomPage = () => {
       )}
 
       <div
-        className="flex flex-col bg-base-200"
+        className="flex bg-base-200"
         style={{ height: "calc(100vh - 64px)" }}
       >
-        {/* Video Call Area - Full width, no sidebar */}
-        <div className="flex-1 overflow-auto bg-base-300">
+        {/* Video Call Area - Takes remaining space */}
+        <div className="flex-1 overflow-auto bg-base-300 relative">
           {client && call ? (
             <StreamVideo client={client}>
               <StreamCall call={call}>
@@ -550,6 +660,9 @@ const StreamRoomPage = () => {
             </div>
           )}
         </div>
+
+        {/* Session Sidebar - Beside the stream window */}
+        <SessionSidebar spaceId={spaceId} authUser={authUser} />
       </div>
     </>
   );
@@ -695,87 +808,125 @@ const CallContent = ({
 
   return (
     <StreamTheme className="h-full w-full flex flex-col">
-      {/* Header with Controls */}
-      <div className="bg-base-100 shadow-lg p-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-full mx-auto px-2">
-          <div className="flex-shrink-0">
-            <h1 className="text-xl sm:text-2xl font-bold">{space?.name}</h1>
-            {activeSession && (
-              <p className="text-xs sm:text-sm text-base-content/60">
-                Session: {activeSession.title}
-              </p>
-            )}
-          </div>
+      {/* Header with Controls - Modern Sleek Design */}
+      <div className="bg-gradient-to-r from-base-100 via-base-200 to-base-100 border-b border-base-300 flex-shrink-0">
+        <div className="max-w-full mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-3 sm:gap-6">
+            {/* Left Section - Space Info & Stats */}
+            <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+              {/* Space Name */}
+              <div className="flex-shrink min-w-0">
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
+                  {space?.name}
+                </h1>
+                {activeSession && (
+                  <p className="text-xs text-base-content/60 truncate mt-0.5">
+                    {activeSession.title}
+                  </p>
+                )}
+              </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-            {/* Participant Count */}
-            <div className="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm">
-              <Users size={18} />
-              <span className="font-semibold">{participants.length}</span>
+              {/* Divider */}
+              <div className="hidden sm:block h-10 w-px bg-base-300"></div>
+
+              {/* Stats Pills */}
+              <div className="hidden md:flex items-center gap-3">
+                {/* Participant Count */}
+                <div className="flex items-center gap-2 bg-base-300/50 px-3 py-1.5 rounded-full border border-base-300">
+                  <Users size={16} className="text-primary" />
+                  <span className="text-sm font-medium">{participants.length}</span>
+                </div>
+
+                {/* Session Duration */}
+                {activeSession && (
+                  <div className="flex items-center gap-2 bg-base-300/50 px-3 py-1.5 rounded-full border border-base-300">
+                    <Clock size={16} className="text-accent" />
+                    <span className="text-sm font-medium">{activeSession.duration}m</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Session Duration */}
+            {/* Center Section - Media Controls */}
+            <div className="flex items-center gap-2">
+              {/* Camera Toggle */}
+              <button
+                onClick={toggleCamera}
+                className={`btn btn-circle btn-sm sm:btn-md transition-all duration-200 ${
+                  isCamMuted 
+                    ? "btn-error hover:btn-error " 
+                    : "btn-ghost hover:bg-base-300"
+                }`}
+                title={isCamMuted ? "Turn on camera" : "Turn off camera"}
+                disabled={isTogglingCam}
+              >
+                {isTogglingCam ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : isCamMuted ? (
+                  <VideoOff size={18} />
+                ) : (
+                  <Video size={18} />
+                )}
+              </button>
+
+              {/* Microphone Toggle */}
+              <button
+                onClick={toggleMicrophone}
+                className={`btn btn-circle btn-sm sm:btn-md transition-all duration-200 ${
+                  isMicMuted 
+                    ? "btn-error hover:btn-error" 
+                    : "btn-ghost hover:bg-base-300"
+                }`}
+                title={isMicMuted ? "Unmute" : "Mute"}
+                disabled={isTogglingMic}
+              >
+                {isTogglingMic ? (
+                  <span className="loading loading-spinner loading-sm"></span>
+                ) : isMicMuted ? (
+                  <MicOff size={18} />
+                ) : (
+                  <Mic size={18} />
+                )}
+              </button>
+
+              {/* Leave Button */}
+              <button
+                className="btn btn-error btn-sm sm:btn-md gap-1.5 sm:gap-2 hover:shadow-error/50 transition-all duration-200"
+                onClick={handleLeave}
+                disabled={isLeaving}
+              >
+                {isLeaving ? (
+                  <>
+                    <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
+                    <span className="hidden sm:inline text-sm">Leaving...</span>
+                  </>
+                ) : (
+                  <>
+                    <LogOut size={16} />
+                    <span className="hidden sm:inline text-sm font-medium">Leave</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Right Section - Reserved for Sidebar Toggle (comes from SessionSidebar) */}
+            <div className="w-10 sm:w-12 flex-shrink-0">
+              {/* Empty space reserved for SessionSidebar toggle button */}
+            </div>
+          </div>
+
+          {/* Mobile Stats Row */}
+          <div className="flex md:hidden items-center gap-2 mt-3 pt-3 border-t border-base-300">
+            <div className="flex items-center gap-2 bg-base-300/50 px-2.5 py-1 rounded-full border border-base-300 text-xs">
+              <Users size={14} className="text-primary" />
+              <span className="font-medium">{participants.length}</span>
+            </div>
             {activeSession && (
-              <div className="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm">
-                <Clock size={18} />
-                <span className="font-semibold">{activeSession.duration}m</span>
+              <div className="flex items-center gap-2 bg-base-300/50 px-2.5 py-1 rounded-full border border-base-300 text-xs">
+                <Clock size={14} className="text-accent" />
+                <span className="font-medium">{activeSession.duration}m</span>
               </div>
             )}
-
-            {/* Camera Toggle */}
-            <button
-              onClick={toggleCamera}
-              className={`btn btn-sm sm:btn-md ${
-                isCamMuted ? "btn-error" : "btn-ghost"
-              }`}
-              title={isCamMuted ? "Turn on camera" : "Turn off camera"}
-              disabled={isTogglingCam}
-            >
-              {isTogglingCam ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : isCamMuted ? (
-                <VideoOff size={18} />
-              ) : (
-                <Video size={18} />
-              )}
-            </button>
-
-            {/* Microphone Toggle */}
-            <button
-              onClick={toggleMicrophone}
-              className={`btn btn-sm sm:btn-md ${
-                isMicMuted ? "btn-error" : "btn-ghost"
-              }`}
-              title={isMicMuted ? "Unmute" : "Mute"}
-              disabled={isTogglingMic}
-            >
-              {isTogglingMic ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : isMicMuted ? (
-                <MicOff size={18} />
-              ) : (
-                <Mic size={18} />
-              )}
-            </button>
-
-            {/* Leave Button */}
-            <button
-              className="btn btn-error btn-sm sm:btn-md gap-2"
-              onClick={handleLeave}
-              disabled={isLeaving}
-            >
-              {isLeaving ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  <span className="hidden sm:inline">Leaving...</span>
-                </>
-              ) : (
-                <>
-                  <LogOut size={18} />
-                  <span className="hidden sm:inline">Leave Stream</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
       </div>

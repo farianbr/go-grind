@@ -8,6 +8,7 @@ import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
 import spaceRoutes from "./routes/space.route.js";
 import notificationRoutes from "./routes/notification.route.js";
+import sessionRoutes from "./routes/session.route.js";
 
 import { connectDB } from "./lib/db.js";
 
@@ -30,7 +31,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/spaces", spaceRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/notifications", notificationRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port: ${PORT}`);

@@ -229,3 +229,24 @@ export async function deleteNotification(notificationId) {
   const response = await axiosInstance.delete(`/notifications/${notificationId}`);
   return response.data;
 }
+
+// User Sessions API
+export async function getUserSessions(userId) {
+  const response = await axiosInstance.get(`/sessions/user/${userId}`);
+  return response.data;
+}
+
+export async function getCurrentSession(spaceId) {
+  const response = await axiosInstance.get(`/sessions/current/${spaceId}`);
+  return response.data;
+}
+
+export async function updateSessionTask(sessionId, taskId, isCompleted) {
+  const response = await axiosInstance.patch(`/sessions/${sessionId}/tasks/${taskId}`, { isCompleted });
+  return response.data;
+}
+
+export async function getSpaceSessionStats(spaceId) {
+  const response = await axiosInstance.get(`/sessions/space/${spaceId}/stats`);
+  return response.data;
+}
