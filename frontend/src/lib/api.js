@@ -40,6 +40,24 @@ export async function getRecommendedUsers() {
   return response.data;
 }
 
+// Get user profile by ID
+export async function getUserProfile(userId) {
+  const response = await axiosInstance.get(`/users/profile/${userId}`);
+  return response.data;
+}
+
+// Get user statistics
+export async function getUserStatistics(userId) {
+  const response = await axiosInstance.get(`/users/${userId}/statistics`);
+  return response.data;
+}
+
+// Get user spaces
+export async function getUserSpaces(userId) {
+  const response = await axiosInstance.get(`/users/${userId}/spaces`);
+  return response.data;
+}
+
 export async function getOutgoingFriendReqs() {
   const response = await axiosInstance.get("/users/outgoing-friend-requests");
   return response.data;

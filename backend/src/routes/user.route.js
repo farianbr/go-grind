@@ -13,6 +13,9 @@ import {
   sendFriendRequest,
   unfriend,
   uploadPhoto,
+  getUserProfile,
+  getUserStatistics,
+  getUserSpaces,
 } from "../controllers/user.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
@@ -34,5 +37,9 @@ router.delete("/unfriend/:id", unfriend);
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendRequests);
 router.put("/notifications/mark-seen", markNotificationsSeen);
+
+router.get("/profile/:userId", getUserProfile);
+router.get("/:userId/statistics", getUserStatistics);
+router.get("/:userId/spaces", getUserSpaces);
 
 export default router;

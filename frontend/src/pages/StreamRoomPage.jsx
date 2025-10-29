@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, Link } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -662,7 +662,7 @@ const StreamRoomPage = () => {
         </div>
 
         {/* Session Sidebar - Beside the stream window */}
-        <SessionSidebar spaceId={spaceId} authUser={authUser} />
+        <SessionSidebar spaceId={spaceId} authUser={authUser} defaultVisible={false} />
       </div>
     </>
   );
@@ -964,13 +964,16 @@ const CallContent = ({
                 {/* Top overlay - Name and grinding topic */}
                 <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2">
                   <div className="flex justify-between bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
-                    <div>
-                      <p className="text-sm font-bold text-base-content truncate">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/profile/${participant.userId}`}
+                        className="text-sm font-bold text-base-content truncate hover:text-primary transition-colors block"
+                      >
                         {participant.name || "Anonymous"}
                         {isMe && (
                           <span className="text-primary ml-1">(You)</span>
                         )}
-                      </p>
+                      </Link>
                       {grindingTopic && (
                         <p className="text-xs text-base-content/70 truncate mt-1">
                           Focusing on: {grindingTopic}
@@ -984,7 +987,7 @@ const CallContent = ({
                         onClick={() =>
                           removeUser(participant.userId, participant.name)
                         }
-                        className="btn btn-error btn-sm gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
+                        className="btn btn-error btn-sm gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg flex-shrink-0"
                         title="Remove from stream"
                       >
                         <UserX size={16} />

@@ -31,11 +31,11 @@ const FriendCard = ({ friend }) => {
     <div className="card bg-base-200 hover:shadow-md transition-shadow">
       <div className="card-body p-4">
         {/* USER INFO */}
-        <div className="flex items-center gap-3 mb-3">
+        <Link to={`/profile/${friend._id}`} className="flex items-center gap-3 mb-3 hover:opacity-80 transition-opacity">
           <div className="avatar size-16 rounded-full overflow-hidden">
             <img src={friend.profilePic} alt={friend.fullName} />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{friend.fullName}</h3>
             {friend.location && (
               <div className="flex items-center text-xs opacity-70 mt-1">
@@ -44,7 +44,7 @@ const FriendCard = ({ friend }) => {
               </div>
             )}
           </div>
-        </div>
+        </Link>
 
         <div className="flex flex-wrap gap-1.5 mb-3">
           <span className="badge badge-secondary">

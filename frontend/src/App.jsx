@@ -17,6 +17,7 @@ import FriendsPage from "./pages/FriendsPage.jsx";
 import SpacesPage from "./pages/SpacesPage.jsx";
 import SpaceDetailPage from "./pages/SpaceDetailPage.jsx";
 import StreamRoomPage from "./pages/StreamRoomPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
@@ -176,6 +177,30 @@ const App = () => {
           element={
             isAuthenticated ? <UpdateProfilePage/> : (
               <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
             )
           }
         />

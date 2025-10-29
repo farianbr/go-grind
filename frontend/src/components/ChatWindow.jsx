@@ -7,7 +7,7 @@ import {
   Channel,
   useChannelStateContext,
 } from "stream-chat-react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import CallButton from "./CallButton";
 import { ArrowLeft } from "lucide-react";
@@ -22,6 +22,7 @@ const CustomChannelHeader = ({ onBack }) => {
 
   const otherMember = getOtherMember();
 
+
   return (
     <div className="str-chat__header-livestream flex items-center gap-3 p-4 border-b border-base-300 bg-base-100">
       {/* Mobile back button */}
@@ -35,17 +36,21 @@ const CustomChannelHeader = ({ onBack }) => {
 
       {/* User info */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Link to={`/profile/${otherMember?.id}`}>
         <div className="avatar">
-          <div className="w-10 h-10 rounded-full">
+          <div className="w-10 h-10 rounded-full ">
             <img
               src={otherMember?.image || "/avatar.png"}
               alt={otherMember?.name || "User"}
             />
           </div>
         </div>
+        </Link>
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold truncate text-base-content">{otherMember?.name || "Chat"}</h3>
-          <p className="text-sm text-base-content/60">Active</p>
+          <Link to={`/profile/${otherMember?.id}`}>
+            <h3 className="font-semibold truncate text-base-content hover:text-primary transition-colors">{otherMember?.name || "Chat"}</h3>
+          </Link>
+            <p className="text-sm text-base-content/60">Active</p>
         </div>
       </div>
     </div>

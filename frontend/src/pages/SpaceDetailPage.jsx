@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, Link } from "react-router";
 import {
   ArrowLeft,
   Users,
@@ -183,11 +183,84 @@ const SpaceDetailPage = () => {
         {activeTab === "dashboard" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Session Statistics Section */}
+                            {/* Currently Grinding Section */}
+              {isMember && (
+                <div className="card bg-base-200">
+                  <div className="card-body">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-lg">Currently Grinding</h3>
+                      <button
+                        onClick={() => navigate(`/spaces/${id}/stream`)}
+                        className="btn btn-primary btn-sm gap-2"
+                      >
+                        <Video className="size-4" />
+                        Enter Stream Room
+                      </button>
+                    </div>
+                    
+                    {/* Stream initialization notice */}
+                    {!space.streamInitialized && !isCreator && (
+                      <div className="alert alert-warning mb-4">
+                        <div className="text-sm">
+                          <p className="font-semibold">Stream room not ready yet</p>
+                          <p className="text-xs mt-1">Waiting for the creator to initialize the stream room...</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {!space.streamInitialized && isCreator && (
+                      <div className="alert alert-info mb-4">
+                        <div className="text-sm">
+                          <p className="font-semibold">Initialize your stream room</p>
+                          <p className="text-xs mt-1">Click "Enter Stream Room" to make it available for all members!</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {space.activeStreams && space.activeStreams.length > 0 ? (
+                      <div className="space-y-2">
+                        {space.activeStreams.map((stream) => (
+                          <div
+                            key={stream._id}
+                            className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                          >
+                            <div className="avatar">
+                              <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                                <img
+                                  src={stream.user.profilePic || "/avatar.png"}
+                                  alt={stream.user.fullName}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm">
+                                {stream.user.fullName}
+                              </h4>
+                              <p className="text-xs text-base-content/60 truncate">
+                                Focusing on: {stream.grindingTopic}
+                              </p>
+                            </div>
+                            <div className="text-xs text-base-content/50">
+                              Started at: {format(new Date(stream.startedAt), "h:mm a")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-base-content/60">
+                        <Video className="size-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No one is grinding yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Space Statistics Section */}
               {isMember && sessionStats && (
                 <div className="card bg-base-200">
                   <div className="card-body">
-                    <h3 className="font-semibold text-lg mb-4">Session Statistics</h3>
+                    <h3 className="font-semibold text-lg mb-4">Space Statistics</h3>
                     
                     {sessionStats.totalSessions > 0 ? (
                       <>
@@ -302,78 +375,7 @@ const SpaceDetailPage = () => {
                 </div>
               )}
 
-              {/* Currently Grinding Section - Moved to top */}
-              {isMember && (
-                <div className="card bg-base-200">
-                  <div className="card-body">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-lg">Currently Grinding</h3>
-                      <button
-                        onClick={() => navigate(`/spaces/${id}/stream`)}
-                        className="btn btn-primary btn-sm gap-2"
-                      >
-                        <Video className="size-4" />
-                        Enter Stream Room
-                      </button>
-                    </div>
-                    
-                    {/* Stream initialization notice */}
-                    {!space.streamInitialized && !isCreator && (
-                      <div className="alert alert-warning mb-4">
-                        <div className="text-sm">
-                          <p className="font-semibold">Stream room not ready yet</p>
-                          <p className="text-xs mt-1">Waiting for the creator to initialize the stream room...</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!space.streamInitialized && isCreator && (
-                      <div className="alert alert-info mb-4">
-                        <div className="text-sm">
-                          <p className="font-semibold">Initialize your stream room</p>
-                          <p className="text-xs mt-1">Click "Enter Stream Room" to make it available for all members!</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {space.activeStreams && space.activeStreams.length > 0 ? (
-                      <div className="space-y-2">
-                        {space.activeStreams.map((stream) => (
-                          <div
-                            key={stream._id}
-                            className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
-                          >
-                            <div className="avatar">
-                              <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
-                                <img
-                                  src={stream.user.profilePic || "/avatar.png"}
-                                  alt={stream.user.fullName}
-                                />
-                              </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm">
-                                {stream.user.fullName}
-                              </h4>
-                              <p className="text-xs text-base-content/60 truncate">
-                                Focusing on: {stream.grindingTopic}
-                              </p>
-                            </div>
-                            <div className="text-xs text-base-content/50">
-                              Started at: {format(new Date(stream.startedAt), "h:mm a")}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-base-content/60">
-                        <Video className="size-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm">No one is grinding yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+
               
               {/* Members Section */}
               <div className="card bg-base-200">
@@ -383,9 +385,10 @@ const SpaceDetailPage = () => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {space.members.map((member) => (
-                      <div
+                      <Link
                         key={member._id}
-                        className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                        to={`/profile/${member._id}`}
+                        className="flex items-center gap-3 p-3 bg-base-100 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
                       >
                         <div className="avatar">
                           <div className="w-12 h-12 rounded-full">
@@ -410,7 +413,7 @@ const SpaceDetailPage = () => {
                             Creator
                           </div>
                         )}
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

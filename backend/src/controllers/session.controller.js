@@ -103,11 +103,35 @@ export async function getUserSessions(req, res) {
     const { userId } = req.params;
     const requesterId = req.user.id;
 
-    // Users can only view their own sessions
-    if (userId !== requesterId) {
-      return res.status(403).json({ message: "Unauthorized" });
+    // Allow viewing own sessions
+    if (userId === requesterId) {
+      const sessions = await Session.find({ user: userId })
+        .populate("space", "name skill")
+        .sort({ startTime: -1 })
+        .limit(50); // Limit to recent 50 sessions
+
+      return res.status(200).json(sessions);
     }
 
+    // Check if requester is a friend of the user
+    const User = (await import("../models/User.model.js")).default;
+    const targetUser = await User.findById(userId).select("friends");
+
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isFriend = targetUser.friends.some(
+      (friendId) => friendId.toString() === requesterId
+    );
+
+    if (!isFriend) {
+      return res.status(403).json({
+        message: "You must be friends with this user to view their sessions",
+      });
+    }
+
+    // Return sessions for friend
     const sessions = await Session.find({ user: userId })
       .populate("space", "name skill")
       .sort({ startTime: -1 })

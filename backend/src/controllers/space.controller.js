@@ -1,5 +1,4 @@
 import Space from "../models/Space.model.js";
-import User from "../models/User.model.js";
 import { createNotification } from "./notification.controller.js";
 
 export async function createSpace(req, res) {

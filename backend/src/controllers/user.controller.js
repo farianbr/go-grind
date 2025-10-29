@@ -358,3 +358,151 @@ export async function uploadPhoto(req, res) {
     res.status(500).json({ success: false, message: "Server error" });
   }
 }
+
+// Get user profile by ID
+export async function getUserProfile(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    const user = await User.findById(userId)
+      .select("-password")
+      .populate("friends", "fullName profilePic");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    // If not a friend and not own profile, return limited information
+    if (!isFriend && !isOwnProfile) {
+      return res.status(200).json({
+        _id: user._id,
+        fullName: user.fullName,
+        profilePic: user.profilePic,
+        bio: user.bio,
+        location: user.location,
+        nativeLanguage: user.nativeLanguage,
+        learningSkill: user.learningSkill,
+        friends: user.friends,
+      });
+    }
+
+    // Return full profile for friends and own profile
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in getUserProfile controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Get user statistics
+export async function getUserStatistics(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user exists
+    const user = await User.findById(userId).populate("friends", "_id");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    if (!isFriend && !isOwnProfile) {
+      return res.status(403).json({
+        message: "You must be friends with this user to view their statistics",
+      });
+    }
+
+    // Import Space and Session models
+    const Space = (await import("../models/Space.model.js")).default;
+    const Session = (await import("../models/Session.model.js")).default;
+
+    // Get all sessions for the user
+    const sessions = await Session.find({ user: userId });
+    const totalSessions = sessions.length;
+
+    // Calculate total time spent (in seconds)
+    const totalTimeSpent = sessions.reduce((total, session) => {
+      if (session.endTime && session.startTime) {
+        const duration = Math.floor(
+          (new Date(session.endTime) - new Date(session.startTime)) / 1000
+        );
+        return total + duration;
+      }
+      return total;
+    }, 0);
+
+    // Calculate average session duration
+    const averageSessionDuration =
+      totalSessions > 0 ? Math.floor(totalTimeSpent / totalSessions) : 0;
+
+    // Calculate total tasks completed
+    const totalTasksCompleted = sessions.reduce((total, session) => {
+      return total + session.tasks.filter((task) => task.isCompleted).length;
+    }, 0);
+
+    res.status(200).json({
+      totalSessions,
+      totalTimeSpent,
+      averageSessionDuration,
+      totalTasksCompleted,
+    });
+  } catch (error) {
+    console.error("Error in getUserStatistics controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Get user spaces (spaces they are a member of or created)
+export async function getUserSpaces(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user exists
+    const user = await User.findById(userId).populate("friends", "_id");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    if (!isFriend && !isOwnProfile) {
+      return res.status(403).json({
+        message: "You must be friends with this user to view their spaces",
+      });
+    }
+
+    // Import Space model
+    const Space = (await import("../models/Space.model.js")).default;
+
+    // Get spaces where user is creator or member
+    const spaces = await Space.find({
+      $or: [{ creator: userId }, { members: userId }],
+    })
+      .populate("creator", "fullName profilePic")
+      .populate("members", "fullName profilePic")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(spaces);
+  } catch (error) {
+    console.error("Error in getUserSpaces controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

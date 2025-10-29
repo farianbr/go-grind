@@ -1,14 +1,32 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentSession, updateSessionTask } from "../lib/api";
-import { Clock, CheckSquare, Square, PanelRightClose, PanelRightOpen, Target, Plus, X } from "lucide-react";
+import {
+  Clock,
+  CheckSquare,
+  Square,
+  PanelRightClose,
+  PanelRightOpen,
+  Target,
+  Plus,
+  X,
+  ListTodo,
+  Trophy,
+} from "lucide-react";
 import toast from "react-hot-toast";
+import { format } from "date-fns";
 
-const SessionSidebar = ({ spaceId, authUser }) => {
-  const [isVisible, setIsVisible] = useState(true);
+const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      return defaultVisible;
+    }
+    return true;
+  });
   const [elapsedTime, setElapsedTime] = useState(0);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const queryClient = useQueryClient();
 
   // Fetch current session
@@ -20,14 +38,18 @@ const SessionSidebar = ({ spaceId, authUser }) => {
   });
 
   // Update task mutation
-  const { mutate: updateTask } = useMutation({
+  const { mutate: updateTask, isPending: isUpdatingTask } = useMutation({
     mutationFn: ({ sessionId, taskId, isCompleted }) =>
       updateSessionTask(sessionId, taskId, isCompleted),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentSession", spaceId, authUser._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["currentSession", spaceId, authUser._id],
+      });
+      setUpdatingTaskId(null);
     },
     onError: (error) => {
       toast.error(error.response?.data?.message || "Failed to update task");
+      setUpdatingTaskId(null);
     },
   });
 
@@ -36,11 +58,16 @@ const SessionSidebar = ({ spaceId, authUser }) => {
     mutationFn: async ({ sessionId, title }) => {
       // For now, we'll need to create this endpoint
       const { axiosInstance } = await import("../lib/axios");
-      const response = await axiosInstance.post(`/sessions/${sessionId}/tasks`, { title });
+      const response = await axiosInstance.post(
+        `/sessions/${sessionId}/tasks`,
+        { title }
+      );
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["currentSession", spaceId, authUser._id] });
+      queryClient.invalidateQueries({
+        queryKey: ["currentSession", spaceId, authUser._id],
+      });
       setNewTaskTitle("");
       setIsAddingTask(false);
       toast.success("Task added");
@@ -65,7 +92,8 @@ const SessionSidebar = ({ spaceId, authUser }) => {
   }, [session]);
 
   const handleToggleTask = (taskId, currentStatus) => {
-    if (!session) return;
+    if (!session || isUpdatingTask) return;
+    setUpdatingTaskId(taskId);
     updateTask({
       sessionId: session._id,
       taskId,
@@ -149,20 +177,26 @@ const SessionSidebar = ({ spaceId, authUser }) => {
                   <div className="text-4xl font-bold font-mono text-primary">
                     {formatTime(elapsedTime)}
                   </div>
-                  <p className="text-xs text-base-content/60 mt-1">Elapsed Time</p>
+                  <p className="text-xs text-base-content/60 mt-1">
+                    Elapsed Time
+                  </p>
                 </div>
 
                 {/* Progress Bar */}
                 <div className="mb-3">
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-base-content/70">Progress</span>
+                    <span className="text-xs text-base-content/70">
+                      Progress
+                    </span>
                     <span className="text-xs font-semibold">
                       {getProgress().toFixed(0)}%
                     </span>
                   </div>
                   <progress
                     className={`progress ${
-                      isTargetReached() ? "progress-success" : "progress-primary"
+                      isTargetReached()
+                        ? "progress-success"
+                        : "progress-primary"
                     } w-full`}
                     value={getProgress()}
                     max="100"
@@ -183,7 +217,8 @@ const SessionSidebar = ({ spaceId, authUser }) => {
                 {/* Target Reached Badge */}
                 {isTargetReached() && (
                   <div className="alert alert-success mt-3 py-2">
-                    <span className="text-sm">🎉 Target reached!</span>
+                    <Trophy className="size-4" />
+                    <span className="text-sm">Target reached!</span>
                   </div>
                 )}
               </div>
@@ -194,7 +229,7 @@ const SessionSidebar = ({ spaceId, authUser }) => {
               <div className="card-body p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <CheckSquare className="size-5 text-primary" />
+                    <ListTodo className="size-5 text-primary" />
                     <h3 className="font-semibold">Tasks</h3>
                   </div>
                   <div className="flex items-center gap-2">
@@ -207,7 +242,11 @@ const SessionSidebar = ({ spaceId, authUser }) => {
                       onClick={() => setIsAddingTask(!isAddingTask)}
                       title="Add new task"
                     >
-                      {isAddingTask ? <X className="size-4" /> : <Plus className="size-4" />}
+                      {isAddingTask ? (
+                        <X className="size-4" />
+                      ) : (
+                        <Plus className="size-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -245,37 +284,51 @@ const SessionSidebar = ({ spaceId, authUser }) => {
 
                 {session.tasks.length > 0 ? (
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {session.tasks.map((task) => (
-                      <div
-                        key={task._id}
-                        className="flex items-start gap-3 p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors cursor-pointer"
-                        onClick={() => handleToggleTask(task._id, task.isCompleted)}
-                      >
-                        <div className="pt-0.5">
-                          {task.isCompleted ? (
-                            <CheckSquare className="size-5 text-success flex-shrink-0" />
-                          ) : (
-                            <Square className="size-5 text-base-content/50 flex-shrink-0" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`text-sm break-words ${
-                              task.isCompleted
-                                ? "line-through text-base-content/60"
-                                : ""
-                            }`}
-                          >
-                            {task.title}
-                          </p>
-                          {task.isCompleted && task.completedAt && (
-                            <p className="text-xs text-base-content/50 mt-1">
-                              Completed {new Date(task.completedAt).toLocaleTimeString()}
+                    {session.tasks.map((task) => {
+                      const isTaskUpdating = updatingTaskId === task._id;
+                      return (
+                        <div
+                          key={task._id}
+                          className={`flex items-start gap-3 p-3 bg-base-200 rounded-lg transition-colors ${
+                            isTaskUpdating
+                              ? "opacity-60 cursor-wait"
+                              : "hover:bg-base-300 cursor-pointer"
+                          }`}
+                          onClick={() => {
+                            if (!isTaskUpdating) {
+                              handleToggleTask(task._id, task.isCompleted);
+                            }
+                          }}
+                        >
+                          <div className="pt-0.5">
+                            {isTaskUpdating ? (
+                              <span className="loading loading-spinner loading-sm text-primary"></span>
+                            ) : task.isCompleted ? (
+                              <CheckSquare className="size-5 text-success flex-shrink-0" />
+                            ) : (
+                              <Square className="size-5 text-base-content/50 flex-shrink-0" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={`text-sm break-words ${
+                                task.isCompleted
+                                  ? "line-through text-base-content/60"
+                                  : ""
+                              }`}
+                            >
+                              {task.title}
                             </p>
-                          )}
+                            {task.isCompleted && task.completedAt && (
+                              <p className="text-xs text-base-content/50 mt-1">
+                                Completed{" "}
+                                {format(new Date(task.completedAt), "h:mm a")}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="text-center py-6 text-base-content/60">
@@ -316,7 +369,7 @@ const SessionSidebar = ({ spaceId, authUser }) => {
                   <div className="flex justify-between">
                     <span className="text-base-content/70">Started at</span>
                     <span className="font-semibold">
-                      {new Date(session.startTime).toLocaleTimeString()}
+                      {format(new Date(session.startTime), "h:mm a")}
                     </span>
                   </div>
                   <div className="flex justify-between">
