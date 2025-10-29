@@ -1,5 +1,7 @@
 import FriendRequest from "../models/FriendRequest.model.js";
 import User from "../models/User.model.js";
+import Notification from "../models/Notification.model.js";
+import { createNotification } from "./notification.controller.js";
 
 export async function getRecommendedUsers(req, res) {
   try {
@@ -33,7 +35,7 @@ export async function getMyFriends(req, res) {
       .select("friends")
       .populate(
         "friends",
-        "fullName bio location profilePic nativeLanguage learningLanguage"
+        "fullName bio location profilePic nativeLanguage learningSkill"
       );
 
     res.status(200).json(user.friends);
@@ -86,6 +88,17 @@ export async function sendFriendRequest(req, res) {
       recipient: recipientId,
     });
 
+    // Create notification for recipient
+    await createNotification({
+      recipient: recipientId,
+      sender: myId,
+      type: "friend_request",
+      message: `${req.user.fullName} sent you a friend request`,
+      metadata: {
+        friendRequestId: friendRequest._id.toString(),
+      },
+    });
+
     res.status(201).json(friendRequest);
   } catch (error) {
     console.error("Error in sendFriendRequest controller", error.message);
@@ -123,6 +136,22 @@ export async function acceptFriendRequest(req, res) {
       $addToSet: { friends: friendRequest.sender },
     });
 
+    // Create notification for the sender
+    await createNotification({
+      recipient: friendRequest.sender,
+      sender: friendRequest.recipient,
+      type: "friend_request_accepted",
+      message: `${req.user.fullName} accepted your friend request`,
+    });
+
+    // Delete the friend_request notification for the recipient
+    await Notification.deleteOne({
+      recipient: friendRequest.recipient,
+      sender: friendRequest.sender,
+      type: "friend_request",
+      "metadata.friendRequestId": requestId,
+    });
+
     res.status(200).json({ message: "Friend request accepted" });
   } catch (error) {
     console.log("Error in acceptFriendRequest controller", error.message);
@@ -137,17 +166,36 @@ export async function getFriendRequests(req, res) {
       status: "pending",
     }).populate(
       "sender",
-      "fullName profilePic nativeLanguage learningLanguage"
+      "fullName profilePic nativeLanguage learningSkill"
     );
 
     const acceptedRequests = await FriendRequest.find({
       sender: req.user.id,
       status: "accepted",
+      isNotificationSeen: { $ne: true },
     }).populate("recipient", "fullName profilePic");
 
     res.status(200).json({ incomingRequests, acceptedRequests });
   } catch (error) {
     console.log("Error in getPendingFriendRequests controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function markNotificationsSeen(req, res) {
+  try {
+    await FriendRequest.updateMany(
+      {
+        sender: req.user.id,
+        status: "accepted",
+        isNotificationSeen: { $ne: true },
+      },
+      { $set: { isNotificationSeen: true } }
+    );
+
+    res.status(200).json({ message: "Notifications marked as seen" });
+  } catch (error) {
+    console.log("Error in markNotificationsSeen controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -159,12 +207,119 @@ export async function getOutgoingFriendRequests(req, res) {
       status: "pending",
     }).populate(
       "recipient",
-      "fullName profilePic nativeLanguage learningLanguage"
+      "fullName profilePic nativeLanguage learningSkill"
     );
 
     res.status(200).json(outgoingRequests);
   } catch (error) {
     console.log("Error in getOutgoingFriendReqs controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function declineFriendRequest(req, res) {
+  try {
+    const { id: requestId } = req.params;
+
+    const friendRequest = await FriendRequest.findById(requestId);
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    // Verify the current user is the recipient
+    if (friendRequest.recipient.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to decline this request" });
+    }
+
+    // Delete the friend request
+    await FriendRequest.findByIdAndDelete(requestId);
+
+    // Delete the friend_request notification for the recipient
+    await Notification.deleteOne({
+      recipient: friendRequest.recipient,
+      sender: friendRequest.sender,
+      type: "friend_request",
+      "metadata.friendRequestId": requestId,
+    });
+
+    res.status(200).json({ message: "Friend request declined" });
+  } catch (error) {
+    console.log("Error in declineFriendRequest controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function cancelFriendRequest(req, res) {
+  try {
+    const { id: requestId } = req.params;
+
+    const friendRequest = await FriendRequest.findById(requestId);
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    // Verify the current user is the sender
+    if (friendRequest.sender.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "You are not authorized to cancel this request" });
+    }
+
+    // Delete the friend request
+    await FriendRequest.findByIdAndDelete(requestId);
+
+    res.status(200).json({ message: "Friend request cancelled" });
+  } catch (error) {
+    console.log("Error in cancelFriendRequest controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function unfriend(req, res) {
+  try {
+    const myId = req.user.id;
+    const { id: friendId } = req.params;
+
+    if (myId === friendId) {
+      return res.status(400).json({ message: "You cannot unfriend yourself" });
+    }
+
+    // Check if they are friends
+    const myUser = await User.findById(myId);
+    const friendUser = await User.findById(friendId);
+
+    if (!friendUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!myUser.friends.includes(friendId)) {
+      return res.status(400).json({ message: "You are not friends with this user" });
+    }
+
+    // Remove from both users' friend lists
+    await User.findByIdAndUpdate(myId, {
+      $pull: { friends: friendId },
+    });
+
+    await User.findByIdAndUpdate(friendId, {
+      $pull: { friends: myId },
+    });
+
+    // Delete the friend request record
+    await FriendRequest.deleteMany({
+      $or: [
+        { sender: myId, recipient: friendId, status: "accepted" },
+        { sender: friendId, recipient: myId, status: "accepted" },
+      ],
+    });
+
+    res.status(200).json({ message: "Unfriended successfully" });
+  } catch (error) {
+    console.log("Error in unfriend controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -201,5 +356,152 @@ export async function uploadPhoto(req, res) {
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+// Get user profile by ID
+export async function getUserProfile(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    const user = await User.findById(userId)
+      .select("-password")
+      .populate("friends", "fullName profilePic");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    // If not a friend and not own profile, return limited information
+    if (!isFriend && !isOwnProfile) {
+      return res.status(200).json({
+        _id: user._id,
+        fullName: user.fullName,
+        profilePic: user.profilePic,
+        bio: user.bio,
+        location: user.location,
+        nativeLanguage: user.nativeLanguage,
+        learningSkill: user.learningSkill,
+        friends: user.friends,
+      });
+    }
+
+    // Return full profile for friends and own profile
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in getUserProfile controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Get user statistics
+export async function getUserStatistics(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user exists
+    const user = await User.findById(userId).populate("friends", "_id");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    if (!isFriend && !isOwnProfile) {
+      return res.status(403).json({
+        message: "You must be friends with this user to view their statistics",
+      });
+    }
+
+    // Import Space and Session models
+    const Session = (await import("../models/Session.model.js")).default;
+
+    // Get all sessions for the user
+    const sessions = await Session.find({ user: userId });
+    const totalSessions = sessions.length;
+
+    // Calculate total time spent (in seconds)
+    const totalTimeSpent = sessions.reduce((total, session) => {
+      if (session.endTime && session.startTime) {
+        const duration = Math.floor(
+          (new Date(session.endTime) - new Date(session.startTime)) / 1000
+        );
+        return total + duration;
+      }
+      return total;
+    }, 0);
+
+    // Calculate average session duration
+    const averageSessionDuration =
+      totalSessions > 0 ? Math.floor(totalTimeSpent / totalSessions) : 0;
+
+    // Calculate total tasks completed
+    const totalTasksCompleted = sessions.reduce((total, session) => {
+      return total + session.tasks.filter((task) => task.isCompleted).length;
+    }, 0);
+
+    res.status(200).json({
+      totalSessions,
+      totalTimeSpent,
+      averageSessionDuration,
+      totalTasksCompleted,
+    });
+  } catch (error) {
+    console.error("Error in getUserStatistics controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Get user spaces (spaces they are a member of or created)
+export async function getUserSpaces(req, res) {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user exists
+    const user = await User.findById(userId).populate("friends", "_id");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if the requesting user is a friend or viewing their own profile
+    const isFriend = user.friends.some(
+      (friend) => friend._id.toString() === currentUserId
+    );
+    const isOwnProfile = userId === currentUserId;
+
+    if (!isFriend && !isOwnProfile) {
+      return res.status(403).json({
+        message: "You must be friends with this user to view their spaces",
+      });
+    }
+
+    // Import Space model
+    const Space = (await import("../models/Space.model.js")).default;
+
+    // Get spaces where user is creator or member
+    const spaces = await Space.find({
+      $or: [{ creator: userId }, { members: userId }],
+    })
+      .populate("creator", "fullName profilePic")
+      .populate("members", "fullName profilePic")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(spaces);
+  } catch (error) {
+    console.error("Error in getUserSpaces controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }

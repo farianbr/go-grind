@@ -33,7 +33,7 @@ const SignUpPage = () => {
             <Airplay className="size-9 text-primary" />
             
 
-            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider">
               GoGrind
             </span>
           </div>
@@ -57,15 +57,15 @@ const SignUpPage = () => {
 
                 <div className="space-y-3">
                   {/* FULLNAME */}
-                  <div className="form-control w-full">
+                  <fieldset className="fieldset">
                     <label htmlFor="fullName" className="label">
-                      <span className="label-text">Full Name</span>
+                      Full Name
                     </label>
                     <input
                       id="fullName"
                       type="text"
                       placeholder="John Doe"
-                      className="input input-bordered w-full "
+                      className="input w-full"
                       value={signupData.fullName}
                       onChange={(e) =>
                         setSignupData({
@@ -75,34 +75,34 @@ const SignUpPage = () => {
                       }
                       required
                     />
-                  </div>
+                  </fieldset>
                   {/* EMAIL */}
-                  <div className="form-control w-full">
+                  <fieldset className="fieldset">
                     <label htmlFor="email" className="label">
-                      <span className="label-text">Email</span>
+                      Email
                     </label>
                     <input
                       id="email"
                       type="email"
                       placeholder="john@gmail.com"
-                      className="input input-bordered w-full"
+                      className="input w-full"
                       value={signupData.email}
                       onChange={(e) =>
                         setSignupData({ ...signupData, email: e.target.value })
                       }
                       required
                     />
-                  </div>
+                  </fieldset>
                   {/* PASSWORD */}
-                  <div className="form-control w-full">
+                  <fieldset className="fieldset">
                     <label htmlFor="password" className="label">
-                      <span className="label-text">Password</span>
+                      Password
                     </label>
                     <input
                       id="password"
                       type="password"
                       placeholder="********"
-                      className="input input-bordered w-full"
+                      className="input w-full"
                       value={signupData.password}
                       onChange={(e) =>
                         setSignupData({
@@ -115,9 +115,9 @@ const SignUpPage = () => {
                     <p className="text-xs opacity-70 mt-1">
                       Password must be at least 6 characters long
                     </p>
-                  </div>
+                  </fieldset>
 
-                  <div className="form-control">
+                  <fieldset className="fieldset">
                     <label className="label cursor-pointer justify-start gap-2">
                       <input
                         type="checkbox"
@@ -135,7 +135,7 @@ const SignUpPage = () => {
                         </span>
                       </span>
                     </label>
-                  </div>
+                  </fieldset>
                 </div>
 
                 <button className="btn btn-primary w-full" type="submit">

@@ -5,7 +5,6 @@ import SignUpPage from "./pages/SignUpPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import NotificationsPage from "./pages/NotificationsPage.jsx";
 import CallPage from "./pages/CallPage.jsx";
-import ChatPage from "./pages/ChatPage.jsx";
 import OnboardingPage from "./pages/OnboardingPage.jsx";
 import PageLoader from "./components/PageLoader.jsx";
 import useAuthUser from "./hooks/useAuthUser.js";
@@ -15,6 +14,10 @@ import HomePage from "./pages/HomePage.jsx";
 import UpdateProfilePage from "./pages/UpdateProfilePage.jsx";
 import ChatsPage from "./pages/ChatsPage.jsx";
 import FriendsPage from "./pages/FriendsPage.jsx";
+import SpacesPage from "./pages/SpacesPage.jsx";
+import SpaceDetailPage from "./pages/SpaceDetailPage.jsx";
+import StreamRoomPage from "./pages/StreamRoomPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
@@ -73,8 +76,56 @@ const App = () => {
             )
           }
         />
+        <Route
+          path="/spaces"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <SpacesPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/spaces/:id"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <SpaceDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/spaces/:id/stream"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <StreamRoomPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
          <Route
           path="/chats"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ChatsPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/chats/:id"
           element={
             isAuthenticated && isOnboarded ? (
               <Layout showSidebar={true}>
@@ -108,18 +159,6 @@ const App = () => {
           }
         />
         <Route
-          path="/chat/:id"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <ChatPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
           path="/onboarding"
           element={
             isAuthenticated ? (
@@ -138,6 +177,30 @@ const App = () => {
           element={
             isAuthenticated ? <UpdateProfilePage/> : (
               <Navigate to="/login" />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route
+          path="/profile/:userId"
+          element={
+            isAuthenticated && isOnboarded ? (
+              <Layout showSidebar={true}>
+                <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
             )
           }
         />

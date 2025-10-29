@@ -1,35 +1,183 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
 
+@utility btn {
+  @apply rounded-full;
+}
 
+/* Stream Chat Theme Overrides for DaisyUI */
 .str-chat__channel {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
   height: 100%;
 }
 
 .str-chat__container {
-  max-width: 1200px;
+  max-width: 100%;
   width: 100%;
-  height: 80% !important;
+  height: 100% !important;
   margin: 0 auto !important;
-  border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
 
+/* Background colors - adapt to theme */
+.str-chat__list,
+.str-chat__main-panel,
+.str-chat__thread,
+.str-chat__empty-channel,
+.str-chat-channel-list {
+  background-color: hsl(var(--b1)) !important;
+}
+
+.str-chat__message-simple-text-inner,
+.str-chat__message-text-inner {
+  background-color: hsl(var(--b2)) !important;
+  color: hsl(var(--bc)) !important;
+}
+
+.str-chat__message-commerce-text-inner {
+  background-color: hsl(var(--b2)) !important;
+  color: hsl(var(--bc)) !important;
+}
+
+/* Input styling */
+.str-chat__textarea,
+.str-chat__message-textarea,
+.str-chat__input,
+.str-chat__input-flat,
+.str-chat__input-flat-wrapper,
+.str-chat__message-textarea-container {
+  background-color: hsl(var(--b2)) !important;
+  color: hsl(var(--bc)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+.str-chat__textarea::placeholder,
+.str-chat__message-textarea::placeholder,
+.str-chat__input::placeholder {
+  color: hsl(var(--bc) / 0.5) !important;
+}
+
+/* Header styling */
+.str-chat__header-livestream {
+  background-color: hsl(var(--b1)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+.str-chat__header-livestream-left--title,
+.str-chat__header-livestream-left--subtitle {
+  color: hsl(var(--bc)) !important;
+}
+
+/* Message list */
 .str-chat__list {
-  background-color: #ffffff;
+  background-color: hsl(var(--b1)) !important;
   padding: 12px;
+  max-height: calc(100vh - 200px);
 }
 
 .str-chat__list-notifications {
   display: none;
 }
 
+/* Message input */
 .str-chat__message-input {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid hsl(var(--b3)) !important;
+  background-color: hsl(var(--b1)) !important;
+}
+
+.str-chat__message-input-inner {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+/* Message input textarea and container */
+.str-chat__message-textarea-container,
+.str-chat__message-textarea-react-host {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+.str-chat__message-textarea,
+.str-chat__message-textarea textarea {
+  background-color: hsl(var(--b2)) !important;
+  color: hsl(var(--bc)) !important;
+  caret-color: hsl(var(--bc)) !important;
+}
+
+.str-chat__message-textarea::placeholder,
+.str-chat__message-textarea::-webkit-input-placeholder,
+.str-chat__message-textarea::-moz-placeholder,
+.str-chat__message-textarea textarea::placeholder,
+.str-chat__message-textarea textarea::-webkit-input-placeholder,
+.str-chat__message-textarea textarea::-moz-placeholder {
+  color: hsl(var(--bc) / 0.5) !important;
+  opacity: 1 !important;
+}
+
+/* Send button and icons */
+.str-chat__send-button,
+.str-chat__fileupload-wrapper,
+.str-chat__input-emojiselect {
+  color: hsl(var(--bc) / 0.7) !important;
+}
+
+.str-chat__send-button:hover,
+.str-chat__fileupload-wrapper:hover,
+.str-chat__input-emojiselect:hover {
+  color: hsl(var(--p)) !important;
+  background-color: hsl(var(--b3)) !important;
+}
+
+/* Emoji picker */
+.str-chat__emoji-picker {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+/* Date separator */
+.str-chat__date-separator {
+  color: hsl(var(--bc) / 0.6) !important;
+}
+
+/* System messages */
+.str-chat__message--system__text,
+.str-chat__message--system__line {
+  color: hsl(var(--bc) / 0.5) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+/* Reactions */
+.str-chat__reaction-list {
+  background-color: hsl(var(--b2)) !important;
+  border-color: hsl(var(--b3)) !important;
+}
+
+/* Thread header */
+.str-chat__thread-header {
+  background-color: hsl(var(--b1)) !important;
+  border-color: hsl(var(--b3)) !important;
+  color: hsl(var(--bc)) !important;
+}
+
+/* Scrollbar styling for dark themes */
+.str-chat__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.str-chat__list::-webkit-scrollbar-track {
+  background: hsl(var(--b2));
+}
+
+.str-chat__list::-webkit-scrollbar-thumb {
+  background: hsl(var(--b3));
+  border-radius: 4px;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--bc) / 0.3);
 }

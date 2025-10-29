@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { CheckCircleIcon, MapPinIcon, UserPlusIcon } from "lucide-react";
+import { CheckCircleIcon, MapPinIcon, UserPlusIcon, X } from "lucide-react";
+import toast from "react-hot-toast";
 
 import {
+  cancelFriendRequest,
   getOutgoingFriendReqs,
   getRecommendedUsers,
   sendFriendRequest,
@@ -10,11 +12,12 @@ import {
 import { getLanguageFlag } from "../components/FriendCard";
 import { capitalize } from "../lib/utils.js";
 import useAuthUser from "../hooks/useAuthUser.js";
+import { Link } from "react-router";
 const RecommendedFriends = () => {
   const queryClient = useQueryClient();
   const { authUser } = useAuthUser();
 
-  const [outgoingRequestsIds, setOutgoingRequestsIds] = useState();
+  const [outgoingRequestsMap, setOutgoingRequestsMap] = useState(new Map());
 
   const { data: recommendedUsers = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["users"],
@@ -26,20 +29,31 @@ const RecommendedFriends = () => {
     queryFn: getOutgoingFriendReqs,
   });
 
-  const { mutate: sendRequestMutation, isPending } = useMutation({
+  const { mutate: sendRequestMutation, isPending: isSending } = useMutation({
     mutationFn: sendFriendRequest,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] }),
+    onSuccess: () => {
+      toast.success("Friend request sent!");
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
+  });
+
+  const { mutate: cancelRequestMutation, isPending: isCancelling } = useMutation({
+    mutationFn: cancelFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request cancelled");
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
   });
 
   useEffect(() => {
-    const outgoingIds = new Set();
+    const requestsMap = new Map();
     if (outgoingFriendReqs && outgoingFriendReqs.length > 0) {
       outgoingFriendReqs.forEach((req) => {
-        outgoingIds.add(req.recipient._id);
+        requestsMap.set(req.recipient._id, req._id);
       });
-      setOutgoingRequestsIds(outgoingIds);
     }
+    setOutgoingRequestsMap(requestsMap);
   }, [outgoingFriendReqs, authUser]);
   return (
     <section>
@@ -72,7 +86,8 @@ const RecommendedFriends = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recommendedUsers?.map((user) => {
-            const hasRequestBeenSent = outgoingRequestsIds?.has(user._id);
+            const requestId = outgoingRequestsMap.get(user._id);
+            const hasRequestBeenSent = !!requestId;
 
             return (
               <div
@@ -80,7 +95,7 @@ const RecommendedFriends = () => {
                 className="card bg-base-200 hover:shadow-lg transition-all duration-300"
               >
                 <div className="card-body p-5 space-y-4">
-                  <div className="flex items-center gap-3">
+                  <Link to={`/profile/${user._id}`} className="flex items-center gap-3">
                     <div className="avatar size-16 rounded-full overflow-hidden">
                       <img src={user.profilePic} alt={user.fullName} />
                     </div>
@@ -94,42 +109,55 @@ const RecommendedFriends = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Link>
 
-                  {/* Languages with flags */}
+                  {/* Languages and Skills */}
                   <div className="flex flex-wrap gap-1.5">
                     <span className="badge badge-secondary">
                       {getLanguageFlag(user.nativeLanguage)}
                       Native: {capitalize(user.nativeLanguage)}
                     </span>
-                    <span className="badge badge-outline">
-                      {getLanguageFlag(user.learningLanguage)}
-                      Learning: {capitalize(user.learningLanguage)}
-                    </span>
+                    {user.learningSkill && (
+                      <span className="badge badge-outline">
+                        📚 Learning: {capitalize(user.learningSkill)}
+                      </span>
+                    )}
                   </div>
 
                   {user.bio && <p className="text-sm opacity-70">{user.bio}</p>}
 
                   {/* Action button */}
-                  <button
-                    className={`btn w-full mt-2 ${
-                      hasRequestBeenSent ? "btn-disabled" : "btn-primary"
-                    } `}
-                    onClick={() => sendRequestMutation(user._id)}
-                    disabled={hasRequestBeenSent || isPending}
-                  >
-                    {hasRequestBeenSent ? (
-                      <>
-                        <CheckCircleIcon className="size-4 mr-2" />
-                        Request Sent
-                      </>
-                    ) : (
-                      <>
-                        <UserPlusIcon className="size-4 mr-2" />
-                        Send Friend Request
-                      </>
+                  <div className="flex gap-2">
+                    <button
+                      className={`btn flex-1 mt-2 ${
+                        hasRequestBeenSent ? "btn-disabled" : "btn-primary"
+                      } `}
+                      onClick={() => sendRequestMutation(user._id)}
+                      disabled={hasRequestBeenSent || isSending}
+                    >
+                      {hasRequestBeenSent ? (
+                        <>
+                          <CheckCircleIcon className="size-4 mr-2" />
+                          Request Sent
+                        </>
+                      ) : (
+                        <>
+                          <UserPlusIcon className="size-4 mr-2" />
+                          Send Friend Request
+                        </>
+                      )}
+                    </button>
+                    {hasRequestBeenSent && (
+                      <button
+                        className="btn btn-ghost btn-circle mt-2"
+                        onClick={() => cancelRequestMutation(requestId)}
+                        disabled={isCancelling}
+                        aria-label="Cancel request"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
             );

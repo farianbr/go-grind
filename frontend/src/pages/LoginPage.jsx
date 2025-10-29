@@ -28,7 +28,7 @@ const LoginPage = () => {
           {/* LOGO */}
           <div className="mb-4 flex items-center justify-start gap-2">
             <Airplay className="size-9 text-primary" />
-            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider">
+            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary  tracking-wider">
               GoGrind
             </span>
           </div>
@@ -51,37 +51,39 @@ const LoginPage = () => {
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <div className="form-control w-full space-y-2">
-                    <label className="label">
-                      <span className="label-text">Email</span>
+                  <fieldset className="fieldset space-y-2">
+                    <label className="label" htmlFor="email">
+                      Email
                     </label>
                     <input
+                      id="email"
                       type="email"
                       placeholder="hello@example.com"
-                      className="input input-bordered w-full"
+                      className="input w-full"
                       value={loginData.email}
                       onChange={(e) =>
                         setLoginData({ ...loginData, email: e.target.value })
                       }
                       required
                     />
-                  </div>
+                  </fieldset>
 
-                  <div className="form-control w-full space-y-2">
-                    <label className="label">
-                      <span className="label-text">Password</span>
+                  <fieldset className="fieldset space-y-2">
+                    <label className="label" htmlFor="password">
+                      Password
                     </label>
                     <input
+                      id="password"
                       type="password"
                       placeholder="••••••••"
-                      className="input input-bordered w-full"
+                      className="input w-full"
                       value={loginData.password}
                       onChange={(e) =>
                         setLoginData({ ...loginData, password: e.target.value })
                       }
                       required
                     />
-                  </div>
+                  </fieldset>
 
                   <button
                     type="submit"

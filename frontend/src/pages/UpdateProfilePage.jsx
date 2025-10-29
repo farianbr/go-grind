@@ -13,7 +13,7 @@ import {
 
 import useAuthUser from "../hooks/useAuthUser";
 import { completeOnboarding, uploadPhoto } from "../lib/api";
-import { LANGUAGES } from "../constants";
+import { LANGUAGES, SKILLS } from "../constants";
 
 const UpdateProfilePage = () => {
   const { authUser } = useAuthUser();
@@ -24,7 +24,7 @@ const UpdateProfilePage = () => {
     fullName: authUser?.fullName || "",
     bio: authUser?.bio || "",
     nativeLanguage: authUser?.nativeLanguage || "",
-    learningLanguage: authUser?.learningLanguage || "",
+    learningSkill: authUser?.learningSkill || "",
     location: authUser?.location || "",
     profilePic: authUser?.profilePic || "/blank-pp.png",
   });
@@ -135,46 +135,49 @@ const UpdateProfilePage = () => {
             </div>
 
             {/* FULL NAME */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Full Name</span>
+            <fieldset className="fieldset">
+              <label className="label" htmlFor="fullName">
+                Full Name
               </label>
               <input
+                id="fullName"
                 type="text"
                 name="fullName"
                 value={formState.fullName}
                 onChange={(e) =>
                   setFormState({ ...formState, fullName: e.target.value })
                 }
-                className="input input-bordered w-full"
+                className="input w-full"
                 placeholder="Your full name"
               />
-            </div>
+            </fieldset>
 
             {/* BIO */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Bio</span>
+            <fieldset className="fieldset">
+              <label className="label" htmlFor="bio">
+                Bio
               </label>
               <textarea
+                id="bio"
                 name="bio"
                 value={formState.bio}
                 onChange={(e) =>
                   setFormState({ ...formState, bio: e.target.value })
                 }
-                className="textarea textarea-bordered h-24"
+                className="textarea h-24 w-full"
                 placeholder="Tell others about yourself and your language learning goals"
               />
-            </div>
+            </fieldset>
 
-            {/* LANGUAGES */}
+            {/* LANGUAGES AND SKILLS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* NATIVE LANGUAGE */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Native Language</span>
+              <fieldset className="fieldset">
+                <label className="label" htmlFor="nativeLanguage">
+                  Native Language
                 </label>
                 <select
+                  id="nativeLanguage"
                   name="nativeLanguage"
                   value={formState.nativeLanguage}
                   onChange={(e) =>
@@ -183,7 +186,7 @@ const UpdateProfilePage = () => {
                       nativeLanguage: e.target.value,
                     })
                   }
-                  className="select select-bordered w-full"
+                  className="select w-full"
                 >
                   <option value="">Select your native language</option>
                   {LANGUAGES.map((lang) => (
@@ -192,53 +195,55 @@ const UpdateProfilePage = () => {
                     </option>
                   ))}
                 </select>
-              </div>
+              </fieldset>
 
-              {/* LEARNING LANGUAGE */}
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Learning Language</span>
+              {/* LEARNING SKILL */}
+              <fieldset className="fieldset">
+                <label className="label" htmlFor="learningSkill">
+                  Learning Skill
                 </label>
                 <select
-                  name="learningLanguage"
-                  value={formState.learningLanguage}
+                  id="learningSkill"
+                  name="learningSkill"
+                  value={formState.learningSkill}
                   onChange={(e) =>
                     setFormState({
                       ...formState,
-                      learningLanguage: e.target.value,
+                      learningSkill: e.target.value,
                     })
                   }
-                  className="select select-bordered w-full"
+                  className="select w-full"
                 >
-                  <option value="">Select language you're learning</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`learning-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
+                  <option value="">Select skill you're learning</option>
+                  {SKILLS.map((skill) => (
+                    <option key={`learning-${skill}`} value={skill.toLowerCase()}>
+                      {skill}
                     </option>
                   ))}
                 </select>
-              </div>
+              </fieldset>
             </div>
 
             {/* LOCATION */}
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text">Location</span>
+            <fieldset className="fieldset">
+              <label className="label" htmlFor="location">
+                Location
               </label>
               <div className="relative">
                 <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70" />
                 <input
+                  id="location"
                   type="text"
                   name="location"
                   value={formState.location}
                   onChange={(e) =>
                     setFormState({ ...formState, location: e.target.value })
                   }
-                  className="input input-bordered w-full pl-10"
+                  className="input w-full pl-10"
                   placeholder="City, Country"
                 />
               </div>
-            </div>
+            </fieldset>
 
             {/* SUBMIT BUTTON */}
 
