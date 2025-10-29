@@ -202,7 +202,7 @@ const Navbar = () => {
 
                   <button
                     onClick={handleProfileClick}
-                    className="w-full px-4 pb-2 pt-4 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm"
+                    className="w-full px-4 py-2 mt-2 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm"
                   >
                     <User className="size-4" />
                     <span>My Profile</span>

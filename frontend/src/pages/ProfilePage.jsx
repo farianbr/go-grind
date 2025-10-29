@@ -1,7 +1,14 @@
 import { useParams, useNavigate, Link } from "react-router";
-import { useQuery } from "@tanstack/react-query";
-import { getUserProfile, getUserStatistics, getUserSessions, getUserSpaces } from "../lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getUserProfile,
+  getUserStatistics,
+  getUserSessions,
+  getUserSpaces,
+  unfriend,
+} from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
+import toast from "react-hot-toast";
 import PageLoader from "../components/PageLoader";
 import {
   MapPin,
@@ -15,16 +22,18 @@ import {
   TrendingUp,
   MessageSquare,
   UserPlus,
-  UserCheck,
+  UserX,
   CheckCircle,
   Shapes,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { capitalize } from "../lib/utils";
 
 const ProfilePage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { authUser } = useAuthUser();
+  const queryClient = useQueryClient();
 
   // Determine if viewing own profile or another user's
   const isOwnProfile = !userId || userId === authUser?._id;
@@ -41,36 +50,6 @@ const ProfilePage = () => {
     enabled: !!targetUserId,
   });
 
-  // Fetch user statistics
-  const {
-    data: statistics,
-    isLoading: statsLoading,
-  } = useQuery({
-    queryKey: ["userStatistics", targetUserId],
-    queryFn: () => getUserStatistics(targetUserId),
-    enabled: !!targetUserId,
-  });
-
-  // Fetch user sessions
-  const {
-    data: sessions,
-    isLoading: sessionsLoading,
-  } = useQuery({
-    queryKey: ["userSessions", targetUserId],
-    queryFn: () => getUserSessions(targetUserId),
-    enabled: !!targetUserId,
-  });
-
-  // Fetch user spaces
-  const {
-    data: spaces,
-    isLoading: spacesLoading,
-  } = useQuery({
-    queryKey: ["userSpaces", targetUserId],
-    queryFn: () => getUserSpaces(targetUserId),
-    enabled: !!targetUserId,
-  });
-
   // Check if viewing user is a friend
   const isFriend = userProfile?.friends?.some(
     (friend) => friend._id === authUser?._id || friend === authUser?._id
@@ -78,7 +57,58 @@ const ProfilePage = () => {
 
   const canViewDetails = isOwnProfile || isFriend;
 
-  if (profileLoading || statsLoading || sessionsLoading || spacesLoading) {
+  // Fetch user statistics - only if can view details
+  const { data: statistics, isLoading: statsLoading } = useQuery({
+    queryKey: ["userStatistics", targetUserId],
+    queryFn: () => getUserStatistics(targetUserId),
+    enabled: !!targetUserId && canViewDetails,
+  });
+
+  // Fetch user sessions - only if can view details
+  const { data: sessions, isLoading: sessionsLoading } = useQuery({
+    queryKey: ["userSessions", targetUserId],
+    queryFn: () => getUserSessions(targetUserId),
+    enabled: !!targetUserId && canViewDetails,
+  });
+
+  // Fetch user spaces - only if can view details
+  const { data: spaces, isLoading: spacesLoading } = useQuery({
+    queryKey: ["userSpaces", targetUserId],
+    queryFn: () => getUserSpaces(targetUserId),
+    enabled: !!targetUserId && canViewDetails,
+  });
+
+  // Unfriend mutation
+  const { mutate: unfriendMutation, isPending: isUnfriending } = useMutation({
+    mutationFn: unfriend,
+    onSuccess: () => {
+      toast.success("Friend removed successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["userProfile", targetUserId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+    },
+    onError: () => {
+      toast.error("Failed to remove friend");
+    },
+  });
+
+  const handleUnfriend = () => {
+    if (
+      window.confirm(
+        `Are you sure you want to unfriend ${userProfile.fullName}?`
+      )
+    ) {
+      unfriendMutation(targetUserId);
+    }
+  };
+
+  if (profileLoading) {
+    return <PageLoader />;
+  }
+
+  // Show loader for additional data only if we should be loading it
+  if (canViewDetails && (statsLoading || sessionsLoading || spacesLoading)) {
     return <PageLoader />;
   }
 
@@ -112,11 +142,11 @@ const ProfilePage = () => {
       {/* Profile Header */}
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
+          <div className="flex flex-col gap-6">
             {/* Profile Picture and Basic Info */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 w-full lg:w-auto">
-              <div className="avatar">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-2">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              <div className="avatar shrink-0">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-2">
                   <img
                     src={userProfile.profilePic}
                     alt={userProfile.fullName}
@@ -125,8 +155,8 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              <div className="text-center sm:text-left flex-1">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+              <div className="text-center sm:text-left flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
                   {userProfile.fullName}
                 </h1>
                 {userProfile.bio && (
@@ -146,13 +176,13 @@ const ProfilePage = () => {
                   {userProfile.nativeLanguage && (
                     <div className="flex items-center gap-1.5 text-base-content/60">
                       <Globe className="size-4" />
-                      <span>{userProfile.nativeLanguage}</span>
+                      <span>{capitalize(userProfile.nativeLanguage)}</span>
                     </div>
                   )}
                   {userProfile.learningSkill && (
                     <div className="flex items-center gap-1.5 text-base-content/60">
                       <BookOpen className="size-4" />
-                      <span>{userProfile.learningSkill}</span>
+                      <span>{capitalize(userProfile.learningSkill)}</span>
                     </div>
                   )}
                 </div>
@@ -168,30 +198,46 @@ const ProfilePage = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full lg:w-auto lg:ml-auto">
+            <div className="flex flex-col gap-2 w-full lg:w-auto lg:ml-auto mt-4 lg:mt-0">
               {isOwnProfile ? (
                 <Link to="/update-profile" className="btn btn-primary gap-2">
                   <Edit className="size-4" />
-                  <span className="hidden sm:inline">Edit Profile</span>
-                  <span className="sm:hidden">Edit</span>
+                  Edit Profile
                 </Link>
               ) : (
                 <>
                   {isFriend ? (
-                    <button className="btn btn-success gap-2" disabled>
-                      <UserCheck className="size-4" />
-                      Friends
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={handleUnfriend}
+                        className="btn btn-error btn-outline gap-2"
+                        disabled={isUnfriending}
+                      >
+                        {isUnfriending ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          <UserX className="size-4" />
+                        )}
+                        Unfriend
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate(`/chats/${userProfile._id}`);
+                        }}
+                        className="btn btn-primary gap-2"
+                      >
+                        <MessageSquare className="size-4" />
+                        Message
+                      </button>
+                    </div>
                   ) : (
-                    <button className="btn btn-primary gap-2">
-                      <UserPlus className="size-4" />
-                      Add Friend
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button className="btn btn-primary gap-2">
+                        <UserPlus className="size-4" />
+                        Add Friend
+                      </button>
+                    </div>
                   )}
-                  <button className="btn btn-outline gap-2">
-                    <MessageSquare className="size-4" />
-                    Message
-                  </button>
                 </>
               )}
             </div>

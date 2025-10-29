@@ -12,6 +12,7 @@ import {
 import { getLanguageFlag } from "../components/FriendCard";
 import { capitalize } from "../lib/utils.js";
 import useAuthUser from "../hooks/useAuthUser.js";
+import { Link } from "react-router";
 const RecommendedFriends = () => {
   const queryClient = useQueryClient();
   const { authUser } = useAuthUser();
@@ -94,7 +95,7 @@ const RecommendedFriends = () => {
                 className="card bg-base-200 hover:shadow-lg transition-all duration-300"
               >
                 <div className="card-body p-5 space-y-4">
-                  <div className="flex items-center gap-3">
+                  <Link to={`/profile/${user._id}`} className="flex items-center gap-3">
                     <div className="avatar size-16 rounded-full overflow-hidden">
                       <img src={user.profilePic} alt={user.fullName} />
                     </div>
@@ -108,7 +109,7 @@ const RecommendedFriends = () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Languages and Skills */}
                   <div className="flex flex-wrap gap-1.5">
