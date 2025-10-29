@@ -257,10 +257,10 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
                     <input
                       type="text"
                       placeholder="New task..."
-                      className="input input-bordered input-sm flex-1"
+                      className="input  input-sm flex-1"
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
-                      onKeyPress={(e) => {
+                      onKeyUp={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
                           handleAddTask();
@@ -269,7 +269,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
                       autoFocus
                     />
                     <button
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-primary btn-sm rounded"
                       onClick={handleAddTask}
                       disabled={isAddingTaskMutation || !newTaskTitle.trim()}
                     >
@@ -304,14 +304,14 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
                             {isTaskUpdating ? (
                               <span className="loading loading-spinner loading-sm text-primary"></span>
                             ) : task.isCompleted ? (
-                              <CheckSquare className="size-5 text-success flex-shrink-0" />
+                              <CheckSquare className="size-5 text-success shrink-0" />
                             ) : (
-                              <Square className="size-5 text-base-content/50 flex-shrink-0" />
+                              <Square className="size-5 text-base-content/50 shrink-0" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p
-                              className={`text-sm break-words ${
+                              className={`text-sm wrap-break-word ${
                                 task.isCompleted
                                   ? "line-through text-base-content/60"
                                   : ""
@@ -388,7 +388,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
       {/* Responsive Toggle Button - Optimized for all screen sizes */}
       <button
         onClick={() => setIsVisible(!isVisible)}
-        className="fixed right-[13px] sm:right-4 top-[76px] sm:top-20 z-50 btn btn-circle btn-sm sm:btn-md btn-primary shadow-xl hover:shadow-2xl transition-all duration-200 hover:scale-110"
+        className="fixed right-[13px] sm:right-6 top-[60px] sm:top-20 z-2  btn btn-circle btn-sm sm:btn-md btn-primary transition-all duration-200 hover:scale-110"
         title={isVisible ? "Hide sidebar" : "Show sidebar"}
       >
         {isVisible ? (

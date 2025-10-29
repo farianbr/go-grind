@@ -451,6 +451,28 @@ export async function createAnnouncement(req, res) {
       .populate("sessions.host", "fullName profilePic")
       .populate("announcements.createdBy", "fullName profilePic");
 
+    // Send notifications to all space members except the creator
+    const membersToNotify = space.members.filter(
+      (memberId) => memberId.toString() !== userId
+    );
+
+    // Create notifications for all members
+    await Promise.all(
+      membersToNotify.map((memberId) =>
+        createNotification({
+          recipient: memberId,
+          sender: userId,
+          type: "announcement",
+          message: `New announcement in ${space.name}: ${title}`,
+          relatedSpace: spaceId,
+          metadata: {
+            announcementTitle: title,
+            announcementContent: content,
+          },
+        })
+      )
+    );
+
     res.status(201).json(populatedSpace);
   } catch (error) {
     console.error("Error in createAnnouncement controller", error.message);

@@ -67,10 +67,10 @@ const Navbar = () => {
       <div className="w-full px-2 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between w-full">
           {/* Logo - visible on mobile */}
-          <div className="lg:hidden flex-shrink-0">
+          <div className="lg:hidden shrink-0">
             <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5">
               <Airplay className="size-6 sm:size-9 text-primary" />
-              <span className="text-xl sm:text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary tracking-wider">
+              <span className="text-xl sm:text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider">
                 GoGrind
               </span>
             </Link>
@@ -140,7 +140,7 @@ const Navbar = () => {
                               </p>
                             </div>
                             {!notification.read && (
-                              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-1"></div>
+                              <div className="w-2 h-2 bg-primary rounded-full shrink-0 mt-1"></div>
                             )}
                           </div>
                         </Link>
@@ -191,7 +191,7 @@ const Navbar = () => {
               {/* Dropdown Menu */}
               {showProfileDropdown && (
                 <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 py-2">
-                  <div className="px-4 py-2 border-b border-base-300">
+                  <div className="px-4 pt-2 pb-4 border-b border-base-300">
                     <p className="font-semibold text-sm truncate">
                       {authUser?.fullName}
                     </p>
@@ -202,7 +202,7 @@ const Navbar = () => {
 
                   <button
                     onClick={handleProfileClick}
-                    className="w-full px-4 py-2 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm"
+                    className="w-full px-4 pb-2 pt-4 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm"
                   >
                     <User className="size-4" />
                     <span>My Profile</span>

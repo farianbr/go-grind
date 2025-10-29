@@ -116,7 +116,7 @@ const ProfilePage = () => {
             {/* Profile Picture and Basic Info */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 w-full lg:w-auto">
               <div className="avatar">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-2">
                   <img
                     src={userProfile.profilePic}
                     alt={userProfile.fullName}

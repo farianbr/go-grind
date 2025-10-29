@@ -105,7 +105,7 @@ const ChatsPage = () => {
       <Chat client={chatClient}>
         {/* Left sidebar - Chat list */}
         <div
-          className={`w-full md:w-96 lg:w-[400px] xl:w-[450px] border-r border-base-300 bg-base-100 flex-shrink-0 ${
+          className={`w-full md:w-96 lg:w-[400px] xl:w-[450px] border-r border-base-300 bg-base-100 shrink-0 ${
             selectedChannel ? "hidden md:block" : "block"
           }`}
         >

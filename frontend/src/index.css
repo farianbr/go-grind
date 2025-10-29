@@ -1,8 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
 
-.btn {
+@utility btn {
   @apply rounded-full;
 }
 

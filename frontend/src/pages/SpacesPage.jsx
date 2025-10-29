@@ -1,4 +1,4 @@
-import { useState } from "react";
+ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { Plus, Users, BookOpen, UserPlus, Radio, Search } from "lucide-react";
@@ -90,31 +90,33 @@ const SpacesPage = () => {
     const activeStreamCount = space.activeStreams?.length || 0;
 
     return (
-      <div className="card bg-base-200 hover:shadow-lg transition-shadow">
-        <div className="card-body p-5 space-y-4">
+      <div className="card bg-base-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-base-300">
+        <div className="card-body p-4 sm:p-5 space-y-3 sm:space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h3 className="font-bold text-lg mb-1">{space.name}</h3>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-base sm:text-lg mb-1.5 line-clamp-2">
+                {space.name}
+              </h3>
               <div className="badge badge-primary badge-sm">
                 <BookOpen className="size-3 mr-1" />
                 {capitalize(space.skill)}
               </div>
             </div>
             {isCreator && (
-              <div className="badge badge-accent badge-sm">Creator</div>
+              <div className="badge badge-accent badge-sm shrink-0">Creator</div>
             )}
           </div>
 
           {/* Description */}
-          <p className="text-sm opacity-70 line-clamp-2">
+          <p className="text-xs sm:text-sm opacity-70 line-clamp-2">
             {space.description}
           </p>
 
           {/* Creator */}
           <div className="flex items-center gap-2">
             <div className="avatar">
-              <div className="w-8 h-8 rounded-full">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-base-300">
                 <img
                   src={space.creator.profilePic}
                   alt={space.creator.fullName}
@@ -122,21 +124,21 @@ const SpacesPage = () => {
                 />
               </div>
             </div>
-            <div className="text-sm">
-              <p className="font-medium">{space.creator.fullName}</p>
+            <div className="text-xs sm:text-sm min-w-0 flex-1">
+              <p className="font-medium truncate">{space.creator.fullName}</p>
               <p className="text-xs opacity-60">Creator</p>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Users className="size-4" />
+          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm pt-2 border-t border-base-300">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Users className="size-3.5 sm:size-4" />
               <span>{space.members.length} members</span>
             </div>
             {isMember && activeStreamCount > 0 && (
-              <div className="flex items-center gap-2 text-success">
-                <Radio className="size-4" />
+              <div className="flex items-center gap-1.5 sm:gap-2 text-success">
+                <Radio className="size-3.5 sm:size-4" />
                 <span>{activeStreamCount} streaming</span>
               </div>
             )}
@@ -147,25 +149,25 @@ const SpacesPage = () => {
             {isMember ? (
               <button
                 onClick={() => navigate(`/spaces/${space._id}`)}
-                className="btn btn-sm btn-success w-full"
+                className="btn btn-sm sm:btn-md btn-success w-full gap-1.5 sm:gap-2"
               >
                 Open Space
               </button>
             ) : isPending ? (
-              <button className="btn btn-sm btn-disabled w-full">
+              <button className="btn btn-sm sm:btn-md btn-disabled w-full">
                 Request Pending
               </button>
             ) : (
               <button
                 onClick={() => requestJoinMutation(space._id)}
-                className="btn btn-sm btn-primary w-full"
+                className="btn btn-sm sm:btn-md btn-primary w-full gap-1.5 sm:gap-2"
                 disabled={isRequesting}
               >
                 {isRequesting ? (
                   <span className="loading loading-spinner loading-sm"></span>
                 ) : (
                   <>
-                    <UserPlus className="size-4 mr-1" />
+                    <UserPlus className="size-3.5 sm:size-4" />
                     Request to Join
                   </>
                 )}
@@ -178,48 +180,48 @@ const SpacesPage = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="container mx-auto space-y-6">
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="container mx-auto  space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              Learning Spaces
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+              Spaces
             </h1>
-            <p className="text-base-content/60 mt-1">
-              Join or create study groups to learn together
+            <p className="text-sm sm:text-base text-base-content/60 mt-1">
+              Join or create spaces to grind together
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary gap-2"
+            className="btn btn-primary btn-sm sm:btn-md gap-2 w-full sm:w-auto"
           >
-            <Plus className="size-5" />
+            <Plus className="size-4 sm:size-5" />
             Create Space
           </button>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16 sm:py-20">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : (
           <>
             {/* Tabs */}
-            <div className="tabs tabs-boxed bg-base-200 p-1">
+            <div className="tabs tabs-box bg-base-200 p-1 w-full sm:w-auto inline-flex">
               <button
-                className={`tab ${activeTab === "my-spaces" ? "tab-active" : ""}`}
+                className={`tab tab-sm sm:tab-md ${activeTab === "my-spaces" ? "tab-active" : ""}`}
                 onClick={() => setActiveTab("my-spaces")}
               >
-                My Spaces
-                <span className="badge badge-sm ml-2">{mySpaces.length}</span>
+                <span >My Spaces</span>
+                <span className="badge badge-sm ml-1.5 sm:ml-2">{mySpaces.length}</span>
               </button>
               <button
-                className={`tab ${activeTab === "discover" ? "tab-active" : ""}`}
+                className={`tab tab-sm sm:tab-md ${activeTab === "discover" ? "tab-active" : ""}`}
                 onClick={() => setActiveTab("discover")}
               >
-                Discover
-                <span className="badge badge-sm ml-2">{discoverSpaces.length}</span>
+                Discover Spaces
+                <span className="badge badge-sm ml-1.5 sm:ml-2">{discoverSpaces.length}</span>
               </button>
             </div>
 
@@ -227,15 +229,15 @@ const SpacesPage = () => {
             {activeTab === "my-spaces" && (
               <div className="space-y-4">
                 {mySpaces.length === 0 ? (
-                  <div className="card bg-base-200 p-8 text-center">
-                    <Users className="size-12 mx-auto mb-3 text-base-content/40" />
-                    <h3 className="text-lg font-semibold mb-2">No spaces yet</h3>
-                    <p className="text-base-content/60 mb-4 text-sm">
+                  <div className="card bg-base-200 p-6 sm:p-8 lg:p-12 text-center">
+                    <Users className="size-10 sm:size-12 mx-auto mb-3 text-base-content/40" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No spaces yet</h3>
+                    <p className="text-xs sm:text-sm text-base-content/60 mb-4">
                       Create or join a space to start learning together
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {mySpaces.map((space) => (
                       <SpaceCard key={space._id} space={space} />
                     ))}
@@ -250,13 +252,14 @@ const SpacesPage = () => {
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   {/* Search */}
-                  <div className="form-control flex-1">
-                    <label className="input input-bordered flex items-center gap-2">
-                      <Search className="size-5 opacity-70" />
+                  <div className="flex-1">
+                    <label className="input input-sm sm:input-md flex items-center gap-2 w-full">
+                      <Search className="size-4 sm:size-5 opacity-70" />
                       <input
                         type="text"
+                        id="space-search"
                         placeholder="Search spaces..."
-                        className="grow"
+                        className="grow text-sm sm:text-base"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -265,7 +268,7 @@ const SpacesPage = () => {
 
                   {/* Skill Filter */}
                   <select
-                    className="select select-bordered w-full sm:w-auto min-w-[200px]"
+                    className="select select-sm sm:select-md w-full sm:w-auto sm:min-w-[200px]"
                     value={selectedSkill}
                     onChange={(e) => setSelectedSkill(e.target.value)}
                   >
@@ -279,17 +282,17 @@ const SpacesPage = () => {
                 </div>
 
                 {filteredDiscoverSpaces.length === 0 ? (
-                  <div className="card bg-base-200 p-8 text-center">
-                    <BookOpen className="size-12 mx-auto mb-3 text-base-content/40" />
-                    <h3 className="text-lg font-semibold mb-2">No spaces found</h3>
-                    <p className="text-base-content/60 text-sm">
+                  <div className="card bg-base-200 p-6 sm:p-8 lg:p-12 text-center">
+                    <BookOpen className="size-10 sm:size-12 mx-auto mb-3 text-base-content/40" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No spaces found</h3>
+                    <p className="text-xs sm:text-sm text-base-content/60">
                       {discoverSpaces.length === 0
-                        ? ""
+                        ? "Come back later to find available spaces"
                         : "Try adjusting your search or filters"}
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 lg:gap-6">
                     {filteredDiscoverSpaces.map((space) => (
                       <SpaceCard key={space._id} space={space} />
                     ))}
@@ -299,91 +302,102 @@ const SpacesPage = () => {
             )}
           </>
         )}
-
-        {/* Create Space Modal */}
-        {showCreateModal && (
-          <div className="modal modal-open">
-            <div className="modal-box">
-              <h3 className="font-bold text-lg mb-4">Create New Space</h3>
-              <form onSubmit={handleCreateSpace} className="space-y-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Space Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., JavaScript Mastery Group"
-                    className="input input-bordered"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Description</span>
-                  </label>
-                  <textarea
-                    placeholder="What will you learn together?"
-                    className="textarea textarea-bordered h-24"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Skill Focus</span>
-                  </label>
-                  <select
-                    className="select select-bordered"
-                    value={formData.skill}
-                    onChange={(e) =>
-                      setFormData({ ...formData, skill: e.target.value })
-                    }
-                  >
-                    <option value="">Select a skill</option>
-                    {SKILLS.map((skill) => (
-                      <option key={skill} value={skill.toLowerCase()}>
-                        {skill}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="modal-action">
-                  <button
-                    type="button"
-                    className="btn btn-ghost"
-                    onClick={() => setShowCreateModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={isCreating}
-                  >
-                    {isCreating ? (
-                      <span className="loading loading-spinner loading-sm"></span>
-                    ) : (
-                      "Create Space"
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-            <div
-              className="modal-backdrop"
-              onClick={() => setShowCreateModal(false)}
-            ></div>
-          </div>
-        )}
       </div>
+
+      {/* Create Space Modal */}
+      {showCreateModal && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <h3 className="font-bold text-lg sm:text-xl mb-4">
+              Create New Space
+            </h3>
+            <form onSubmit={handleCreateSpace} className="space-y-4">
+              <fieldset className="fieldset">
+                <label className="label" htmlFor="space-name">
+                  Space Name
+                </label>
+                <input
+                  id="space-name"
+                  type="text"
+                  placeholder="e.g., JavaScript Mastery Group"
+                  className="input input-sm sm:input-md w-full"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  disabled={isCreating}
+                />
+              </fieldset>
+
+              <fieldset className="fieldset">
+                <label className="label" htmlFor="space-description">
+                  Description
+                </label>
+                <textarea
+                  id="space-description"
+                  placeholder="What will you learn together?"
+                  className="textarea h-20 sm:h-24 text-sm sm:text-base w-full"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  disabled={isCreating}
+                />
+              </fieldset>
+
+              <fieldset className="fieldset">
+                <label className="label" htmlFor="space-skill">
+                  Skill Focus
+                </label>
+                <select
+                  id="space-skill"
+                  className="select select-sm sm:select-md w-full"
+                  value={formData.skill}
+                  onChange={(e) =>
+                    setFormData({ ...formData, skill: e.target.value })
+                  }
+                  disabled={isCreating}
+                >
+                  <option value="">Select a skill</option>
+                  {SKILLS.map((skill) => (
+                    <option key={skill} value={skill.toLowerCase()}>
+                      {skill}
+                    </option>
+                  ))}
+                </select>
+              </fieldset>
+
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm sm:btn-md"
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm sm:btn-md"
+                  disabled={isCreating}
+                >
+                  {isCreating ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Space"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+          <form method="dialog" className="modal-backdrop">
+            <button onClick={() => setShowCreateModal(false)} disabled={isCreating}>close</button>
+          </form>
+        </dialog>
+      )}
     </div>
   );
 };

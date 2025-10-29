@@ -28,7 +28,7 @@ const CustomChannelHeader = ({ onBack }) => {
       {/* Mobile back button */}
       <button
         onClick={onBack}
-        className="md:hidden btn btn-ghost btn-sm btn-circle flex-shrink-0"
+        className="md:hidden btn btn-ghost btn-sm btn-circle shrink-0"
         aria-label="Back to chat list"
       >
         <ArrowLeft size={20} />

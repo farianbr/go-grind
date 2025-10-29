@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useNavigate, Link } from "react-router";
 import {
@@ -143,7 +143,7 @@ const SpaceDetailPage = () => {
 
   return (
     <div className="h-full overflow-y-auto bg-base-100">
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate("/spaces")}
@@ -166,7 +166,7 @@ const SpaceDetailPage = () => {
           </div>
         </div>
 
-        <div className="tabs tabs-boxed mb-6 flex-wrap gap-2">
+        <div className="tabs tabs-box mb-6 flex-wrap gap-2">
           <button
             className={`tab ${activeTab === "dashboard" ? "tab-active" : ""}`}
             onClick={() => setActiveTab("dashboard")}
@@ -239,7 +239,7 @@ const SpaceDetailPage = () => {
                             className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
                           >
                             <div className="avatar">
-                              <div className="w-10 h-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-1">
+                              <div className="w-10 h-10 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-1">
                                 <img
                                   src={stream.user.profilePic || "/avatar.png"}
                                   alt={stream.user.fullName}
@@ -345,11 +345,11 @@ const SpaceDetailPage = () => {
                                     </p>
                                     <div className="flex items-center gap-2 mt-1 text-xs text-base-content/50">
                                       <span>{session.actualDuration}m</span>
-                                      <span>•</span>
+                                      <span> • </span>
                                       <span>
                                         {session.tasksCompleted}/{session.totalTasks} tasks
                                       </span>
-                                      <span>•</span>
+                                      <span> • </span>
                                       <span>
                                         {new Date(session.endTime).toLocaleDateString()}
                                       </span>
@@ -614,7 +614,7 @@ const SpaceDetailPage = () => {
                               </div>
                             </div>
                             <span>{announcement.createdBy.fullName}</span>
-                            <span>•</span>
+                            <span> • </span>
                             <span>
                               {format(
                                 new Date(announcement.createdAt),
@@ -702,13 +702,14 @@ const SpaceDetailPage = () => {
                 }}
                 className="space-y-4"
               >
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Title</span>
+                <fieldset className="fieldset">
+                  <label className="label" htmlFor="announcement-title">
+                    Title
                   </label>
                   <input
+                    id="announcement-title"
                     type="text"
-                    className="input input-bordered"
+                    className="input w-full"
                     value={announcementForm.title}
                     onChange={(e) =>
                       setAnnouncementForm({
@@ -718,13 +719,14 @@ const SpaceDetailPage = () => {
                     }
                     required
                   />
-                </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Content</span>
+                </fieldset>
+                <fieldset className="fieldset">
+                  <label className="label" htmlFor="announcement-content">
+                    Content
                   </label>
                   <textarea
-                    className="textarea textarea-bordered h-32"
+                    id="announcement-content"
+                    className="textarea h-32 w-full"
                     value={announcementForm.content}
                     onChange={(e) =>
                       setAnnouncementForm({
@@ -734,7 +736,7 @@ const SpaceDetailPage = () => {
                     }
                     required
                   />
-                </div>
+                </fieldset>
                 <div className="modal-action">
                   <button
                     type="button"

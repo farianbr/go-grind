@@ -68,8 +68,8 @@ const ExploreSpaces = () => {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
-        <div className="form-control flex-1">
-          <label className="input input-bordered flex items-center gap-2">
+        <div className="flex-1">
+          <label className="input flex items-center gap-2 w-full">
             <Search className="size-5 opacity-70" />
             <input
               type="text"
@@ -83,7 +83,7 @@ const ExploreSpaces = () => {
 
         {/* Skill Filter */}
         <select
-          className="select select-bordered w-full sm:w-auto min-w-[200px]"
+          className="select  w-full sm:w-auto min-w-[200px]"
           value={selectedSkill}
           onChange={(e) => handleSkillChange(e.target.value)}
         >

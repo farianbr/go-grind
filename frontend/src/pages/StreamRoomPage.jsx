@@ -32,7 +32,6 @@ import {
   Mic,
   MicOff,
   Users,
-  Clock,
   LogOut,
   UserX,
 } from "lucide-react";
@@ -123,11 +122,6 @@ const StreamRoomPage = () => {
 
   // Check if user is creator
   const isCreator = space?.creator._id === authUser?._id;
-
-  // Get active session
-  const activeSession = space?.sessions?.find(
-    (session) => session._id === space.activeSessionId
-  );
 
   // Check localStorage for active stream state and manage join modal
   useEffect(() => {
@@ -405,37 +399,23 @@ const StreamRoomPage = () => {
               </div>
             )}
 
-            {/* Active Session Info */}
-            {activeSession && (
-              <div className="alert alert-info mt-4">
-                <div>
-                  <h3 className="font-bold">{activeSession.title}</h3>
-                  <div className="text-sm mt-1">
-                    <p>Duration: {activeSession.duration} minutes</p>
-                    <p>
-                      Participants: {activeSession.participants?.length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">What are you grinding?</span>
+            <fieldset className="fieldset mt-4">
+              <label className="label" htmlFor="grinding-topic">
+                What are you grinding?
               </label>
               <input
+                id="grinding-topic"
                 type="text"
                 placeholder="e.g., React components, Math problems, etc."
-                className="input input-bordered"
+                className="input w-full"
                 value={grindingTopic}
                 onChange={(e) => setGrindingTopic(e.target.value)}
               />
-            </div>
+            </fieldset>
 
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Target Duration</span>
+            <fieldset className="fieldset mt-4">
+              <label className="label" htmlFor="target-duration">
+                Target Duration
               </label>
               
               {/* Quick Select Buttons */}
@@ -456,31 +436,33 @@ const StreamRoomPage = () => {
 
               {/* Custom Duration Input */}
               <input
+                id="target-duration"
                 type="number"
                 placeholder="Or enter custom minutes"
-                className="input input-bordered"
+                className="input w-full"
                 value={targetDuration}
                 onChange={(e) => setTargetDuration(parseInt(e.target.value) || 5)}
                 min="5"
                 step="5"
               />
-              <label className="label">
-                <span className="label-text-alt">Minimum 5 minutes</span>
+              <label className="label" htmlFor="target-duration">
+                <span className="text-xs opacity-70">Minimum 5 minutes</span>
               </label>
-            </div>
+            </fieldset>
 
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Session Tasks (Optional)</span>
+            <fieldset className="fieldset mt-4">
+              <label className="label" htmlFor="session-task">
+                Session Tasks (Optional)
               </label>
               <div className="flex gap-2">
                 <input
+                  id="session-task"
                   type="text"
                   placeholder="Add a task for this session"
-                  className="input input-bordered flex-1"
+                  className="input flex-1"
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  onKeyPress={(e) => {
+                  onKeyUp={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleAddTask();
@@ -489,7 +471,7 @@ const StreamRoomPage = () => {
                 />
                 <button
                   type="button"
-                  className="btn btn-primary"
+                  className="btn btn-primary rounded"
                   onClick={handleAddTask}
                 >
                   Add
@@ -503,10 +485,10 @@ const StreamRoomPage = () => {
                       key={index}
                       className="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
                     >
-                      <span className="flex-1 text-sm break-words">{task.title}</span>
+                      <span className="flex-1 text-sm wrap-break-word">{task.title}</span>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+                        className="btn btn-ghost btn-xs btn-circle shrink-0"
                         onClick={() => handleRemoveTask(index)}
                       >
                         ✕
@@ -515,13 +497,13 @@ const StreamRoomPage = () => {
                   ))}
                 </div>
               )}
-            </div>
+            </fieldset>
 
             <div className="flex gap-4 mt-4">
-              <div className="form-control">
+              <fieldset className="fieldset">
                 <label className="label cursor-pointer gap-2">
                   {videoEnabled ? <Video size={20} /> : <VideoOff size={20} />}
-                  <span className="label-text">Video</span>
+                  <span>Video</span>
                   <input
                     type="checkbox"
                     className="toggle toggle-primary"
@@ -531,12 +513,12 @@ const StreamRoomPage = () => {
                     }}
                   />
                 </label>
-              </div>
+              </fieldset>
 
-              <div className="form-control">
+              <fieldset className="fieldset">
                 <label className="label cursor-pointer gap-2">
                   {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-                  <span className="label-text">Audio</span>
+                  <span>Audio</span>
                   <input
                     type="checkbox"
                     className="toggle toggle-primary"
@@ -546,7 +528,7 @@ const StreamRoomPage = () => {
                     }}
                   />
                 </label>
-              </div>
+              </fieldset>
             </div>
 
             <div className="card-actions justify-end mt-6">
@@ -589,17 +571,18 @@ const StreamRoomPage = () => {
               the stream?
             </p>
 
-            <div className="form-control mb-4">
-              <label className="label">
-                <span className="label-text">Reason (optional)</span>
+            <fieldset className="fieldset mb-4">
+              <label className="label" htmlFor="kick-reason">
+                Reason (optional)
               </label>
               <textarea
-                className="textarea textarea-bordered h-24"
+                id="kick-reason"
+                className="textarea h-24 w-full"
                 placeholder="e.g., Disruptive behavior, inappropriate content, etc."
                 value={kickReason}
                 onChange={(e) => setKickReason(e.target.value)}
               />
-            </div>
+            </fieldset>
 
             <div className="flex justify-end gap-2">
               <button
@@ -646,7 +629,6 @@ const StreamRoomPage = () => {
                   authUser={authUser}
                   isCreator={isCreator}
                   removeUser={handleRemoveUser}
-                  activeSession={activeSession}
                   onLeaveStream={handleLeaveStream}
                 />
               </StreamCall>
@@ -673,7 +655,6 @@ const CallContent = ({
   authUser,
   isCreator,
   removeUser,
-  activeSession,
   onLeaveStream,
 }) => {
   const {
@@ -809,21 +790,16 @@ const CallContent = ({
   return (
     <StreamTheme className="h-full w-full flex flex-col">
       {/* Header with Controls - Modern Sleek Design */}
-      <div className="bg-gradient-to-r from-base-100 via-base-200 to-base-100 border-b border-base-300 flex-shrink-0">
+      <div className="bg-linear-to-r from-base-100 via-base-200 to-base-100 border-b border-base-300 shrink-0">
         <div className="max-w-full mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-3 sm:gap-6">
             {/* Left Section - Space Info & Stats */}
             <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
               {/* Space Name */}
-              <div className="flex-shrink min-w-0">
+              <div className="shrink min-w-0">
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
                   {space?.name}
                 </h1>
-                {activeSession && (
-                  <p className="text-xs text-base-content/60 truncate mt-0.5">
-                    {activeSession.title}
-                  </p>
-                )}
               </div>
 
               {/* Divider */}
@@ -836,14 +812,6 @@ const CallContent = ({
                   <Users size={16} className="text-primary" />
                   <span className="text-sm font-medium">{participants.length}</span>
                 </div>
-
-                {/* Session Duration */}
-                {activeSession && (
-                  <div className="flex items-center gap-2 bg-base-300/50 px-3 py-1.5 rounded-full border border-base-300">
-                    <Clock size={16} className="text-accent" />
-                    <span className="text-sm font-medium">{activeSession.duration}m</span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -889,20 +857,22 @@ const CallContent = ({
                 )}
               </button>
 
+
               {/* Leave Button */}
               <button
-                className="btn btn-error btn-sm sm:btn-md gap-1.5 sm:gap-2 hover:shadow-error/50 transition-all duration-200"
+                className="btn btn-error btn-circle btn-sm sm:btn-md sm:w-30 transition-all duration-200 hover:shadow-error/50"
                 onClick={handleLeave}
                 disabled={isLeaving}
+                title="Leave stream"
               >
                 {isLeaving ? (
                   <>
                     <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
-                    <span className="hidden sm:inline text-sm">Leaving...</span>
+                    <span className="hidden sm:inline text-sm ml-1.5">Leaving...</span>
                   </>
                 ) : (
                   <>
-                    <LogOut size={16} />
+                    <LogOut size={18} className="sm:mr-1.5" />
                     <span className="hidden sm:inline text-sm font-medium">Leave</span>
                   </>
                 )}
@@ -910,7 +880,7 @@ const CallContent = ({
             </div>
 
             {/* Right Section - Reserved for Sidebar Toggle (comes from SessionSidebar) */}
-            <div className="w-10 sm:w-12 flex-shrink-0">
+            <div className="w-10 sm:w-12 shrink-0">
               {/* Empty space reserved for SessionSidebar toggle button */}
             </div>
           </div>
@@ -921,12 +891,6 @@ const CallContent = ({
               <Users size={14} className="text-primary" />
               <span className="font-medium">{participants.length}</span>
             </div>
-            {activeSession && (
-              <div className="flex items-center gap-2 bg-base-300/50 px-2.5 py-1 rounded-full border border-base-300 text-xs">
-                <Clock size={14} className="text-accent" />
-                <span className="font-medium">{activeSession.duration}m</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -963,7 +927,7 @@ const CallContent = ({
 
                 {/* Top overlay - Name and grinding topic */}
                 <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-2">
-                  <div className="flex justify-between bg-base-100/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
+                  <div className="flex justify-between bg-base-100/90 backdrop-blur-xs px-3 py-2 rounded-lg shadow-lg flex-1 min-w-0">
                     <div className="flex-1 min-w-0">
                       <Link
                         to={`/profile/${participant.userId}`}
@@ -987,7 +951,7 @@ const CallContent = ({
                         onClick={() =>
                           removeUser(participant.userId, participant.name)
                         }
-                        className="btn btn-error btn-sm gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg flex-shrink-0"
+                        className="btn btn-error btn-sm gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg shrink-0"
                         title="Remove from stream"
                       >
                         <UserX size={16} />
@@ -1000,20 +964,20 @@ const CallContent = ({
                 {/* Bottom overlay - Media status indicators */}
                 <div className="absolute bottom-2 left-2 flex items-center gap-2">
                   {hasVideoOn ? (
-                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                    <div className="bg-base-100/90 backdrop-blur-xs p-1.5 rounded-full shadow-lg">
                       <Video size={16} />
                     </div>
                   ) : (
-                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                    <div className="bg-base-100/90 backdrop-blur-xs p-1.5 rounded-full shadow-lg">
                       <VideoOff size={16} className="text-error" />
                     </div>
                   )}
                   {hasAudioOn ? (
-                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                    <div className="bg-base-100/90 backdrop-blur-xs p-1.5 rounded-full shadow-lg">
                       <Mic size={16} />
                     </div>
                   ) : (
-                    <div className="bg-base-100/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg">
+                    <div className="bg-base-100/90 backdrop-blur-xs p-1.5 rounded-full shadow-lg">
                       <MicOff size={16} className="text-error" />
                     </div>
                   )}

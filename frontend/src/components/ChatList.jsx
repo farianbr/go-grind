@@ -131,7 +131,7 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
                   <h3 className="font-semibold truncate">
                     {otherMember?.name || "Unknown User"}
                   </h3>
-                  <span className="text-xs text-base-content/60 flex-shrink-0 ml-2">
+                  <span className="text-xs text-base-content/60 shrink-0 ml-2">
                     {formatTimestamp(lastMessage?.created_at)}
                   </span>
                 </div>

@@ -40,7 +40,7 @@ const ActiveStreamBanner = () => {
     activeStreamSpace && (
       <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 duration-300">
         <div className="bg-primary text-primary-content shadow-2xl rounded-lg p-4 flex items-center gap-4 max-w-sm">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="relative">
               <Video className="size-8" />
               <span className="absolute -top-1 -right-1 flex h-3 w-3">

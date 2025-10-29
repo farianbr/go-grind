@@ -17,7 +17,11 @@ import {
   Trash2,
   CheckCheck,
   Check,
-  X
+  X,
+  Users,
+  ShieldCheck,
+  ShieldX,
+  Megaphone
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -109,17 +113,19 @@ const NotificationsPage = () => {
       case "friend_request_accepted":
         return <UserCheck className="size-5 text-success" />;
       case "space_join_request":
-        return <UserPlus className="size-5 text-primary" />;
+        return <Users className="size-5 text-info" />;
       case "space_join_approved":
-        return <UserCheck className="size-5 text-success" />;
+        return <ShieldCheck className="size-5 text-success" />;
       case "space_join_rejected":
-        return <UserX className="size-5 text-error" />;
+        return <ShieldX className="size-5 text-error" />;
       case "session_started":
-        return <Video className="size-5 text-info" />;
+        return <Video className="size-5 text-secondary" />;
       case "session_reminder":
         return <Clock className="size-5 text-warning" />;
       case "removed_from_stream":
         return <UserX className="size-5 text-error" />;
+      case "announcement":
+        return <Megaphone className="size-5 text-accent" />;
       default:
         return <Bell className="size-5" />;
     }
@@ -170,12 +176,12 @@ const NotificationsPage = () => {
                 <div className="card-body p-4">
                   <div className="flex items-start gap-4">
                     {/* Icon */}
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       {getNotificationIcon(notification.type)}
                     </div>
 
                     {/* Sender Avatar */}
-                    <div className="avatar flex-shrink-0">
+                    <div className="avatar shrink-0">
                       <div className="w-10 h-10 rounded-full">
                         <img
                           src={notification.sender?.profilePic || "/avatar.png"}

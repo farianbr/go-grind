@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema(
         "session_started",
         "session_reminder",
         "removed_from_stream",
+        "announcement",
       ],
     },
     message: {
