@@ -124,8 +124,6 @@ const ExploreSpaces = () => {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedSpaces.map((space) => {
-              const isFull = space.members.length >= space.maxMembers;
-
               return (
                 <div
                   key={space._id}
@@ -170,13 +168,8 @@ const ExploreSpaces = () => {
                     <div className="flex items-center justify-between text-sm pt-2 border-t border-base-300">
                       <div className="flex items-center gap-2">
                         <Users className="size-4" />
-                        <span>
-                          {space.members.length}/{space.maxMembers}
-                        </span>
+                        <span>{space.members.length} members</span>
                       </div>
-                      {isFull && (
-                        <span className="badge badge-error badge-xs">Full</span>
-                      )}
                     </div>
                   </div>
                 </div>

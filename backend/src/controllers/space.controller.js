@@ -3,7 +3,7 @@ import { createNotification } from "./notification.controller.js";
 
 export async function createSpace(req, res) {
   try {
-    const { name, description, skill, maxMembers } = req.body;
+    const { name, description, skill } = req.body;
     const creatorId = req.user.id;
 
     if (!name || !description || !skill) {
@@ -16,7 +16,6 @@ export async function createSpace(req, res) {
       skill,
       creator: creatorId,
       members: [creatorId],
-      maxMembers: maxMembers || 10,
     });
 
     const populatedSpace = await Space.findById(space._id).populate(
@@ -108,11 +107,6 @@ export async function requestToJoinSpace(req, res) {
         .json({ message: "You have already requested to join" });
     }
 
-    // Check if space is full
-    if (space.members.length >= space.maxMembers) {
-      return res.status(400).json({ message: "This space is full" });
-    }
-
     space.pendingRequests.push(userId);
     await space.save();
 
@@ -149,11 +143,6 @@ export async function approveJoinRequest(req, res) {
       return res
         .status(403)
         .json({ message: "Only the creator can approve requests" });
-    }
-
-    // Check if space is full
-    if (space.members.length >= space.maxMembers) {
-      return res.status(400).json({ message: "This space is full" });
     }
 
     // Remove from pending and add to members

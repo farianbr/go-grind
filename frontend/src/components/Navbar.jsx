@@ -63,7 +63,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-16 flex items-center">
+    <nav className="bg-base-200 border-b border-base-300 sticky top-0 z-30 h-12 sm:h-16 flex items-center">
       <div className="w-full px-2 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between w-full">
           {/* Logo - visible on mobile */}

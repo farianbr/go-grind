@@ -53,6 +53,11 @@ const SpaceDetailPage = () => {
 
   const isCreator = space?.creator._id === authUser?._id;
   const isMember = space?.members.some((member) => member._id === authUser?._id);
+  
+  // Check if user is currently in this space's stream
+  const isUserInThisStream = space?.activeStreams?.some(
+    (stream) => stream.user._id === authUser?._id
+  );
 
   // Fetch session statistics
   const { data: sessionStats, isLoading: statsLoading } = useQuery({
@@ -135,7 +140,6 @@ const SpaceDetailPage = () => {
   const hasPendingRequest = space.pendingRequests.some(
     (user) => user._id === authUser._id
   );
-  const isFull = space.members.length >= space.maxMembers;
 
   return (
     <div className="h-full overflow-y-auto bg-base-100">
@@ -156,7 +160,7 @@ const SpaceDetailPage = () => {
               </div>
               <div className="text-sm text-base-content/70 flex items-center gap-2">
                 <Users className="size-4" />
-                {space.members.length}/{space.maxMembers} members
+                {space.members.length} members
               </div>
             </div>
           </div>
@@ -188,14 +192,24 @@ const SpaceDetailPage = () => {
                 <div className="card bg-base-200">
                   <div className="card-body">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-lg">Currently Grinding</h3>
-                      <button
-                        onClick={() => navigate(`/spaces/${id}/stream`)}
-                        className="btn btn-primary btn-sm gap-2"
-                      >
-                        <Video className="size-4" />
-                        Enter Stream Room
-                      </button>
+                      <h3 className="font-semibold text-lg">Currently Streaming</h3>
+                      {isUserInThisStream ? (
+                        <button
+                          onClick={() => navigate(`/spaces/${id}/stream`)}
+                          className="btn btn-success btn-sm gap-2"
+                        >
+                          <Video className="size-4" />
+                          Back to Stream
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate(`/spaces/${id}/stream`)}
+                          className="btn btn-primary btn-sm gap-2"
+                        >
+                          <Video className="size-4" />
+                          Enter Stream Room
+                        </button>
+                      )}
                     </div>
                     
                     {/* Stream initialization notice */}
@@ -465,25 +479,35 @@ const SpaceDetailPage = () => {
                       <button
                         onClick={() => mutations.leave.mutate(id)}
                         className="btn btn-ghost gap-2 w-full"
+                        disabled={mutations.leave.isPending}
                       >
-                        <UserMinus className="size-5" />
-                        Leave Space
+                        {mutations.leave.isPending ? (
+                          <span className="loading loading-spinner loading-sm"></span>
+                        ) : (
+                          <>
+                            <UserMinus className="size-5" />
+                            Leave Space
+                          </>
+                        )}
                       </button>
                     ) : hasPendingRequest ? (
                       <button className="btn btn-disabled w-full">
                         Request Pending
                       </button>
-                    ) : isFull ? (
-                      <button className="btn btn-disabled w-full">
-                        Space Full
-                      </button>
                     ) : (
                       <button
                         onClick={() => mutations.requestJoin.mutate(id)}
                         className="btn btn-primary gap-2 w-full"
+                        disabled={mutations.requestJoin.isPending}
                       >
-                        <UserPlus className="size-5" />
-                        Request to Join
+                        {mutations.requestJoin.isPending ? (
+                          <span className="loading loading-spinner loading-sm"></span>
+                        ) : (
+                          <>
+                            <UserPlus className="size-5" />
+                            Request to Join
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
@@ -521,8 +545,13 @@ const SpaceDetailPage = () => {
                                 })
                               }
                               className="btn btn-success btn-xs btn-circle"
+                              disabled={mutations.approve.isPending}
                             >
-                              <UserCheck className="size-3" />
+                              {mutations.approve.isPending ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <UserCheck className="size-3" />
+                              )}
                             </button>
                             <button
                               onClick={() =>
@@ -532,8 +561,13 @@ const SpaceDetailPage = () => {
                                 })
                               }
                               className="btn btn-error btn-xs btn-circle"
+                              disabled={mutations.reject.isPending}
                             >
-                              <UserX className="size-3" />
+                              {mutations.reject.isPending ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <UserX className="size-3" />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -598,8 +632,13 @@ const SpaceDetailPage = () => {
                               })
                             }
                             className="btn btn-ghost btn-sm btn-circle"
+                            disabled={mutations.deleteAnnouncement.isPending}
                           >
-                            <Trash className="size-4" />
+                            {mutations.deleteAnnouncement.isPending ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              <Trash className="size-4" />
+                            )}
                           </button>
                         )}
                       </div>
@@ -704,8 +743,16 @@ const SpaceDetailPage = () => {
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-primary">
-                    Create Announcement
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary"
+                    disabled={mutations.createAnnouncement.isPending}
+                  >
+                    {mutations.createAnnouncement.isPending ? (
+                      <span className="loading loading-spinner loading-sm"></span>
+                    ) : (
+                      "Create Announcement"
+                    )}
                   </button>
                 </div>
               </form>
