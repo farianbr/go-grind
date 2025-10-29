@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
-import { BellIcon, LogOutIcon, Airplay, User, ChevronDown, Eye } from "lucide-react";
+import { BellIcon, LogOutIcon, Airplay, User, ChevronDown } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";

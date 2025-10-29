@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   Users,
   BookOpen,
-  Calendar,
   Megaphone,
   Video,
   Plus,

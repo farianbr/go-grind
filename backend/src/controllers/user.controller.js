@@ -426,7 +426,6 @@ export async function getUserStatistics(req, res) {
     }
 
     // Import Space and Session models
-    const Space = (await import("../models/Space.model.js")).default;
     const Session = (await import("../models/Session.model.js")).default;
 
     // Get all sessions for the user

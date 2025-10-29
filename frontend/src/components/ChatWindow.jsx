@@ -1,5 +1,4 @@
 import {
-  ChannelHeader,
   MessageInput,
   MessageList,
   Thread,
