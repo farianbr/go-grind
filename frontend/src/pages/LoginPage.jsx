@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Airplay } from "lucide-react";
+import { Airplay, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router";
 
 import useLogin from "../hooks/useLogin";
@@ -9,6 +9,7 @@ const LoginPage = () => {
     email: "",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const { isPending, error, loginMutation } = useLogin();
 
@@ -72,17 +73,27 @@ const LoginPage = () => {
                     <label className="label" htmlFor="password">
                       Password
                     </label>
-                    <input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      className="input w-full"
-                      value={loginData.password}
-                      onChange={(e) =>
-                        setLoginData({ ...loginData, password: e.target.value })
-                      }
-                      required
-                    />
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="input w-full pr-10"
+                        value={loginData.password}
+                        onChange={(e) =>
+                          setLoginData({ ...loginData, password: e.target.value })
+                        }
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                   </fieldset>
 
                   <button

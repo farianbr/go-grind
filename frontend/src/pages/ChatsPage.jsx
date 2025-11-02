@@ -59,9 +59,15 @@ const ChatsPage = () => {
     initChat();
 
     return () => {
-      // Cleanup will be handled when client reference changes
+      // Cleanup: Disconnect and clear the chat client when component unmounts or user changes
+      chatClient?.disconnectUser().then(() => {
+        console.log("Chat client disconnected");
+      }).catch((err) => {
+        console.error("Error disconnecting chat client:", err);
+      });
     };
-  }, [authUser, tokenData?.token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser?._id, tokenData?.token]);
 
   // Handle URL parameter to open specific chat
   useEffect(() => {

@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { unfriend } from "../lib/api";
 import toast from "react-hot-toast";
 
-const FriendCard = ({ friend }) => {
+const FriendCard = ({ friend, showUnfriend = true, showViewProfile = false }) => {
   const queryClient = useQueryClient();
 
   const { mutate: unfriendMutation, isPending } = useMutation({
@@ -60,24 +60,30 @@ const FriendCard = ({ friend }) => {
         {friend.bio && <p className="text-xs sm:text-sm opacity-70 line-clamp-2">{friend.bio}</p>}
 
         <div className="flex gap-2 mt-3 sm:mt-4">
-          <Link
-            to={`/chats/${friend._id}`}
-            className="btn btn-outline btn-sm flex-1"
-          >
+          <Link to={`/chats/${friend._id}`} className="btn btn-outline btn-sm flex-1">
             Message
           </Link>
-          <button
-            onClick={handleUnfriend}
-            className="btn btn-ghost btn-circle btn-sm"
-            disabled={isPending}
-            title="Unfriend"
-          >
-            {isPending ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <UserMinus className="size-4" />
-            )}
-          </button>
+
+          {showViewProfile && (
+            <Link to={`/profile/${friend._id}`} className="btn btn-primary btn-sm">
+              View Profile
+            </Link>
+          )}
+
+          {showUnfriend && !showViewProfile && (
+            <button
+              onClick={handleUnfriend}
+              className="btn btn-ghost btn-circle btn-sm"
+              disabled={isPending}
+              title="Unfriend"
+            >
+              {isPending ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <UserMinus className="size-4" />
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>

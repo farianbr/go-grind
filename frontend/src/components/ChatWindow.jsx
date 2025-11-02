@@ -21,7 +21,6 @@ const CustomChannelHeader = ({ onBack }) => {
 
   const otherMember = getOtherMember();
 
-
   return (
     <div className="str-chat__header-livestream flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-base-300 bg-base-100">
       {/* Mobile back button */}
@@ -49,7 +48,6 @@ const CustomChannelHeader = ({ onBack }) => {
           <Link to={`/profile/${otherMember?.id}`}>
             <h3 className="font-semibold truncate text-sm sm:text-base text-base-content hover:text-primary transition-colors">{otherMember?.name || "Chat"}</h3>
           </Link>
-            <p className="text-xs sm:text-sm text-base-content/60">Active</p>
         </div>
       </div>
     </div>
@@ -86,7 +84,7 @@ const ChatWindow = ({ channel, onBack }) => {
         <Window hideOnThread>
           <CustomChannelHeader onBack={handleBack} />
           <MessageList />
-          <MessageInput  />
+          <MessageInput additionalTextareaProps={{ className: "text-base-content" }} />
         </Window>
       </div>
       <Thread />

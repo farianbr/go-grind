@@ -109,6 +109,7 @@ export async function getUserSessions(req, res) {
     if (userId === requesterId) {
       const sessions = await Session.find({ user: userId })
         .populate("space", "name skill")
+        .populate("user", "fullName profilePic")
         .sort({ startTime: -1 })
         .limit(50); // Limit to recent 50 sessions
 
@@ -136,6 +137,7 @@ export async function getUserSessions(req, res) {
     // Return sessions for friend
     const sessions = await Session.find({ user: userId })
       .populate("space", "name skill")
+      .populate("user", "fullName profilePic")
       .sort({ startTime: -1 })
       .limit(50); // Limit to recent 50 sessions
 

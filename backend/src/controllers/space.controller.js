@@ -32,11 +32,30 @@ export async function createSpace(req, res) {
 
 export async function getAllSpaces(req, res) {
   try {
+    const Session = (await import("../models/Session.model.js")).default;
+    
     const spaces = await Space.find({ isActive: true })
       .populate("creator members", "fullName profilePic learningSkill")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(spaces);
+    // Calculate total streamed hours for each space
+    const spacesWithStats = await Promise.all(
+      spaces.map(async (space) => {
+        const sessions = await Session.find({ 
+          space: space._id, 
+          isCompleted: true 
+        }).select("actualDuration");
+        
+        const totalMinutes = sessions.reduce((sum, s) => sum + (s.actualDuration || 0), 0);
+        
+        return {
+          ...space.toObject(),
+          totalStreamedMinutes: totalMinutes,
+        };
+      })
+    );
+
+    res.status(200).json(spacesWithStats);
   } catch (error) {
     console.error("Error in getAllSpaces controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });

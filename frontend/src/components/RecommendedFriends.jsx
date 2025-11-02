@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { CheckCircleIcon, MapPinIcon, UserPlusIcon, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircleIcon, MapPinIcon, UserPlusIcon, X, Search } from "lucide-react";
 import toast from "react-hot-toast";
 
 import {
@@ -11,13 +11,16 @@ import {
 } from "../lib/api";
 import { getLanguageFlag } from "../components/FriendCard";
 import { capitalize } from "../lib/utils.js";
-import useAuthUser from "../hooks/useAuthUser.js";
+import { SKILLS } from "../constants";
 import { Link } from "react-router";
+
 const RecommendedFriends = () => {
   const queryClient = useQueryClient();
-  const { authUser } = useAuthUser();
 
   const [outgoingRequestsMap, setOutgoingRequestsMap] = useState(new Map());
+  const [search, setSearch] = useState("");
+  const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
 
   const { data: recommendedUsers = [], isLoading: loadingUsers } = useQuery({
     queryKey: ["users"],
@@ -54,19 +57,101 @@ const RecommendedFriends = () => {
       });
     }
     setOutgoingRequestsMap(requestsMap);
-  }, [outgoingFriendReqs, authUser]);
+  }, [outgoingFriendReqs]);
+
+  // Get unique locations from users
+  const availableLocations = useMemo(() => {
+    const locations = new Set();
+    recommendedUsers.forEach((u) => {
+      if (u.location) locations.add(u.location);
+    });
+    return Array.from(locations).sort();
+  }, [recommendedUsers]);
+
+  const filteredUsers = useMemo(() => {
+    if (!recommendedUsers) return [];
+    
+    return recommendedUsers.filter((u) => {
+      // Search filter
+      const term = search.trim().toLowerCase();
+      if (term) {
+        const hay = [u.fullName, u.location, u.nativeLanguage, u.learningSkill, u.bio]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(term)) return false;
+      }
+
+      // Skill filter
+      if (selectedSkill && u.learningSkill?.toLowerCase() !== selectedSkill.toLowerCase()) {
+        return false;
+      }
+
+      // Location filter
+      if (selectedLocation && u.location !== selectedLocation) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [recommendedUsers, search, selectedSkill, selectedLocation]);
+
   return (
     <section>
-      <div className="mb-4 sm:mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-              Meet New Grinders
-            </h2>
-            <p className="text-xs sm:text-sm opacity-70">
-              Discover perfect focus partners based on your profile
-            </p>
-          </div>
+      {/* Filters */}
+      <div className="mb-4 space-y-3">
+        {/* Search */}
+        <label className="input input-bordered w-full flex items-center gap-2">
+          <Search className="size-4 opacity-70" />
+          <input
+            type="text"
+            placeholder="Search by name, skill, or location..."
+            className="grow text-sm sm:text-base"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+
+        {/* Skill and Location Filters */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select
+            className="select select-bordered w-full sm:flex-1 text-sm"
+            value={selectedSkill}
+            onChange={(e) => setSelectedSkill(e.target.value)}
+          >
+            <option value="">All Skills</option>
+            {SKILLS.map((skill) => (
+              <option key={skill} value={skill.toLowerCase()}>
+                {skill}
+              </option>
+            ))}
+          </select>
+
+          <select
+            className="select select-bordered w-full sm:flex-1 text-sm"
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+          >
+            <option value="">All Locations</option>
+            {availableLocations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+
+          {(search || selectedSkill || selectedLocation) && (
+            <button
+              className="btn btn-ghost btn-sm sm:btn-md"
+              onClick={() => {
+                setSearch("");
+                setSelectedSkill("");
+                setSelectedLocation("");
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
@@ -74,21 +159,20 @@ const RecommendedFriends = () => {
         <div className="flex justify-center py-8 sm:py-12">
           <span className="loading loading-spinner loading-md sm:loading-lg" />
         </div>
-      ) : recommendedUsers.length === 0 ? (
+      ) : filteredUsers.length === 0 ? (
         <div className="card bg-base-200 p-4 sm:p-6 text-center">
           <h3 className="font-semibold text-base sm:text-lg mb-2">
-            No recommendations available
+            No matches found
           </h3>
           <p className="text-sm text-base-content opacity-70">
-            Check back later for new partners!
+            Try a different search term or check back later
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-          {recommendedUsers?.map((user) => {
+          {filteredUsers?.map((user) => {
             const requestId = outgoingRequestsMap.get(user._id);
             const hasRequestBeenSent = !!requestId;
-
             return (
               <div
                 key={user._id}
@@ -147,6 +231,13 @@ const RecommendedFriends = () => {
                         </>
                       )}
                     </button>
+                    <Link
+                      to={`/profile/${user._id}`}
+                      className="btn btn-outline btn-sm mt-2"
+                      aria-label="View profile"
+                    >
+                      View Profile
+                    </Link>
                     {hasRequestBeenSent && (
                       <button
                         className="btn btn-ghost btn-circle btn-sm mt-2"
