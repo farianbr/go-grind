@@ -101,12 +101,12 @@ const ChatsPage = () => {
   }
 
   return (
-    <div className="h-full flex overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] flex overflow-hidden">
       <Chat client={chatClient}>
         {/* Left sidebar - Chat list */}
         <div
-          className={`w-full md:w-96 lg:w-[400px] xl:w-[450px] border-r border-base-300 bg-base-100 shrink-0 ${
-            selectedChannel ? "hidden md:block" : "block"
+          className={`w-full sm:w-50 md:w-62 lg:w-[300px] xl:w-[350px] 2xl:w-[400px] border-r border-base-300 bg-base-100 shrink-0 ${
+            selectedChannel ? "hidden sm:block" : "block"
           }`}
         >
           <ChatList
@@ -118,7 +118,7 @@ const ChatsPage = () => {
         {/* Right side - Chat window */}
         <div
           className={`flex-1 bg-base-100 min-w-0 ${
-            !selectedChannel ? "hidden md:flex" : "flex"
+            !selectedChannel ? "hidden sm:flex" : "flex"
           }`}
         >
           {selectedChannel ? (
@@ -126,10 +126,10 @@ const ChatsPage = () => {
               <ChatWindow channel={selectedChannel} onBack={handleBackToList} />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full w-full p-4 sm:p-8 text-center">
-              <div className="text-6xl sm:text-8xl mb-4 sm:mb-6">💬</div>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">Welcome to Messages</h2>
-              <p className="text-base-content/60 text-base sm:text-lg max-w-md px-4">
+            <div className="flex flex-col items-center justify-center h-full w-full p-4 sm:p-6 md:p-8 text-center">
+              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-3 sm:mb-4 md:mb-6">💬</div>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">Welcome to Messages</h2>
+              <p className="text-base-content/60 text-sm sm:text-base md:text-lg max-w-md px-4">
                 Select a conversation from the left to start chatting with your
                 friends.
               </p>

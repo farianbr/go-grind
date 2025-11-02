@@ -233,7 +233,7 @@ const SpacesPage = () => {
                     <Users className="size-10 sm:size-12 mx-auto mb-3 text-base-content/40" />
                     <h3 className="text-base sm:text-lg font-semibold mb-2">No spaces yet</h3>
                     <p className="text-xs sm:text-sm text-base-content/60 mb-4">
-                      Create or join a space to start learning together
+                      Create or join a space to start grinding together
                     </p>
                   </div>
                 ) : (
@@ -335,7 +335,7 @@ const SpacesPage = () => {
                 </label>
                 <textarea
                   id="space-description"
-                  placeholder="What will you learn together?"
+                  placeholder="What will you focus on together?"
                   className="textarea h-20 sm:h-24 text-sm sm:text-base w-full"
                   value={formData.description}
                   onChange={(e) =>

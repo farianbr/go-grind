@@ -5,10 +5,13 @@ import {
   ArrowLeft,
   Users,
   BookOpen,
+  Info,
   Megaphone,
   Video,
+  LayoutDashboard,
   Plus,
   Clock,
+  ListTodo,
   Trash,
   UserPlus,
   UserMinus,
@@ -27,9 +30,10 @@ import {
   requestToJoinSpace,
   createAnnouncement,
   deleteAnnouncement,
+  getNotifications,
   getSpaceSessionStats,
 } from "../lib/api";
-import { capitalize } from "../lib/utils";
+import { capitalize, minutesToHoursAndMinutes } from "../lib/utils";
 import useAuthUser from "../hooks/useAuthUser";
 
 const SpaceDetailPage = () => {
@@ -51,8 +55,10 @@ const SpaceDetailPage = () => {
   });
 
   const isCreator = space?.creator._id === authUser?._id;
-  const isMember = space?.members.some((member) => member._id === authUser?._id);
-  
+  const isMember = space?.members.some(
+    (member) => member._id === authUser?._id
+  );
+
   // Check if user is currently in this space's stream
   const isUserInThisStream = space?.activeStreams?.some(
     (stream) => stream.user._id === authUser?._id
@@ -62,8 +68,29 @@ const SpaceDetailPage = () => {
   const { data: sessionStats, isLoading: statsLoading } = useQuery({
     queryKey: ["sessionStats", id],
     queryFn: () => getSpaceSessionStats(id),
-    enabled: !!id && !!authUser && (isMember || isCreator),
+    // Show stats to non-members as well (anyone viewing the space)
+    enabled: !!id,
   });
+
+  // Notifications (shared cache with Navbar) - used to compute unread announcement count for this space
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: getNotifications,
+    enabled: !!authUser,
+  });
+
+  const unreadAnnouncementCount =
+    notifications.filter((n) => {
+      if (!n) return false;
+      if (n.type !== "announcement") return false;
+      if (n.read) return false;
+      // relatedSpace may be an id string or an object
+      const related = n.relatedSpace;
+      return (
+        String(related) === String(id) ||
+        (related && String(related._id) === String(id))
+      );
+    }).length || 0;
 
   const mutations = {
     approve: useMutation({
@@ -151,7 +178,7 @@ const SpaceDetailPage = () => {
             <ArrowLeft className="size-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold">{space.name}</h1>
+            <h1 className="text-xl sm:text-3xl font-bold">{space.name}</h1>
             <div className="flex items-center gap-3 mt-2">
               <div className="badge badge-primary">
                 <BookOpen className="size-3 mr-1" />
@@ -170,75 +197,118 @@ const SpaceDetailPage = () => {
             className={`tab ${activeTab === "dashboard" ? "tab-active" : ""}`}
             onClick={() => setActiveTab("dashboard")}
           >
+            <LayoutDashboard className="size-4 mr-1" />
             Dashboard
           </button>
+          {(isMember || isCreator) && (
+            <button
+              className={`tab ${
+                activeTab === "announcements" ? "tab-active" : ""
+              }`}
+              onClick={() => setActiveTab("announcements")}
+            >
+              <Megaphone className="size-4 mr-1" />
+              Announcements
+              {unreadAnnouncementCount > 0 && (
+                <span className="badge badge-primary ml-2 badge-xs">
+                  {unreadAnnouncementCount > 9 ? "9+" : unreadAnnouncementCount}
+                </span>
+              )}
+            </button>
+          )}
           <button
-            className={`tab ${
-              activeTab === "announcements" ? "tab-active" : ""
-            }`}
-            onClick={() => setActiveTab("announcements")}
+            className={`tab ${activeTab === "about" ? "tab-active" : ""}`}
+            onClick={() => setActiveTab("about")}
           >
-            <Megaphone className="size-4 mr-1" />
-            Announcements
+            <Info className="size-4 mr-1" />
+            About
+            {isCreator &&
+              space.pendingRequests &&
+              space.pendingRequests.length > 0 && (
+                <span className="badge badge-primary ml-2 badge-xs">
+                  {space.pendingRequests.length > 9
+                    ? "9+"
+                    : space.pendingRequests.length}
+                </span>
+              )}
           </button>
         </div>
 
         {activeTab === "dashboard" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-                            {/* Currently Grinding Section */}
+              {/* If user is not a member show action button here in Dashboard */}
+
+              {/* Currently Grinding Section */}
               {isMember && (
                 <div className="card bg-base-200">
-                  <div className="card-body">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold text-lg">Currently Streaming</h3>
+                  <div className="card-body p-3 sm:p-4 md:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+                      <h3 className="font-semibold text-base sm:text-lg">
+                        Currently Streaming
+                      </h3>
                       {isUserInThisStream ? (
                         <button
                           onClick={() => navigate(`/spaces/${id}/stream`)}
-                          className="btn btn-success btn-sm gap-2"
+                          className="btn btn-success btn-xs sm:btn-sm gap-1 sm:gap-2 w-full sm:w-auto"
                         >
-                          <Video className="size-4" />
-                          Back to Stream
+                          <Video className="size-3 sm:size-4" />
+                          <span className="sm:hidden">Rejoin</span>
+                          <span className="hidden sm:inline">
+                            Back To Stream
+                          </span>
                         </button>
                       ) : (
                         <button
                           onClick={() => navigate(`/spaces/${id}/stream`)}
-                          className="btn btn-primary btn-sm gap-2"
+                          className="btn btn-primary btn-xs sm:btn-sm gap-1 sm:gap-2 w-full sm:w-auto"
                         >
-                          <Video className="size-4" />
-                          Enter Stream Room
+                          <Video className="size-3 sm:size-4" />
+                          <span className="text-xs sm:text-sm">
+                            Enter Stream Room
+                          </span>
                         </button>
                       )}
                     </div>
-                    
+
                     {/* Stream initialization notice */}
                     {!space.streamInitialized && !isCreator && (
-                      <div className="alert alert-warning mb-4">
-                        <div className="text-sm">
-                          <p className="font-semibold">Stream room not ready yet</p>
-                          <p className="text-xs mt-1">Waiting for the creator to initialize the stream room...</p>
+                      <div className="alert alert-warning mb-3 sm:mb-4 py-2 sm:py-3">
+                        <div className="text-xs sm:text-sm">
+                          <p className="font-semibold">
+                            Stream room not ready yet
+                          </p>
+                          <p className="text-[10px] sm:text-xs mt-0.5 sm:mt-1">
+                            Waiting for the creator to initialize the stream
+                            room...
+                          </p>
                         </div>
                       </div>
                     )}
-                    
+
                     {!space.streamInitialized && isCreator && (
-                      <div className="alert alert-info mb-4">
-                        <div className="text-sm">
-                          <p className="font-semibold">Initialize your stream room</p>
-                          <p className="text-xs mt-1">Click "Enter Stream Room" to make it available for all members!</p>
+                      <div className="alert alert-info mb-3 sm:mb-4 py-2 sm:py-3">
+                        <div className="text-xs sm:text-sm">
+                          <p className="font-semibold">
+                            Initialize your stream room
+                          </p>
+                          <p className="text-[10px] sm:text-xs mt-0.5 sm:mt-1">
+                            Click "Enter Stream Room" to make it available for
+                            all members!
+                          </p>
                         </div>
                       </div>
                     )}
-                    
+
                     {space.activeStreams && space.activeStreams.length > 0 ? (
                       <div className="space-y-2">
                         {space.activeStreams.map((stream) => (
                           <div
                             key={stream._id}
-                            className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                            className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-base-100 rounded-lg"
                           >
                             <div className="avatar">
-                              <div className="w-10 h-10 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-1">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 sm:ring-3 ring-primary ring-offset-base-100 ring-offset-1">
                                 <img
                                   src={stream.user.profilePic || "/avatar.png"}
                                   alt={stream.user.fullName}
@@ -246,23 +316,25 @@ const SpaceDetailPage = () => {
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-sm">
+                              <h4 className="font-semibold text-xs sm:text-sm truncate">
                                 {stream.user.fullName}
                               </h4>
-                              <p className="text-xs text-base-content/60 truncate">
+                              <p className="text-[10px] sm:text-xs text-base-content/60 truncate">
                                 Focusing on: {stream.grindingTopic}
                               </p>
                             </div>
-                            <div className="text-xs text-base-content/50">
-                              Started at: {format(new Date(stream.startedAt), "h:mm a")}
+                            <div className="text-[9px] sm:text-xs text-base-content/50 shrink-0 hidden xs:block">
+                              {format(new Date(stream.startedAt), "h:mm a")}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-6 text-base-content/60">
-                        <Video className="size-8 mx-auto mb-2 opacity-30" />
-                        <p className="text-sm">No one is grinding yet</p>
+                      <div className="text-center py-4 sm:py-6 text-base-content/60">
+                        <Video className="size-6 sm:size-8 mx-auto mb-1 sm:mb-2 opacity-30" />
+                        <p className="text-xs sm:text-sm">
+                          No one is grinding yet
+                        </p>
                       </div>
                     )}
                   </div>
@@ -270,112 +342,77 @@ const SpaceDetailPage = () => {
               )}
 
               {/* Space Statistics Section */}
-              {isMember && sessionStats && (
+              {sessionStats && (
                 <div className="card bg-base-200">
                   <div className="card-body">
-                    <h3 className="font-semibold text-lg mb-4">Space Statistics</h3>
-                    
+                    <h3 className="font-semibold text-lg mb-4">
+                      Space Statistics
+                    </h3>
+
                     {sessionStats.totalSessions > 0 ? (
-                      <>
+                      <div className="flex flex-col lg:flex-row gap-4">
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Total Sessions</div>
-                            <div className="stat-value text-2xl text-primary">
-                              {sessionStats.totalSessions}
+                        <div className="flex-1">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Total Sessions
+                              </div>
+                              <div className="stat-value text-2xl text-primary">
+                                {sessionStats.totalSessions}
+                              </div>
                             </div>
-                          </div>
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Total Hours</div>
-                            <div className="stat-value text-2xl text-success">
-                              {sessionStats.totalHours}h
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Total Hours
+                              </div>
+                              <div className="stat-value text-2xl text-success">
+                                {Math.round(sessionStats.totalHours)}h
+                              </div>
                             </div>
-                          </div>
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Avg Duration</div>
-                            <div className="stat-value text-2xl text-info">
-                              {sessionStats.avgDuration}m
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Avg Duration
+                              </div>
+                              <div className="stat-value text-2xl text-info">
+                                {Math.round(sessionStats.avgDuration)}m
+                              </div>
                             </div>
-                          </div>
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Task Completion</div>
-                            <div className="stat-value text-2xl text-warning">
-                              {sessionStats.taskCompletionRate}%
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Task Completion
+                              </div>
+                              <div className="stat-value text-2xl text-warning">
+                                {Math.round(sessionStats.taskCompletionRate)}%
+                              </div>
                             </div>
-                          </div>
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Target Met</div>
-                            <div className="stat-value text-2xl text-secondary">
-                              {sessionStats.sessionCompletionRate}%
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Target Met
+                              </div>
+                              <div className="stat-value text-2xl text-secondary">
+                                {Math.round(sessionStats.sessionCompletionRate)}
+                                %
+                              </div>
                             </div>
-                          </div>
-                          <div className="stat bg-base-100 rounded-lg p-4">
-                            <div className="stat-title text-xs">Participants</div>
-                            <div className="stat-value text-2xl text-accent">
-                              {sessionStats.uniqueParticipants}
+                            <div className="stat bg-base-100 rounded-lg p-4">
+                              <div className="stat-title text-xs">
+                                Participants
+                              </div>
+                              <div className="stat-value text-2xl text-accent">
+                                {Math.round(sessionStats.uniqueParticipants)}
+                              </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Recent Sessions */}
-                        {sessionStats.recentSessions && sessionStats.recentSessions.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="font-semibold mb-3 text-sm">Recent Sessions</h4>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                              {sessionStats.recentSessions.map((session) => (
-                                <div
-                                  key={session._id}
-                                  className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
-                                >
-                                  <div className="avatar">
-                                    <div className="w-10 h-10 rounded-full">
-                                      <img
-                                        src={session.user.profilePic || "/avatar.png"}
-                                        alt={session.user.fullName}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h5 className="font-semibold text-sm truncate">
-                                      {session.user.fullName}
-                                    </h5>
-                                    <p className="text-xs text-base-content/60 truncate">
-                                      {session.grindingTopic}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-base-content/50">
-                                      <span>{session.actualDuration}m</span>
-                                      <span> • </span>
-                                      <span>
-                                        {session.tasksCompleted}/{session.totalTasks} tasks
-                                      </span>
-                                      <span> • </span>
-                                      <span>
-                                        {new Date(session.endTime).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div
-                                    className={`badge badge-sm ${
-                                      session.actualDuration >= session.targetDuration
-                                        ? "badge-success"
-                                        : "badge-warning"
-                                    }`}
-                                  >
-                                    {session.actualDuration >= session.targetDuration
-                                      ? "Target Met"
-                                      : "Incomplete"}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
+                      </div>
                     ) : (
                       <div className="text-center py-6 text-base-content/60">
                         <Clock className="size-8 mx-auto mb-2 opacity-30" />
                         <p className="text-sm">No completed sessions yet</p>
-                        <p className="text-xs mt-1">Start a session to see statistics here</p>
+                        <p className="text-xs mt-1">
+                          Start a session to see statistics here
+                        </p>
                       </div>
                     )}
 
@@ -387,9 +424,175 @@ const SpaceDetailPage = () => {
                   </div>
                 </div>
               )}
+              {!isMember && (
+                <div className="card bg-base-200">
+                  <div className="card-body">
+                    <h3 className="font-semibold text-lg mb-4">Actions</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {hasPendingRequest ? (
+                        <button className="btn btn-disabled w-full">
+                          Request Pending
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => mutations.requestJoin.mutate(id)}
+                          className="btn btn-primary gap-2 w-full"
+                          disabled={mutations.requestJoin.isPending}
+                        >
+                          {mutations.requestJoin.isPending ? (
+                            <span className="loading loading-spinner loading-sm"></span>
+                          ) : (
+                            <>
+                              <UserPlus className="size-5" />
+                              Request to Join
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Right column - Recent Sessions */}
+            {(isMember || isCreator) && (
+              <div className="space-y-6">
+                <div className="card bg-base-200">
+                  <div className="card-body">
+                    <h3 className="font-semibold text-lg mb-4">
+                      Recent Sessions
+                    </h3>
+                    {sessionStats?.recentSessions &&
+                    sessionStats?.recentSessions?.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 gap-3">
+                          {sessionStats.recentSessions
+                            .slice(0, 3)
+                            .map((session) => (
+                              <div
+                                key={session._id}
+                                className="bg-base-100 rounded-lg p-3 flex items-start gap-3 shadow-sm hover:shadow-md transition-shadow duration-150"
+                              >
+                                <div className="avatar shrink-0">
+                                  <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-full">
+                                    <img
+                                      src={
+                                        session.user.profilePic || "/avatar.png"
+                                      }
+                                      alt={session.user.fullName}
+                                    />
+                                  </div>
+                                </div>
 
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <h5 className="font-semibold text-sm truncate">
+                                        {session.user.fullName}
+                                      </h5>
+                                      <p className="text-xs text-base-content/60 truncate">
+                                        {session.grindingTopic}
+                                      </p>
+                                    </div>
 
-              
+                                    {/* Badge */}
+                                    <div className="shrink-0 ">
+                                      <div
+                                        className={`badge badge-sm  ${
+                                          session.actualDuration >=
+                                          session.targetDuration
+                                            ? "badge-success"
+                                            : "badge-warning"
+                                        }`}
+                                      >
+                                        <Clock className="size-3 my-auto" />
+                                        {
+                                          minutesToHoursAndMinutes(
+                                            session.actualDuration
+                                          ).hours
+                                        }
+                                        h{" "}
+                                        {
+                                          minutesToHoursAndMinutes(
+                                            session.actualDuration
+                                          ).minutes
+                                        }
+                                        m
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-3 mt-2">
+                                    <div className="text-xs text-base-content/50 flex items-center gap-2">
+                                      {/* tasks: use icon on small screens */}
+                                      <span className="inline-flex items-center gap-1">
+                                        <span className="hidden xl:inline">
+                                          {session.tasksCompleted}/
+                                          {session.totalTasks} tasks
+                                        </span>
+                                        <span className="xl:hidden flex items-center gap-1">
+                                          <ListTodo className="size-4" />
+                                          {session.tasksCompleted}/
+                                          {session.totalTasks}
+                                        </span>
+                                      </span>
+                                    </div>
+
+                                    {/* Date/time for xl+ on the right */}
+                                    <div className="hidden xl:block text-right ml-2 text-[11px] text-base-content/50 shrink-0">
+                                      <div>
+                                        {format(
+                                          new Date(session.endTime),
+                                          "dd MMM, yyyy"
+                                        )}
+                                      </div>
+                                    </div>
+                                    {/* Date/time for small screens below name */}
+                                    <div className="block xl:hidden text-xs text-base-content/50 mt-1">
+                                      {format(
+                                        new Date(session.endTime),
+                                        "dd MMM, yyyy"
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          {sessionStats.recentSessions.length > 3 && (
+                            <div className="col-span-1">
+                              <div className="p-3 bg-base-100 rounded-lg text-center">
+                                <div className="text-sm font-medium">
+                                  {sessionStats.recentSessions.length - 3} more
+                                  cool sessions!
+                                </div>
+                                <div className="text-xs text-base-content/60 mt-2">
+                                  <Link
+                                    to={`/spaces/${id}/stream`}
+                                    className="btn btn-sm btn-outline"
+                                  >
+                                    Join in
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-base-content/60">
+                        <p className="text-sm">No recent sessions yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "about" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
               {/* Members Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
@@ -429,10 +632,84 @@ const SpaceDetailPage = () => {
                       </Link>
                     ))}
                   </div>
+                  {/* Pending Requests - moved inside Members card */}
+                  {isCreator && space.pendingRequests.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold mb-3">
+                        Pending Requests ({space.pendingRequests.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {space.pendingRequests.map((user) => (
+                          <div
+                            key={user._id}
+                            className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                          >
+                            <div className="avatar">
+                              <div className="w-10 h-10 rounded-full">
+                                <img
+                                  src={user.profilePic}
+                                  alt={user.fullName}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm truncate">
+                                {user.fullName}
+                              </h4>
+                            </div>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() =>
+                                  mutations.approve.mutate({
+                                    spaceId: id,
+                                    userId: user._id,
+                                  })
+                                }
+                                className="btn btn-success btn-xs btn-circle"
+                                disabled={mutations.approve.isPending}
+                              >
+                                {mutations.approve.isPending ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <UserCheck className="size-3" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() =>
+                                  mutations.reject.mutate({
+                                    spaceId: id,
+                                    userId: user._id,
+                                  })
+                                }
+                                className="btn btn-error btn-xs btn-circle"
+                                disabled={mutations.reject.isPending}
+                              >
+                                {mutations.reject.isPending ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <UserX className="size-3" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* About/Description Section */}
+              <div className="card bg-base-200">
+                <div className="card-body">
+                  <h3 className="font-semibold text-lg mb-2">About</h3>
+                  <p className="text-base-content/70">{space.description}</p>
                 </div>
               </div>
             </div>
+
             <div className="space-y-6">
+              {/* Creator Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold mb-4">Created By</h3>
@@ -451,130 +728,69 @@ const SpaceDetailPage = () => {
                       </h4>
                       {space.creator.learningSkill && (
                         <p className="text-sm text-base-content/60">
-                          Learning: {capitalize(space.creator.learningSkill)}
+                          Focus: {capitalize(space.creator.learningSkill)}
                         </p>
                       )}
                     </div>
                   </div>
                 </div>
               </div>
-              
-              {/* About Section */}
-              <div className="card bg-base-200">
-                <div className="card-body">
-                  <h3 className="font-semibold text-lg mb-2">About</h3>
-                  <p className="text-base-content/70">{space.description}</p>
-                  <div className="divider"></div>
-                  <div className="flex flex-wrap gap-2">
-                    {isCreator ? (
-                      <button
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="btn btn-error gap-2 w-full"
-                      >
-                        <Trash2 className="size-5" />
-                        Delete Space
-                      </button>
-                    ) : isMember ? (
-                      <button
-                        onClick={() => mutations.leave.mutate(id)}
-                        className="btn btn-ghost gap-2 w-full"
-                        disabled={mutations.leave.isPending}
-                      >
-                        {mutations.leave.isPending ? (
-                          <span className="loading loading-spinner loading-sm"></span>
-                        ) : (
-                          <>
-                            <UserMinus className="size-5" />
-                            Leave Space
-                          </>
-                        )}
-                      </button>
-                    ) : hasPendingRequest ? (
-                      <button className="btn btn-disabled w-full">
-                        Request Pending
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => mutations.requestJoin.mutate(id)}
-                        className="btn btn-primary gap-2 w-full"
-                        disabled={mutations.requestJoin.isPending}
-                      >
-                        {mutations.requestJoin.isPending ? (
-                          <span className="loading loading-spinner loading-sm"></span>
-                        ) : (
-                          <>
-                            <UserPlus className="size-5" />
-                            Request to Join
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {isCreator && space.pendingRequests.length > 0 && (
+
+              {/* Actions Section - show inside About only for creators or members */}
+              {(isCreator || isMember) && (
                 <div className="card bg-base-200">
                   <div className="card-body">
-                    <h3 className="font-semibold text-lg mb-4">
-                      Pending Requests ({space.pendingRequests.length})
-                    </h3>
-                    <div className="space-y-3">
-                      {space.pendingRequests.map((user) => (
-                        <div
-                          key={user._id}
-                          className="flex items-center gap-3 p-3 bg-base-100 rounded-lg"
+                    <h3 className="font-semibold text-lg mb-4">Actions</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {isCreator ? (
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="btn btn-error gap-2 w-full"
                         >
-                          <div className="avatar">
-                            <div className="w-10 h-10 rounded-full">
-                              <img src={user.profilePic} alt={user.fullName} />
-                            </div>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm truncate">
-                              {user.fullName}
-                            </h4>
-                          </div>
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() =>
-                                mutations.approve.mutate({
-                                  spaceId: id,
-                                  userId: user._id,
-                                })
-                              }
-                              className="btn btn-success btn-xs btn-circle"
-                              disabled={mutations.approve.isPending}
-                            >
-                              {mutations.approve.isPending ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <UserCheck className="size-3" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() =>
-                                mutations.reject.mutate({
-                                  spaceId: id,
-                                  userId: user._id,
-                                })
-                              }
-                              className="btn btn-error btn-xs btn-circle"
-                              disabled={mutations.reject.isPending}
-                            >
-                              {mutations.reject.isPending ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <UserX className="size-3" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                          <Trash2 className="size-5" />
+                          Delete Space
+                        </button>
+                      ) : isMember ? (
+                        <button
+                          onClick={() => mutations.leave.mutate(id)}
+                          className="btn btn-error gap-2 w-full"
+                          disabled={mutations.leave.isPending}
+                        >
+                          {mutations.leave.isPending ? (
+                            <span className="loading loading-spinner loading-sm"></span>
+                          ) : (
+                            <>
+                              <UserMinus className="size-5" />
+                              Leave Space
+                            </>
+                          )}
+                        </button>
+                      ) : hasPendingRequest ? (
+                        <button className="btn btn-disabled w-full">
+                          Request Pending
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => mutations.requestJoin.mutate(id)}
+                          className="btn btn-primary gap-2 w-full"
+                          disabled={mutations.requestJoin.isPending}
+                        >
+                          {mutations.requestJoin.isPending ? (
+                            <span className="loading loading-spinner loading-sm"></span>
+                          ) : (
+                            <>
+                              <UserPlus className="size-5" />
+                              Request to Join
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Pending requests moved into Members section above */}
             </div>
           </div>
         )}
@@ -744,8 +960,8 @@ const SpaceDetailPage = () => {
                   >
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn btn-primary"
                     disabled={mutations.createAnnouncement.isPending}
                   >

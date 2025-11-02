@@ -23,21 +23,21 @@ const CustomChannelHeader = ({ onBack }) => {
 
 
   return (
-    <div className="str-chat__header-livestream flex items-center gap-3 p-4 border-b border-base-300 bg-base-100">
+    <div className="str-chat__header-livestream flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-base-300 bg-base-100">
       {/* Mobile back button */}
       <button
         onClick={onBack}
-        className="md:hidden btn btn-ghost btn-sm btn-circle shrink-0"
+        className="sm:hidden btn btn-ghost btn-xs btn-circle shrink-0"
         aria-label="Back to chat list"
       >
-        <ArrowLeft size={20} />
+        <ArrowLeft size={18} />
       </button>
 
       {/* User info */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         <Link to={`/profile/${otherMember?.id}`}>
         <div className="avatar">
-          <div className="w-10 h-10 rounded-full ">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
             <img
               src={otherMember?.image || "/avatar.png"}
               alt={otherMember?.name || "User"}
@@ -47,9 +47,9 @@ const CustomChannelHeader = ({ onBack }) => {
         </Link>
         <div className="flex-1 min-w-0">
           <Link to={`/profile/${otherMember?.id}`}>
-            <h3 className="font-semibold truncate text-base-content hover:text-primary transition-colors">{otherMember?.name || "Chat"}</h3>
+            <h3 className="font-semibold truncate text-sm sm:text-base text-base-content hover:text-primary transition-colors">{otherMember?.name || "Chat"}</h3>
           </Link>
-            <p className="text-sm text-base-content/60">Active</p>
+            <p className="text-xs sm:text-sm text-base-content/60">Active</p>
         </div>
       </div>
     </div>
@@ -86,7 +86,7 @@ const ChatWindow = ({ channel, onBack }) => {
         <Window hideOnThread>
           <CustomChannelHeader onBack={handleBack} />
           <MessageList />
-          <MessageInput focus />
+          <MessageInput  />
         </Window>
       </div>
       <Thread />

@@ -29,53 +29,53 @@ const FriendCard = ({ friend }) => {
 
   return (
     <div className="card bg-base-200 hover:shadow-md transition-shadow">
-      <div className="card-body p-4">
+      <div className="card-body p-3 sm:p-4">
         {/* USER INFO */}
-        <Link to={`/profile/${friend._id}`} className="flex items-center gap-3 mb-3 hover:opacity-80 transition-opacity">
-          <div className="avatar size-16 rounded-full overflow-hidden">
+        <Link to={`/profile/${friend._id}`} className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 hover:opacity-80 transition-opacity">
+          <div className="avatar size-12 sm:size-16 rounded-full overflow-hidden shrink-0">
             <img src={friend.profilePic} alt={friend.fullName} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate">{friend.fullName}</h3>
+            <h3 className="font-semibold text-sm sm:text-base truncate">{friend.fullName}</h3>
             {friend.location && (
               <div className="flex items-center text-xs opacity-70 mt-1">
-                <MapPinIcon className="size-3 mr-1" />
-                {friend.location}
+                <MapPinIcon className="size-3 mr-1 shrink-0" />
+                <span className="truncate">{friend.location}</span>
               </div>
             )}
           </div>
         </Link>
 
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className="badge badge-secondary">
+        <div className="flex flex-wrap gap-1.5 mb-2 sm:mb-3">
+          <span className="badge badge-secondary badge-xs sm:badge-sm">
             {getLanguageFlag(friend.nativeLanguage)}
             Native: {capitalize(friend.nativeLanguage)}
           </span>
           {friend.learningSkill && (
-            <span className="badge badge-outline">
-              📚 Learning: {capitalize(friend.learningSkill)}
+            <span className="badge badge-outline badge-xs sm:badge-sm">
+              Focus: {capitalize(friend.learningSkill)}
             </span>
           )}
         </div>
-        {friend.bio && <p className="text-sm opacity-70">{friend.bio}</p>}
+        {friend.bio && <p className="text-xs sm:text-sm opacity-70 line-clamp-2">{friend.bio}</p>}
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-3 sm:mt-4">
           <Link
             to={`/chats/${friend._id}`}
-            className="btn btn-outline flex-1"
+            className="btn btn-outline btn-sm flex-1"
           >
             Message
           </Link>
           <button
             onClick={handleUnfriend}
-            className="btn btn-ghost btn-circle"
+            className="btn btn-ghost btn-circle btn-sm"
             disabled={isPending}
             title="Unfriend"
           >
             {isPending ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <UserMinus className="size-5" />
+              <UserMinus className="size-4" />
             )}
           </button>
         </div>

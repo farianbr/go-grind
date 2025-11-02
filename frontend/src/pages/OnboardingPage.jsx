@@ -160,7 +160,7 @@ const OnboardingPage = () => {
                   setFormState({ ...formState, bio: e.target.value })
                 }
                 className="textarea h-24 w-full"
-                placeholder="Tell others about yourself and your language learning goals"
+                placeholder="Tell others about yourself and your focus goals"
               />
             </fieldset>
 
@@ -192,14 +192,14 @@ const OnboardingPage = () => {
                 </select>
               </fieldset>
 
-              {/* LEARNING SKILL */}
+              {/* FOCUS SKILL */}
               <fieldset className="fieldset">
-                <label className="label" htmlFor="learningSkill">
-                  Learning Skill
+                <label className="label" htmlFor="focusSkill">
+                  Focus Skill
                 </label>
                 <select
-                  id="learningSkill"
-                  name="learningSkill"
+                  id="focusSkill"
+                  name="focusSkill"
                   value={formState.learningSkill}
                   onChange={(e) =>
                     setFormState({
@@ -209,9 +209,9 @@ const OnboardingPage = () => {
                   }
                   className="select w-full"
                 >
-                  <option value="">Select skill you're learning</option>
+                  <option value="">Select skill you're focusing</option>
                   {SKILLS.map((skill) => (
-                    <option key={`learning-${skill}`} value={skill.toLowerCase()}>
+                    <option key={`focusing-${skill}`} value={skill.toLowerCase()}>
                       {skill}
                     </option>
                   ))}

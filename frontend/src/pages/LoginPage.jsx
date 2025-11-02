@@ -46,7 +46,7 @@ const LoginPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Welcome Back</h2>
                   <p className="text-sm opacity-70">
-                    Sign in to your account to continue your learning journey
+                    Sign in to your account to continue your journey
                   </p>
                 </div>
 
@@ -131,7 +131,7 @@ const LoginPage = () => {
 
             <div className="text-center space-y-3 mt-6">
               <h2 className="text-xl font-semibold">
-                Connect with learning partners worldwide
+                Connect with focus partners worldwide
               </h2>
               <p className="opacity-70 ">
                 Practice daily, make friends, and improve your 

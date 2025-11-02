@@ -57,34 +57,34 @@ const RecommendedFriends = () => {
   }, [outgoingFriendReqs, authUser]);
   return (
     <section>
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
               Meet New Grinders
             </h2>
-            <p className="opacity-70">
-              Discover perfect learning partners based on your profile
+            <p className="text-xs sm:text-sm opacity-70">
+              Discover perfect focus partners based on your profile
             </p>
           </div>
         </div>
       </div>
 
       {loadingUsers ? (
-        <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-lg" />
+        <div className="flex justify-center py-8 sm:py-12">
+          <span className="loading loading-spinner loading-md sm:loading-lg" />
         </div>
       ) : recommendedUsers.length === 0 ? (
-        <div className="card bg-base-200 p-6 text-center">
-          <h3 className="font-semibold text-lg mb-2">
+        <div className="card bg-base-200 p-4 sm:p-6 text-center">
+          <h3 className="font-semibold text-base sm:text-lg mb-2">
             No recommendations available
           </h3>
-          <p className="text-base-content opacity-70">
+          <p className="text-sm text-base-content opacity-70">
             Check back later for new partners!
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
           {recommendedUsers?.map((user) => {
             const requestId = outgoingRequestsMap.get(user._id);
             const hasRequestBeenSent = !!requestId;
@@ -94,18 +94,18 @@ const RecommendedFriends = () => {
                 key={user._id}
                 className="card bg-base-200 hover:shadow-lg transition-all duration-300"
               >
-                <div className="card-body p-5 space-y-4">
-                  <Link to={`/profile/${user._id}`} className="flex items-center gap-3">
-                    <div className="avatar size-16 rounded-full overflow-hidden">
+                <div className="card-body p-4 sm:p-5 space-y-3 sm:space-y-4">
+                  <Link to={`/profile/${user._id}`} className="flex items-center gap-2 sm:gap-3">
+                    <div className="avatar size-12 sm:size-16 rounded-full overflow-hidden shrink-0">
                       <img src={user.profilePic} alt={user.fullName} />
                     </div>
 
-                    <div>
-                      <h3 className="font-semibold text-lg">{user.fullName}</h3>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-base sm:text-lg truncate">{user.fullName}</h3>
                       {user.location && (
                         <div className="flex items-center text-xs opacity-70 mt-1">
-                          <MapPinIcon className="size-3 mr-1" />
-                          {user.location}
+                          <MapPinIcon className="size-3 mr-1 shrink-0" />
+                          <span className="truncate">{user.location}</span>
                         </div>
                       )}
                     </div>
@@ -113,23 +113,23 @@ const RecommendedFriends = () => {
 
                   {/* Languages and Skills */}
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="badge badge-secondary">
+                    <span className="badge badge-secondary text-xs">
                       {getLanguageFlag(user.nativeLanguage)}
                       Native: {capitalize(user.nativeLanguage)}
                     </span>
                     {user.learningSkill && (
-                      <span className="badge badge-outline">
-                        📚 Learning: {capitalize(user.learningSkill)}
+                      <span className="badge badge-outline text-xs">
+                        Focus: {capitalize(user.learningSkill)}
                       </span>
                     )}
                   </div>
 
-                  {user.bio && <p className="text-sm opacity-70">{user.bio}</p>}
+                  {user.bio && <p className="text-xs sm:text-sm opacity-70 line-clamp-2">{user.bio}</p>}
 
                   {/* Action button */}
                   <div className="flex gap-2">
                     <button
-                      className={`btn flex-1 mt-2 ${
+                      className={`btn btn-sm flex-1 mt-2 ${
                         hasRequestBeenSent ? "btn-disabled" : "btn-primary"
                       } `}
                       onClick={() => sendRequestMutation(user._id)}
@@ -137,24 +137,24 @@ const RecommendedFriends = () => {
                     >
                       {hasRequestBeenSent ? (
                         <>
-                          <CheckCircleIcon className="size-4 mr-2" />
-                          Request Sent
+                          <CheckCircleIcon className="size-4 mr-1 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">Request Sent</span>
                         </>
                       ) : (
                         <>
-                          <UserPlusIcon className="size-4 mr-2" />
-                          Send Friend Request
+                          <UserPlusIcon className="size-4 mr-1 sm:mr-2" />
+                          <span className="text-xs sm:text-sm">Send Request</span>
                         </>
                       )}
                     </button>
                     {hasRequestBeenSent && (
                       <button
-                        className="btn btn-ghost btn-circle mt-2"
+                        className="btn btn-ghost btn-circle btn-sm mt-2"
                         onClick={() => cancelRequestMutation(requestId)}
                         disabled={isCancelling}
                         aria-label="Cancel request"
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4" />
                       </button>
                     )}
                   </div>

@@ -87,10 +87,10 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
 
   if (channels.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-4 text-center">
-        <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-xl font-semibold mb-2 text-base-content">No chats yet</h3>
-        <p className="text-base-content/60">
+      <div className="flex flex-col items-center justify-center h-full p-3 sm:p-4 text-center">
+        <div className="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">💬</div>
+        <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-base-content">No chats yet</h3>
+        <p className="text-sm sm:text-base text-base-content/60">
           Start a conversation with your friends!
         </p>
       </div>
@@ -99,8 +99,8 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-base-300">
-        <h2 className="text-2xl font-bold">Messages</h2>
+      <div className="p-3 sm:p-4 border-b border-base-300">
+        <h2 className="text-xl sm:text-2xl font-bold">Messages</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -113,12 +113,12 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
             <div
               key={channel.id}
               onClick={() => onSelectChat(channel)}
-              className={`flex items-center gap-3 p-4 cursor-pointer transition-colors border-b border-base-300 hover:bg-base-200 ${
+              className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 cursor-pointer transition-colors border-b border-base-300 hover:bg-base-200 ${
                 isSelected ? "bg-base-200" : ""
               }`}
             >
               <div className="avatar">
-                <div className="w-12 h-12 rounded-full">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full">
                   <img
                     src={otherMember?.image || "/avatar.png"}
                     alt={otherMember?.name || "User"}
@@ -127,21 +127,21 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-semibold truncate">
+                <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+                  <h3 className="font-semibold truncate text-sm sm:text-base">
                     {otherMember?.name || "Unknown User"}
                   </h3>
-                  <span className="text-xs text-base-content/60 shrink-0 ml-2">
+                  <span className="text-[10px] sm:text-xs text-base-content/60 shrink-0 ml-1 sm:ml-2">
                     {formatTimestamp(lastMessage?.created_at)}
                   </span>
                 </div>
-                <p className="text-sm text-base-content/60 truncate">
+                <p className="text-xs sm:text-sm text-base-content/60 truncate">
                   {lastMessage?.text || "No messages yet"}
                 </p>
               </div>
 
               {channel.countUnread() > 0 && (
-                <div className="badge badge-primary badge-sm">
+                <div className="badge badge-primary badge-xs sm:badge-sm">
                   {channel.countUnread()}
                 </div>
               )}

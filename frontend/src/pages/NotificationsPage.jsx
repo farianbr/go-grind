@@ -21,7 +21,8 @@ import {
   Users,
   ShieldCheck,
   ShieldX,
-  Megaphone
+  Megaphone,
+  Heart
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -126,6 +127,8 @@ const NotificationsPage = () => {
         return <UserX className="size-5 text-error" />;
       case "announcement":
         return <Megaphone className="size-5 text-accent" />;
+      case "encouragement":
+        return <Heart className="size-5 text-error" />;
       default:
         return <Bell className="size-5" />;
     }
@@ -134,14 +137,14 @@ const NotificationsPage = () => {
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="container mx-auto max-w-4xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Notifications</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Notifications</h1>
             {unreadCount > 0 && (
-              <p className="text-sm text-base-content/60 mt-1">
+              <p className="text-xs sm:text-sm text-base-content/60 mt-1">
                 You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
               </p>
             )}
@@ -150,9 +153,9 @@ const NotificationsPage = () => {
           {notifications && notifications.length > 0 && unreadCount > 0 && (
             <button
               onClick={() => markAllAsReadMutation()}
-              className="btn btn-sm btn-ghost gap-2"
+              className="btn btn-xs sm:btn-sm btn-ghost gap-2 w-full sm:w-auto"
             >
-              <CheckCheck className="size-4" />
+              <CheckCheck className="size-3 sm:size-4" />
               Mark all as read
             </button>
           )}
@@ -160,11 +163,11 @@ const NotificationsPage = () => {
 
         {/* Notifications List */}
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <span className="loading loading-spinner loading-lg"></span>
+          <div className="flex justify-center py-8 sm:py-12">
+            <span className="loading loading-spinner loading-md sm:loading-lg"></span>
           </div>
         ) : notifications && notifications.length > 0 ? (
-          <div className="space-y-2">
+          <div className="space-y-2 sm:space-y-3">
             {notifications.map((notification) => (
               <div
                 key={notification._id}
@@ -173,16 +176,18 @@ const NotificationsPage = () => {
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="card-body p-4">
-                  <div className="flex items-start gap-4">
+                <div className="card-body p-3 sm:p-4">
+                  <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
                     {/* Icon */}
                     <div className="shrink-0">
-                      {getNotificationIcon(notification.type)}
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                        {getNotificationIcon(notification.type)}
+                      </div>
                     </div>
 
                     {/* Sender Avatar */}
                     <div className="avatar shrink-0">
-                      <div className="w-10 h-10 rounded-full">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
                         <img
                           src={notification.sender?.profilePic || "/avatar.png"}
                           alt={notification.sender?.fullName || "User"}
@@ -192,17 +197,17 @@ const NotificationsPage = () => {
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.read ? 'font-semibold' : ''}`}>
-                        {notification.message}
+                      <p className={`text-xs sm:text-sm ${!notification.read ? 'font-semibold' : ''}`}>
+                        {notification.type === "encouragement" && `${notification.sender?.fullName} ` }{notification.message}
                       </p>
                       
                       {notification.relatedSpace && (
-                        <p className="text-xs text-primary mt-1">
+                        <p className="text-[10px] sm:text-xs text-primary mt-1">
                           {notification.relatedSpace.name}
                         </p>
                       )}
 
-                      <p className="text-xs text-base-content/50 mt-2">
+                      <p className="text-[10px] sm:text-xs text-base-content/50 mt-1 sm:mt-2">
                         {formatDistanceToNow(new Date(notification.createdAt), {
                           addSuffix: true,
                         })}
@@ -211,19 +216,19 @@ const NotificationsPage = () => {
                       {/* Friend Request Actions */}
                       {notification.type === "friend_request" && 
                        notification.metadata?.friendRequestId && (
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-2 sm:mt-3">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               acceptFriendRequestMutation(notification.metadata.friendRequestId);
                             }}
-                            className="btn btn-sm btn-success gap-2"
+                            className="btn btn-xs sm:btn-sm btn-success gap-1 sm:gap-2"
                             disabled={isAccepting || isDeclining}
                           >
                             {isAccepting ? (
                               <span className="loading loading-spinner loading-xs"></span>
                             ) : (
-                              <Check className="size-4" />
+                              <Check className="size-3 sm:size-4" />
                             )}
                             Accept
                           </button>
@@ -232,13 +237,13 @@ const NotificationsPage = () => {
                               e.stopPropagation();
                               declineFriendRequestMutation(notification.metadata.friendRequestId);
                             }}
-                            className="btn btn-sm btn-error gap-2"
+                            className="btn btn-xs sm:btn-sm btn-error gap-1 sm:gap-2"
                             disabled={isAccepting || isDeclining}
                           >
                             {isDeclining ? (
                               <span className="loading loading-spinner loading-xs"></span>
                             ) : (
-                              <X className="size-4" />
+                              <X className="size-3 sm:size-4" />
                             )}
                             Decline
                           </button>
@@ -252,9 +257,9 @@ const NotificationsPage = () => {
                         e.stopPropagation();
                         deleteNotificationMutation(notification._id);
                       }}
-                      className="btn btn-ghost btn-sm btn-circle"
+                      className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3 sm:size-4" />
                     </button>
                   </div>
                 </div>
@@ -262,10 +267,10 @@ const NotificationsPage = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Bell className="size-16 text-base-content/20 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No notifications yet</h3>
-            <p className="text-base-content/60 text-center max-w-md">
+          <div className="flex flex-col items-center justify-center py-12 sm:py-16">
+            <Bell className="size-12 sm:size-14 md:size-16 text-base-content/20 mb-3 sm:mb-4" />
+            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">No notifications yet</h3>
+            <p className="text-xs sm:text-sm md:text-base text-base-content/60 text-center max-w-md px-4">
               You'll see notifications here when you receive space invites, session updates, and more.
             </p>
           </div>

@@ -254,8 +254,11 @@ export async function getUserSessions(userId) {
   return response.data;
 }
 
-export async function getCurrentSession(spaceId) {
-  const response = await axiosInstance.get(`/sessions/current/${spaceId}`);
+export async function getCurrentSession(spaceId, userId = null) {
+  const url = userId 
+    ? `/sessions/current/${spaceId}?userId=${userId}`
+    : `/sessions/current/${spaceId}`;
+  const response = await axiosInstance.get(url);
   return response.data;
 }
 
@@ -266,5 +269,15 @@ export async function updateSessionTask(sessionId, taskId, isCompleted) {
 
 export async function getSpaceSessionStats(spaceId) {
   const response = await axiosInstance.get(`/sessions/space/${spaceId}/stats`);
+  return response.data;
+}
+
+export async function encourageParticipant(sessionId) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/encourage`);
+  return response.data;
+}
+
+export async function removeEncouragement(sessionId) {
+  const response = await axiosInstance.delete(`/sessions/${sessionId}/encourage`);
   return response.data;
 }

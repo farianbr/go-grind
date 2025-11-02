@@ -13,45 +13,45 @@ const NavLinks = () => {
     <>
       <Link
         to="/"
-        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
           currentPath === "/" ? "btn-active" : ""
         }`}
       >
-        <HomeIcon className="size-5 text-base-content opacity-70" />
+        <HomeIcon className="size-4 lg:size-5 text-base-content opacity-70" />
         <span>Home</span>
       </Link>
 
       <Link
         to="/spaces"
-        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
           currentPath === "/spaces" || currentPath.startsWith("/spaces/") ? "btn-active" : ""
         }`}
       >
-        <Shapes className="size-5 text-base-content opacity-70" />
+        <Shapes className="size-4 lg:size-5 text-base-content opacity-70" />
         <span>Spaces</span>
       </Link>
 
       <Link
         to="/friends"
-        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
           currentPath === "/friends" ? "btn-active" : ""
         }`}
       >
-        <UsersIcon className="size-5 text-base-content opacity-70" />
+        <UsersIcon className="size-4 lg:size-5 text-base-content opacity-70" />
         <span>Friends</span>
       </Link>
 
       <Link
         to="/chats"
-        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
           currentPath === "/chats" || currentPath.startsWith("/chats/") ? "btn-active" : ""
         }`}
       >
-        <MessagesSquare className="size-5 text-base-content opacity-70" />
-        <div className="flex items-center gap-2">
+        <MessagesSquare className="size-4 lg:size-5 text-base-content opacity-70" />
+        <div className="flex items-center gap-1 lg:gap-2">
           <span>Chats</span>
           {unreadChatCount > 0 && (
-            <span className="badge badge-primary badge-sm">
+            <span className="badge badge-primary badge-xs lg:badge-sm">
               {unreadChatCount > 9 ? "9+" : unreadChatCount}
             </span>
           )}
@@ -60,15 +60,15 @@ const NavLinks = () => {
 
       <Link
         to="/notifications"
-        className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
           currentPath === "/notifications" ? "btn-active" : ""
         }`}
       >
-        <BellIcon className="size-5 text-base-content opacity-70" />
-        <div className="flex items-center gap-2">
+        <BellIcon className="size-4 lg:size-5 text-base-content opacity-70" />
+        <div className="flex items-center gap-1 lg:gap-2">
           <span>Notifications</span>
           {unreadNotificationCount > 0 && (
-            <span className="badge badge-primary badge-sm">
+            <span className="badge badge-primary badge-xs lg:badge-sm">
               {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
             </span>
           )}

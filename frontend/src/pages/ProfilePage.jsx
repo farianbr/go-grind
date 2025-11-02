@@ -367,10 +367,13 @@ const ProfilePage = () => {
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body p-4 sm:p-6">
             <h2 className="card-title text-xl sm:text-2xl mb-4">
-              Recent Sessions
+              Recent Completed Sessions
             </h2>
             <div className="space-y-3">
-              {sessions.slice(0, 5).map((session) => (
+              {sessions
+                .filter((session) => session.endTime) // Only show completed sessions (those with endTime)
+                .slice(0, 5)
+                .map((session) => (
                 <div
                   key={session._id}
                   className="p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"

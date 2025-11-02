@@ -6,6 +6,8 @@ import {
   addSessionTask,
   getUserSessions,
   getSpaceSessionStats,
+  encourageParticipant,
+  removeEncouragement,
 } from "../controllers/session.controller.js";
 
 const router = express.Router();
@@ -26,5 +28,11 @@ router.get("/user/:userId", getUserSessions);
 
 // Get space session statistics
 router.get("/space/:spaceId/stats", getSpaceSessionStats);
+
+// Encourage a participant
+router.post("/:sessionId/encourage", encourageParticipant);
+
+// Remove encouragement
+router.delete("/:sessionId/encourage", removeEncouragement);
 
 export default router;

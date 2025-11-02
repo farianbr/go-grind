@@ -12,22 +12,46 @@ import {
   X,
   ListTodo,
   Trophy,
+  Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
-const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
-  const [isVisible, setIsVisible] = useState(() => {
+const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantCount = 0, onToggleVisibility, externalVisible }) => {
+  const [internalVisible, setInternalVisible] = useState(() => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       return defaultVisible;
     }
     return true;
   });
+  
+  // Use external visibility if provided, otherwise use internal state
+  const isVisible = externalVisible !== undefined ? externalVisible : internalVisible;
+  const setIsVisible = (value) => {
+    if (externalVisible !== undefined && onToggleVisibility) {
+      // If controlled from parent, notify parent
+      onToggleVisibility(value);
+    } else {
+      // Otherwise use internal state
+      setInternalVisible(value);
+      if (onToggleVisibility) {
+        onToggleVisibility(value);
+      }
+    }
+  };
+  
   const [elapsedTime, setElapsedTime] = useState(0);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const queryClient = useQueryClient();
+
+  // Notify parent component when visibility changes (for uncontrolled mode)
+  useEffect(() => {
+    if (externalVisible === undefined && onToggleVisibility) {
+      onToggleVisibility(internalVisible);
+    }
+  }, [internalVisible, onToggleVisibility, externalVisible]);
 
   // Fetch current session
   const { data: session, isLoading } = useQuery({
@@ -149,20 +173,48 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
     <>
       {/* Sidebar */}
       <div
-        className={`bg-base-200 shadow-2xl transition-all duration-300 overflow-y-auto border-l border-base-300 ${
-          isVisible ? "w-full md:w-80 lg:w-96" : "w-0"
+        className={`bg-base-200 shadow-2xl transition-all duration-300 ease-in-out overflow-y-auto border-l border-base-300 ${
+          isVisible ? "w-full md:w-80 lg:w-96 translate-x-0" : "w-0 translate-x-full"
         }`}
         style={{ height: "100%" }}
       >
         {isVisible && (
           <div className="p-4 sm:p-6 space-y-6">
-            {/* Header */}
-            <div className="text-center">
-              <h2 className="text-xl font-bold">Session Details</h2>
-              <p className="text-sm text-base-content/70 mt-1 truncate">
-                {session.grindingTopic}
-              </p>
+            {/* Header with close button */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl font-bold">Session Details</h2>
+                <p className="text-sm text-base-content/70 mt-1 truncate">
+                  {session.grindingTopic}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsVisible(false)}
+                className="btn btn-ghost btn-circle btn-sm shrink-0"
+                title="Close sidebar"
+              >
+                <X className="size-4" />
+              </button>
             </div>
+
+            {/* Member Count - Only show on screens below xl */}
+            {participantCount > 0 && (
+              <div className="xl:hidden">
+                <div className="card bg-base-100 shadow-lg">
+                  <div className="card-body p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Users className="size-5 text-primary" />
+                        <h3 className="font-semibold">Participants</h3>
+                      </div>
+                      <span className="text-2xl font-bold text-primary">
+                        {participantCount}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Timer Section */}
             <div className="card bg-base-100 shadow-lg">
@@ -385,20 +437,20 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true }) => {
         )}
       </div>
 
-      {/* Responsive Toggle Button - Optimized for all screen sizes */}
-      <button
-        onClick={() => setIsVisible(!isVisible)}
-        className="fixed right-[13px] sm:right-6 top-[60px] sm:top-20 z-2  btn btn-circle btn-sm sm:btn-md btn-primary transition-all duration-200 hover:scale-110"
-        title={isVisible ? "Hide sidebar" : "Show sidebar"}
-      >
-        {isVisible ? (
-          <PanelRightClose className="size-4 sm:size-5" />
-        ) : (
-          <PanelRightOpen className="size-4 sm:size-5" />
-        )}
-      </button>
+      {/* Export toggle button state via props */}
     </>
   );
 };
+
+// Export a separate toggle button component
+export const SidebarToggleButton = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    className="btn btn-circle btn-sm sm:btn-md btn-primary shadow-lg transition-all duration-200 hover:scale-110"
+    title="Show sidebar"
+  >
+    <PanelRightOpen className="size-4 sm:size-5" />
+  </button>
+);
 
 export default SessionSidebar;

@@ -51,7 +51,7 @@ const SignUpPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Create an Account</h2>
                   <p className="text-sm opacity-70">
-                    Join GoGrind and start your learning adventure!
+                    Join GoGrind and start your focused adventure!
                   </p>
                 </div>
 
@@ -176,7 +176,7 @@ const SignUpPage = () => {
 
             <div className="text-center space-y-3 mt-6">
               <h2 className="text-xl font-semibold">
-                Connect with learning partners worldwide
+                Connect with focus partners worldwide
               </h2>
               <p className="opacity-70">
                 Practice daily, make friends, and improve your skills together

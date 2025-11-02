@@ -1,17 +1,19 @@
 import Session from "../models/Session.model.js";
 import Space from "../models/Space.model.js";
+import Notification from "../models/Notification.model.js";
 
 // Get current active session for a user in a space
 export async function getCurrentSession(req, res) {
   try {
     const { spaceId } = req.params;
-    const userId = req.user.id;
+    const { userId } = req.query; // Optional query param to get other user's session
+    const requestUserId = userId || req.user.id; // Use query param or authenticated user
 
     const session = await Session.findOne({
-      user: userId,
+      user: requestUserId,
       space: spaceId,
       isCompleted: false,
-    }).sort({ startTime: -1 });
+    }).sort({ startTime: -1 }).populate("encouragements.user", "fullName profilePic");
 
     if (!session) {
       return res.status(404).json({ message: "No active session found" });
@@ -156,15 +158,7 @@ export async function getSpaceSessionStats(req, res) {
       return res.status(404).json({ message: "Space not found" });
     }
 
-    // Check if user is a member
-    if (
-      !space.members.includes(userId) &&
-      space.creator.toString() !== userId
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Only members can view statistics" });
-    }
+  
 
     // Get all completed sessions for this space
     const sessions = await Session.find({
@@ -231,6 +225,99 @@ export async function getSpaceSessionStats(req, res) {
     });
   } catch (error) {
     console.error("Error in getSpaceSessionStats controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Encourage a participant in their session
+export async function encourageParticipant(req, res) {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+
+    const session = await Session.findById(sessionId).populate("user", "fullName profilePic");
+    
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Check if user already encouraged this session
+    const alreadyEncouraged = session.encouragements.some(
+      (e) => e.user.toString() === userId
+    );
+
+    if (alreadyEncouraged) {
+      return res.status(400).json({ message: "You've already encouraged this participant" });
+    }
+
+    // Add encouragement
+    session.encouragements.push({ user: userId });
+    await session.save();
+
+    // Create notification for the session owner (if not encouraging themselves)
+    if (session.user._id.toString() !== userId) {
+      await Notification.create({
+        recipient: session.user._id,
+        sender: userId,
+        type: "encouragement",
+        message: "encouraged you during your session!",
+        metadata: {
+          sessionId: session._id,
+          grindingTopic: session.grindingTopic,
+        },
+      });
+    }
+
+    res.status(200).json({ 
+      message: "Encouragement sent!",
+      encouragementCount: session.encouragements.length
+    });
+  } catch (error) {
+    console.error("Error in encourageParticipant controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// Remove encouragement from a participant's session
+export async function removeEncouragement(req, res) {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user.id;
+
+    const session = await Session.findById(sessionId).populate("user", "fullName profilePic");
+
+    if (!session) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    // Check if user has encouraged this session
+    const encouragementIndex = session.encouragements.findIndex(
+      (e) => e.user.toString() === userId
+    );
+
+    if (encouragementIndex === -1) {
+      return res.status(400).json({ message: "You haven't encouraged this participant" });
+    }
+
+    // Remove encouragement
+    session.encouragements.splice(encouragementIndex, 1);
+    await session.save();
+
+    // Delete the related notification
+    await Notification.findOneAndDelete({
+      recipient: session.user._id,
+      sender: userId,
+      type: "encouragement",
+      "metadata.sessionId": session._id,
+    });
+
+    res.status(200).json({ 
+      message: "Encouragement removed",
+      encouragementCount: session.encouragements.length
+    });
+  } catch (error) {
+    console.error("Error in removeEncouragement controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
