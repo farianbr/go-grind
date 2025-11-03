@@ -46,12 +46,8 @@ export async function signup(req, res) {
         name: newUser.fullName,
         image: newUser.profilePic || "",
       });
-
-      if (user) {
-        console.log(`Stream user created for ${newUser.fullName}`);
-      }
     } catch (error) {
-      console.log("Error creating stream user");
+      // Stream user creation failed - not critical for signup
     }
 
     const token = jwt.sign(
@@ -76,7 +72,7 @@ export async function signup(req, res) {
       user: newUser,
     });
   } catch (error) {
-    console.log("Error in signup controller", error);
+    console.error("Error in signup controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -113,7 +109,7 @@ export async function login(req, res) {
 
     res.status(200).json({ success: true, user });
   } catch (error) {
-    console.log("Error in login controller", error);
+    console.error("Error in login controller", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -159,16 +155,8 @@ export async function onboard(req, res) {
         name: updatedUser.fullName,
         image: updatedUser.profilePic || "",
       });
-
-      console.log(
-        "Stream user updated after onboarding for: ",
-        updatedUser.fullName
-      );
     } catch (streamError) {
-      console.log(
-        "Error updating stream user during onboarding: ",
-        streamError.message
-      );
+      // Stream user update failed - not critical for onboarding
     }
 
     res.status(200).json({ success: true, user: updatedUser });

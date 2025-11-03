@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { 
   getNotifications, 
   markNotificationAsRead, 
@@ -22,7 +23,9 @@ import {
   ShieldCheck,
   ShieldX,
   Megaphone,
-  Heart
+  Heart,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
@@ -31,11 +34,16 @@ import { useNavigate } from "react-router";
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 20;
 
-  const { data: notifications, isLoading } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: getNotifications,
+  const { data: notificationsData, isLoading } = useQuery({
+    queryKey: ["notifications", currentPage],
+    queryFn: () => getNotifications(currentPage, limit),
   });
+
+  const notifications = notificationsData?.notifications || [];
+  const totalPages = notificationsData?.totalPages || 1;
 
   const { mutate: markAsReadMutation } = useMutation({
     mutationFn: markNotificationAsRead,
@@ -70,10 +78,24 @@ const NotificationsPage = () => {
     mutationFn: acceptFriendRequest,
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request accepted");
-      // Remove the notification after accepting
-      queryClient.setQueryData(["notifications"], (old) => 
-        old?.filter(n => n.metadata?.friendRequestId !== friendRequestId)
+      
+      // Find and mark the notification as read before removing
+      const notificationToMark = notifications.find(
+        n => n.metadata?.friendRequestId === friendRequestId && !n.read
       );
+      if (notificationToMark) {
+        markAsReadMutation(notificationToMark._id);
+      }
+      
+      // Immediately update the UI by filtering out the notification
+      queryClient.setQueryData(["notifications", currentPage], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          notifications: old.notifications?.filter(n => n.metadata?.friendRequestId !== friendRequestId) || []
+        };
+      });
+      
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
@@ -85,10 +107,24 @@ const NotificationsPage = () => {
     mutationFn: declineFriendRequest,
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request declined");
-      // Remove the notification after declining
-      queryClient.setQueryData(["notifications"], (old) => 
-        old?.filter(n => n.metadata?.friendRequestId !== friendRequestId)
+      
+      // Find and mark the notification as read before removing
+      const notificationToMark = notifications.find(
+        n => n.metadata?.friendRequestId === friendRequestId && !n.read
       );
+      if (notificationToMark) {
+        markAsReadMutation(notificationToMark._id);
+      }
+      
+      // Immediately update the UI by filtering out the notification
+      queryClient.setQueryData(["notifications", currentPage], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          notifications: old.notifications?.filter(n => n.metadata?.friendRequestId !== friendRequestId) || []
+        };
+      });
+      
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
       queryClient.invalidateQueries({ queryKey: ["notificationUnreadCount"] });
@@ -273,6 +309,56 @@ const NotificationsPage = () => {
             <p className="text-xs sm:text-sm md:text-base text-base-content/60 text-center max-w-md px-4">
               You'll see notifications here when you receive space invites, session updates, and more.
             </p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {notifications && notifications.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="btn btn-sm btn-outline gap-2"
+            >
+              <ChevronLeft className="size-4" />
+              Previous
+            </button>
+            
+            <div className="flex items-center gap-2">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`btn btn-sm ${
+                      currentPage === pageNum ? "btn-primary" : "btn-ghost"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="btn btn-sm btn-outline gap-2"
+            >
+              Next
+              <ChevronRight className="size-4" />
+            </button>
           </div>
         )}
       </div>

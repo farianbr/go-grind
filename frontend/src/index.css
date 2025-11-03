@@ -181,3 +181,46 @@
 .str-chat__list::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--bc) / 0.3);
 }
+
+/* Specific theme overrides for chat input */
+[data-theme="light"] .str-chat__message-textarea,
+[data-theme="light"] .str-chat__message-textarea textarea {
+  background-color: #ffffff !important;
+  color: #1a202c !important;
+}
+
+[data-theme="dark"] .str-chat__message-textarea,
+[data-theme="dark"] .str-chat__message-textarea textarea {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="forest"] .str-chat__message-textarea,
+[data-theme="forest"] .str-chat__message-textarea textarea {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="halloween"] .str-chat__message-textarea,
+[data-theme="halloween"] .str-chat__message-textarea textarea {
+  color: #ffffff !important;
+}
+
+/* Input container backgrounds */
+[data-theme="light"] .str-chat__message-textarea-container,
+[data-theme="light"] .str-chat__message-input-inner {
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="dark"] .str-chat__message-textarea-container,
+[data-theme="dark"] .str-chat__message-input-inner {
+  border-color: #374151 !important;
+}
+
+[data-theme="forest"] .str-chat__message-textarea-container,
+[data-theme="forest"] .str-chat__message-input-inner {
+  border-color: #2d2a2a !important;
+}
+
+[data-theme="halloween"] .str-chat__message-textarea-container,
+[data-theme="halloween"] .str-chat__message-input-inner {
+  border-color: #2d2a2a !important;
+}

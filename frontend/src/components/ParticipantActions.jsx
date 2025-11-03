@@ -68,8 +68,6 @@ const ParticipantActions = ({
   );
   const isOwnView = participantUserId === authUserId;
 
-  console.log(session);
-
   // Determine task status icon (larger default size for better touch targets on small screens)
   const taskStatusIcon =
     totalTasks === 0 ? (

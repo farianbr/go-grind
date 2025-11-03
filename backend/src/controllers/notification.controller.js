@@ -3,15 +3,30 @@ import Notification from "../models/Notification.model.js";
 // Get all notifications for the authenticated user
 export const getNotifications = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
     const notifications = await Notification.find({
       recipient: req.user._id,
     })
       .populate("sender", "fullName profilePic")
       .populate("relatedSpace", "name")
       .sort({ createdAt: -1 })
-      .limit(50); // Limit to 50 most recent
+      .skip(skip)
+      .limit(limit);
 
-    res.status(200).json(notifications);
+    const total = await Notification.countDocuments({
+      recipient: req.user._id,
+    });
+
+    res.status(200).json({
+      notifications,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+      totalNotifications: total,
+      hasMore: skip + notifications.length < total,
+    });
   } catch (error) {
     console.error("Error in getNotifications controller:", error);
     res.status(500).json({ message: "Internal server error" });

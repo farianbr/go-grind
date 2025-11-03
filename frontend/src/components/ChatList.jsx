@@ -23,8 +23,8 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
         });
 
         setChannels(channels);
-      } catch (error) {
-        console.error("Error fetching channels:", error);
+      } catch {
+        // Ignore channel fetch errors
       } finally {
         setLoading(false);
       }

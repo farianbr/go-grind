@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentSession, updateSessionTask } from "../lib/api";
+import { axiosInstance } from "../lib/axios";
 import {
   Clock,
   CheckSquare,
@@ -81,7 +82,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
   const { mutate: addTask, isPending: isAddingTaskMutation } = useMutation({
     mutationFn: async ({ sessionId, title }) => {
       // For now, we'll need to create this endpoint
-      const { axiosInstance } = await import("../lib/axios");
+      
       const response = await axiosInstance.post(
         `/sessions/${sessionId}/tasks`,
         { title }
@@ -190,10 +191,10 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
               </div>
               <button
                 onClick={() => setIsVisible(false)}
-                className="btn btn-ghost btn-circle btn-sm shrink-0"
+                className="btn btn-circle btn-sm sm:btn-md btn-primary shadow-lg transition-all duration-200 hover:scale-110"
                 title="Close sidebar"
               >
-                <X className="size-4" />
+                <PanelRightClose className="size-4 sm:size-5" />
               </button>
             </div>
 

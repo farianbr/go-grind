@@ -43,8 +43,9 @@ const Navbar = () => {
     },
   });
 
+
   // Get recent 5 notifications
-  const recentNotifications = notifications.slice(0, 5);
+  const recentNotifications = notifications?.notifications?.slice(0, 5);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -115,7 +116,7 @@ const Navbar = () => {
 
               {/* Notifications Dropdown */}
               {showNotificationDropdown && (
-                <div className="fixed sm:absolute right-2 sm:right-0 mt-2 w-[calc(100vw-1rem)] sm:w-80 md:w-96 max-w-md bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 max-h-[70vh] sm:max-h-96 overflow-hidden flex flex-col" style={{ top: '60px' }}>
+                <div className="absolute right-0 mt-2 w-[calc(100vw-1rem)] sm:w-80 md:w-96 max-w-md bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 max-h-[70vh] sm:max-h-96 overflow-hidden flex flex-col">
                   <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-base-300 flex items-center justify-between gap-2">
                     <h3 className="font-semibold text-xs sm:text-sm">Notifications</h3>
                     <div className="flex items-center gap-1 sm:gap-2">
@@ -186,7 +187,7 @@ const Navbar = () => {
                   </div>
 
                   {/* See All Button */}
-                  {notifications.length > 0 && (
+                  {notifications?.notifications.length > 0 && (
                     <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-base-300">
                       <button
                         onClick={handleSeeAllNotifications}
@@ -222,7 +223,7 @@ const Navbar = () => {
 
               {/* Dropdown Menu */}
               {showProfileDropdown && (
-                <div className="fixed sm:absolute right-2 sm:right-0 mt-2 w-48 sm:w-56 bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 py-2" style={{ top: '60px' }}>
+                <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 py-2">
                   <div className="px-4 pt-2 pb-4 border-b border-base-300">
                     <p className="font-semibold text-sm truncate">
                       {authUser?.fullName}

@@ -40,8 +40,6 @@ const CallPage = () => {
       if (!tokenData.token || !authUser || !callId) return;
 
       try {
-        console.log("Initializing Stream video client...");
-
         const user = {
           id: authUser._id,
           name: authUser.fullName,
@@ -58,12 +56,9 @@ const CallPage = () => {
 
         await callInstance.join({ create: true });
 
-        console.log("Joined call successfully");
-
         setClient(videoClient);
         setCall(callInstance);
-      } catch (error) {
-        console.error("Error joining call:", error);
+      } catch {
         toast.error("Could not join the call. Please try again.");
       } finally {
         setIsConnecting(false);

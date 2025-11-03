@@ -64,8 +64,6 @@ const CallContent = ({
     return () => document.head.removeChild(style);
   }, [isVideoCover]);
 
-  console.log("camera", camera);
-
   // Detect if device is mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -97,8 +95,7 @@ const CallContent = ({
           "inactive"
         );
       }
-    } catch (error) {
-      console.error("Error toggling microphone:", error);
+    } catch {
       toast.error("Failed to toggle microphone");
     } finally {
       setIsTogglingMic(false);

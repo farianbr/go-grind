@@ -156,7 +156,9 @@ const StreamRoomPage = () => {
     return () => {
       videoClient
         .disconnectUser()
-        .catch((err) => console.error("Error disconnecting user:", err));
+        .catch(() => {
+          // Ignore disconnect errors during cleanup
+        });
       setClient(null);
     };
   }, [tokenData, authUser, showJoinModal]);
@@ -189,7 +191,6 @@ const StreamRoomPage = () => {
     callInstance
       .join({ create: true })
       .then(() => {
-        console.log("Successfully joined call");
         setCall(callInstance);
         toast.success("Joined the stream!");
 
@@ -199,8 +200,7 @@ const StreamRoomPage = () => {
           localStorage.setItem(storageKey, "active");
         }
       })
-      .catch((error) => {
-        console.error("Error joining call:", error);
+      .catch(() => {
         toast.error("Could not join the video call. Please try again.");
         navigate(`/spaces/${spaceId}`);
       });
@@ -211,8 +211,8 @@ const StreamRoomPage = () => {
       try {
         const callingState = callInstance?.state?.callingState;
         if (!kickedRef.current && callingState !== CallingState.LEFT) {
-          callInstance.leave().catch((err) => {
-            console.error("Error leaving call:", err);
+          callInstance.leave().catch(() => {
+            // Ignore cleanup errors
           });
         }
       } catch {
@@ -248,8 +248,7 @@ const StreamRoomPage = () => {
       toast.success("Left the stream");
 
       navigate(`/spaces/${spaceId}`);
-    } catch (error) {
-      console.error("Error leaving stream:", error);
+    } catch {
       toast.error("Failed to leave stream");
     }
   };
@@ -321,8 +320,7 @@ const StreamRoomPage = () => {
               userId: kickTargetUser.id,
               reason: reason.trim() || "No reason provided",
             });
-          } catch (error) {
-            console.error("Error kicking user:", error);
+          } catch {
             toast.error("Failed to kick user");
             setIsRemoving(false);
           }

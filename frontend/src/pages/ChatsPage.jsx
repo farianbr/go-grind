@@ -16,7 +16,7 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 const ChatsPage = () => {
   const { id: targetUserId } = useParams();
   const navigate = useNavigate();
-  
+
   const [chatClient, setChatClient] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,10 +34,7 @@ const ChatsPage = () => {
       if (!tokenData?.token || !authUser) return;
 
       try {
-        console.log("Initializing stream chat client...");
-
         const client = StreamChat.getInstance(STREAM_API_KEY);
-
         await client.connectUser(
           {
             id: authUser._id,
@@ -48,8 +45,7 @@ const ChatsPage = () => {
         );
 
         setChatClient(client);
-      } catch (error) {
-        console.error("Error initializing chat:", error);
+      } catch {
         toast.error("Could not connect to chat. Please try again.");
       } finally {
         setLoading(false);
@@ -60,14 +56,13 @@ const ChatsPage = () => {
 
     return () => {
       // Cleanup: Disconnect and clear the chat client when component unmounts or user changes
-      chatClient?.disconnectUser().then(() => {
-        console.log("Chat client disconnected");
-      }).catch((err) => {
-        console.error("Error disconnecting chat client:", err);
-      });
+      chatClient
+        ?.disconnectUser()
+        .catch(() => {
+          // Ignore disconnect errors during cleanup
+        });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser?._id, tokenData?.token]);
+  }, [tokenData?.token, chatClient, authUser]);
 
   // Handle URL parameter to open specific chat
   useEffect(() => {
@@ -82,8 +77,7 @@ const ChatsPage = () => {
 
         await channel.watch();
         setSelectedChannel(channel);
-      } catch (error) {
-        console.error("Error loading channel from URL:", error);
+      } catch {
         toast.error("Could not load chat. Please try again.");
       }
     };
@@ -133,8 +127,12 @@ const ChatsPage = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full w-full p-4 sm:p-6 md:p-8 text-center">
-              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-3 sm:mb-4 md:mb-6">💬</div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">Welcome to Messages</h2>
+              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-3 sm:mb-4 md:mb-6">
+                💬
+              </div>
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">
+                Welcome to Messages
+              </h2>
               <p className="text-base-content/60 text-sm sm:text-base md:text-lg max-w-md px-4">
                 Select a conversation from the left to start chatting with your
                 friends.

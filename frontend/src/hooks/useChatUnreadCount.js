@@ -71,8 +71,8 @@ export const useChatUnreadCount = () => {
           client.off("message.new", handleNewMessage);
           client.off("message.read", handleNewMessage);
         };
-      } catch (error) {
-        console.error("Error getting unread count:", error);
+      } catch {
+        // Ignore errors in getting unread count
       }
     };
 

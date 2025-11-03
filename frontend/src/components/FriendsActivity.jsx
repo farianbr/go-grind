@@ -18,12 +18,18 @@ const FriendsActivity = () => {
       space.activeStreams?.forEach((s) => {
         const uid = s.user?._id || s.user;
         if (friendIds.has(uid)) {
-          list.push({ space, stream: s });
+          // Find the friend object to get full user data including profile pic
+          const friend = friends.find(f => f._id === uid);
+          list.push({ 
+            space, 
+            stream: s,
+            friend: friend || s.user // fallback to s.user if friend not found
+          });
         }
       });
     });
     return list;
-  }, [mySpaces, friendIds]);
+  }, [mySpaces, friendIds, friends]);
 
   // Fetch all completed sessions from friends
   const { data: allFriendSessions = [] } = useQuery({
@@ -62,15 +68,15 @@ const FriendsActivity = () => {
             <div className="text-sm text-base-content/60">No friends are streaming right now.</div>
           ) : (
             <div className="space-y-2">
-              {streamingFriends.map(({ space, stream }) => (
+              {streamingFriends.map(({ space, stream, friend }) => (
                 <div key={`${space._id}-${stream.user?._id || stream.user}`} className="flex items-center gap-3 p-2 rounded-lg bg-base-300/50">
                   <div className="avatar">
                     <div className="w-8 h-8 rounded-full overflow-hidden">
-                      <img src={stream.user?.profilePic || "/avatar.png"} alt={stream.user?.fullName || "Friend"} />
+                      <img src={friend?.profilePic || stream.user?.profilePic || "/avatar.png"} alt={friend?.fullName || stream.user?.fullName || "Friend"} />
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{stream.user?.fullName || "Friend"}</p>
+                    <p className="text-sm font-medium truncate">{friend?.fullName || stream.user?.fullName || "Friend"}</p>
                     <p className="text-xs text-base-content/60 truncate">{space.name}</p>
                   </div>
                   <Link to={`/spaces/${space._id}/stream`} className="btn btn-primary btn-xs">

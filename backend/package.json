@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "generate-cert": "node generate-cert.js"
+    "build:client": "cd ../frontend && npm install && npm run build",
+    "start": "node src/server.js",
+    "start:prod": "npm run build:client && node src/server.js"
   },
   "type": "module",
   "keywords": [],
@@ -17,11 +19,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.0",
-    "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "multer": "^2.0.2",
-    "selfsigned": "^4.0.0",
     "stream-chat": "^8.60.0"
   },
   "devDependencies": {

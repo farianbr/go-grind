@@ -19,8 +19,7 @@ export const getAuthUser = async () => {
   try {
     const res = await axiosInstance.get("/auth/me");
     return res.data;
-  } catch (error) {
-    console.log("Error in getAuthUser:", error);
+  } catch {
     return null;
   }
 };
@@ -216,15 +215,14 @@ export async function uploadPhoto(file) {
   try {
     const response = await axiosInstance.post("/users/upload-photo", formData);
     return response.data;
-  } catch (err) {
-    console.error("Frontend upload error:", err);
+  } catch {
     return null;
   }
 }
 
 // Notifications API
-export async function getNotifications() {
-  const response = await axiosInstance.get("/notifications");
+export async function getNotifications(page = 1, limit = 20) {
+  const response = await axiosInstance.get(`/notifications?page=${page}&limit=${limit}`);
   return response.data;
 }
 

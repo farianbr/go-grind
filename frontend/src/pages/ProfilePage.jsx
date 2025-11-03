@@ -6,6 +6,11 @@ import {
   getUserSessions,
   getUserSpaces,
   unfriend,
+  sendFriendRequest,
+  acceptFriendRequest,
+  declineFriendRequest,
+  getFriendRequests,
+  getOutgoingFriendReqs,
 } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
 import toast from "react-hot-toast";
@@ -25,15 +30,19 @@ import {
   UserX,
   CheckCircle,
   Shapes,
+  Check,
+  X,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { capitalize } from "../lib/utils";
+import { useState } from "react";
 
 const ProfilePage = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { authUser } = useAuthUser();
   const queryClient = useQueryClient();
+  const [showUnfriendModal, setShowUnfriendModal] = useState(false);
 
   // Determine if viewing own profile or another user's
   const isOwnProfile = !userId || userId === authUser?._id;
@@ -53,6 +62,30 @@ const ProfilePage = () => {
   // Check if viewing user is a friend
   const isFriend = userProfile?.friends?.some(
     (friend) => friend._id === authUser?._id || friend === authUser?._id
+  );
+
+  // Fetch incoming friend requests to check if there's a pending request
+  const { data: friendRequestsData } = useQuery({
+    queryKey: ["friendRequests"],
+    queryFn: getFriendRequests,
+    enabled: !isOwnProfile && !!authUser,
+  });
+
+  // Fetch outgoing friend requests to check if we've already sent a request
+  const { data: outgoingRequests = [] } = useQuery({
+    queryKey: ["outgoingFriendReqs"],
+    queryFn: getOutgoingFriendReqs,
+    enabled: !isOwnProfile && !!authUser,
+  });
+
+  // Check if there's an incoming friend request from this user
+  const incomingRequest = friendRequestsData?.incomingRequests?.find(
+    (req) => req.sender?._id === targetUserId || req.sender === targetUserId
+  );
+
+  // Check if we've sent a friend request to this user
+  const hasSentRequest = outgoingRequests?.some(
+    (req) => req.recipient?._id === targetUserId || req.recipient === targetUserId
   );
 
   const canViewDetails = isOwnProfile || isFriend;
@@ -83,6 +116,7 @@ const ProfilePage = () => {
     mutationFn: unfriend,
     onSuccess: () => {
       toast.success("Friend removed successfully");
+      setShowUnfriendModal(false);
       queryClient.invalidateQueries({
         queryKey: ["userProfile", targetUserId],
       });
@@ -90,16 +124,69 @@ const ProfilePage = () => {
     },
     onError: () => {
       toast.error("Failed to remove friend");
+      setShowUnfriendModal(false);
+    },
+  });
+
+  // Send friend request mutation
+  const { mutate: sendFriendRequestMutation, isPending: isSendingRequest } = useMutation({
+    mutationFn: sendFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request sent");
+      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+    },
+    onError: () => {
+      toast.error("Failed to send friend request");
+    },
+  });
+
+  // Accept friend request mutation
+  const { mutate: acceptFriendRequestMutation, isPending: isAccepting } = useMutation({
+    mutationFn: acceptFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request accepted");
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      queryClient.invalidateQueries({ queryKey: ["userProfile", targetUserId] });
+    },
+    onError: () => {
+      toast.error("Failed to accept friend request");
+    },
+  });
+
+  // Decline friend request mutation
+  const { mutate: declineFriendRequestMutation, isPending: isDeclining } = useMutation({
+    mutationFn: declineFriendRequest,
+    onSuccess: () => {
+      toast.success("Friend request declined");
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+    },
+    onError: () => {
+      toast.error("Failed to decline friend request");
     },
   });
 
   const handleUnfriend = () => {
-    if (
-      window.confirm(
-        `Are you sure you want to unfriend ${userProfile.fullName}?`
-      )
-    ) {
-      unfriendMutation(targetUserId);
+    setShowUnfriendModal(true);
+  };
+
+  const confirmUnfriend = () => {
+    unfriendMutation(targetUserId);
+  };
+
+  const handleSendFriendRequest = () => {
+    sendFriendRequestMutation(targetUserId);
+  };
+
+  const handleAcceptRequest = () => {
+    if (incomingRequest) {
+      acceptFriendRequestMutation(incomingRequest._id);
+    }
+  };
+
+  const handleDeclineRequest = () => {
+    if (incomingRequest) {
+      declineFriendRequestMutation(incomingRequest._id);
     }
   };
 
@@ -230,13 +317,51 @@ const ProfilePage = () => {
                         Message
                       </button>
                     </div>
-                  ) : (
+                  ) : incomingRequest ? (
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <button className="btn btn-primary gap-2">
-                        <UserPlus className="size-4" />
-                        Add Friend
+                      <button
+                        onClick={handleAcceptRequest}
+                        className="btn btn-success gap-2"
+                        disabled={isAccepting || isDeclining}
+                      >
+                        {isAccepting ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          <Check className="size-4" />
+                        )}
+                        Accept Request
+                      </button>
+                      <button
+                        onClick={handleDeclineRequest}
+                        className="btn btn-error btn-outline gap-2"
+                        disabled={isAccepting || isDeclining}
+                      >
+                        {isDeclining ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          <X className="size-4" />
+                        )}
+                        Decline
                       </button>
                     </div>
+                  ) : hasSentRequest ? (
+                    <button className="btn btn-disabled gap-2" disabled>
+                      <Clock className="size-4" />
+                      Request Sent
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleSendFriendRequest}
+                      className="btn btn-primary gap-2"
+                      disabled={isSendingRequest}
+                    >
+                      {isSendingRequest ? (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      ) : (
+                        <UserPlus className="size-4" />
+                      )}
+                      Add Friend
+                    </button>
                   )}
                 </>
               )}
@@ -438,11 +563,86 @@ const ProfilePage = () => {
               Become friends with {userProfile.fullName} to see their detailed
               profile, statistics, and activity.
             </p>
-            <button className="btn btn-primary gap-2 mx-auto">
-              <UserPlus className="size-4" />
-              Send Friend Request
-            </button>
+            {incomingRequest ? (
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={handleAcceptRequest}
+                  className="btn btn-success gap-2"
+                  disabled={isAccepting || isDeclining}
+                >
+                  {isAccepting ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <Check className="size-4" />
+                  )}
+                  Accept Request
+                </button>
+                <button
+                  onClick={handleDeclineRequest}
+                  className="btn btn-error btn-outline gap-2"
+                  disabled={isAccepting || isDeclining}
+                >
+                  {isDeclining ? (
+                    <span className="loading loading-spinner loading-xs"></span>
+                  ) : (
+                    <X className="size-4" />
+                  )}
+                  Decline
+                </button>
+              </div>
+            ) : hasSentRequest ? (
+              <button className="btn btn-disabled gap-2 mx-auto" disabled>
+                <Clock className="size-4" />
+                Request Sent
+              </button>
+            ) : (
+              <button 
+                onClick={handleSendFriendRequest}
+                className="btn btn-primary gap-2 mx-auto"
+                disabled={isSendingRequest}
+              >
+                {isSendingRequest ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  <UserPlus className="size-4" />
+                )}
+                Send Friend Request
+              </button>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Unfriend Confirmation Modal */}
+      {showUnfriendModal && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Unfriend {userProfile.fullName}?</h3>
+            <p className="py-4">
+              Are you sure you want to remove {userProfile.fullName} from your friends list?
+            </p>
+            <div className="modal-action">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setShowUnfriendModal(false)}
+                disabled={isUnfriending}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-error"
+                onClick={confirmUnfriend}
+                disabled={isUnfriending}
+              >
+                {isUnfriending ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  "Unfriend"
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="modal-backdrop" onClick={() => !isUnfriending && setShowUnfriendModal(false)}></div>
         </div>
       )}
     </div>
