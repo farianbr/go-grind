@@ -80,7 +80,7 @@ const SpaceDetailPage = () => {
   });
 
   const unreadAnnouncementCount =
-    notifications?.notifications.filter((n) => {
+    notifications?.notifications?.filter((n) => {
       if (!n) return false;
       if (n.type !== "announcement") return false;
       if (n.read) return false;
