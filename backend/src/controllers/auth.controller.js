@@ -58,7 +58,6 @@ export async function signup(req, res) {
       }
     );
 
-
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
@@ -97,7 +96,6 @@ export async function login(req, res) {
       expiresIn: "7d",
     });
 
-
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
@@ -113,7 +111,11 @@ export async function login(req, res) {
 }
 
 export function logout(req, res) {
-  res.clearCookie("jwt");
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+  });
   res.status(200).json({ success: true, message: "Logout successful" });
 }
 
@@ -121,16 +123,9 @@ export async function onboard(req, res) {
   try {
     const userId = req.user._id;
 
-    const { fullName, bio, nativeLanguage, learningSkill, location } =
-      req.body;
+    const { fullName, bio, nativeLanguage, learningSkill, location } = req.body;
 
-    if (
-      !fullName ||
-      !bio ||
-      !nativeLanguage ||
-      !learningSkill ||
-      !location
-    ) {
+    if (!fullName || !bio || !nativeLanguage || !learningSkill || !location) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
