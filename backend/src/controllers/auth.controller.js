@@ -69,6 +69,7 @@ export async function signup(req, res) {
     res.status(201).json({
       success: true,
       user: newUser,
+      token, // Send token in response as fallback for mobile
     });
   } catch (error) {
     console.error("Error in signup controller", error);
@@ -105,7 +106,7 @@ export async function login(req, res) {
       path: "/",
     });
 
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ success: true, user, token }); // Send token in response as fallback for mobile
   } catch (error) {
     console.error("Error in login controller", error);
     res.status(500).json({ message: "Internal Server Error" });

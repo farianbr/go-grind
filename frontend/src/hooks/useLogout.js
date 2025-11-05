@@ -11,6 +11,8 @@ const useLogout = () => {
   } = useMutation({
     mutationFn: logout,
     onSuccess: () => {
+      // Clear token from localStorage
+      localStorage.removeItem("token");
       queryClient.invalidateQueries({ queryKey: ["authUser"] });
     },
   });
