@@ -74,4 +74,4 @@ app.get("/*", (req, res, next) => {
 // });
 
 // Export the app for serverless deployment
-module.exports = app;
+export default app;
