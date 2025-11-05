@@ -174,7 +174,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     <>
       {/* Sidebar */}
       <div
-        className={`bg-base-200 shadow-2xl transition-all duration-300 ease-in-out overflow-y-auto border-l border-base-300 ${
+        className={`bg-base-200 shadow-2xl overflow-y-auto border-l border-base-300 ${
           isVisible ? "w-full md:w-80 lg:w-96 translate-x-0" : "w-0 translate-x-full"
         }`}
         style={{ height: "100%" }}

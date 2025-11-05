@@ -30,7 +30,7 @@ const FloatingSideBar = () => {
 
       {isOpen && (
         <div
-          className="absolute right-0 mt-2 p-1 shadow-2xl bg-base-100 rounded-2xl
+          className="absolute -right-24 mt-2 p-1 shadow-2xl bg-base-100 rounded-2xl
         w-56 border border-base-300 max-h-80 overflow-y-auto z-50"
           onClick={() => setIsOpen(false)}
         >

@@ -6,7 +6,6 @@ import {
   ArrowLeftIcon,
   LoaderIcon,
   MapPinIcon,
-  Airplay,
   ShuffleIcon,
   UploadIcon,
   User,
@@ -232,7 +231,7 @@ const UpdateProfilePage = () => {
                 Location
               </label>
               <div className="relative">
-                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70" />
+                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 z-100 left-3 size-5 text-base-content opacity-70" />
                 <input
                   id="location"
                   type="text"
@@ -256,7 +255,7 @@ const UpdateProfilePage = () => {
             >
               {!isPending ? (
                 <>
-                  <Airplay className="size-5 mr-2" />
+                  <img src="/go-grind.png" alt="GoGrind" className="w-5 h-5 mr-2" />
                   Save Update
                 </>
               ) : (

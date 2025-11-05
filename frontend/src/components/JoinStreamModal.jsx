@@ -72,7 +72,7 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
   };
 
   return (
-    <div className="flex items-center justify-center bg-base-200 sm:py-4">
+    <div className="flex h-full items-center justify-center bg-base-200 sm:py-4">
       <div className="card w-full max-w-lg bg-base-100 shadow-xl">
         <div className="card-body">
           <h2 className="card-title text-2xl">Join Stream Room</h2>

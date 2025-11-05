@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Airplay, Eye, EyeOff } from "lucide-react";
+import {  Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router";
 
 import useSignUp from "../hooks/useSignup";
@@ -31,8 +31,7 @@ const SignUpPage = () => {
         <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
           {/* LOGO */}
           <div className="mb-4 flex items-center justify-start gap-2">
-            <Airplay className="size-9 text-primary" />
-            
+            <img src="/go-grind.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
 
             <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider">
               GoGrind
@@ -117,7 +116,7 @@ const SignUpPage = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle"
+                        className="absolute z-2 right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}

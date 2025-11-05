@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LoaderIcon,
   MapPinIcon,
-  Airplay,
   ShuffleIcon,
   UploadIcon,
   User,
@@ -227,7 +226,7 @@ const OnboardingPage = () => {
                 Location
               </label>
               <div className="relative">
-                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70" />
+                <MapPinIcon className="absolute top-1/2 transform -translate-y-1/2 z-100 left-3 size-5 text-base-content opacity-70" />
                 <input
                   id="location"
                   type="text"
@@ -251,7 +250,7 @@ const OnboardingPage = () => {
             >
               {!isPending ? (
                 <>
-                  <Airplay className="size-5 mr-2" />
+                  <img src="/go-grind.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
                   Complete Onboarding
                 </>
               ) : (

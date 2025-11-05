@@ -34,7 +34,7 @@ Below is a breakdown of the product features.
 	- Typing indicators, read receipts, and reply threads for organized conversations
 
 
-## Tech stack (expanded)
+## Tech stack
 
 This project uses modern full-stack JS tooling.
 

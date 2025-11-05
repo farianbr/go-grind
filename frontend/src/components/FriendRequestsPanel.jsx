@@ -59,8 +59,8 @@ const FriendRequestsPanel = () => {
             <span className="loading loading-spinner loading-lg" />
           </div>
         ) : incoming.length === 0 ? (
-          <div className="card bg-base-200 p-4 text-center text-sm text-base-content/60">
-            No incoming requests
+          <div className="card bg-base-200 p-4 h-24 text-center text-sm text-base-content/60">
+            <span className="my-auto">No incoming requests</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -114,8 +114,8 @@ const FriendRequestsPanel = () => {
             <span className="loading loading-spinner loading-lg" />
           </div>
         ) : outgoing.length === 0 ? (
-          <div className="card bg-base-200 p-4 text-center text-sm text-base-content/60">
-            No outgoing requests
+          <div className="card bg-base-200 p-4 h-24 text-center text-sm text-base-content/60">
+            <span className="my-auto">No outgoing requests</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

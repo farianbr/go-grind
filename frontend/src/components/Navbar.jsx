@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
-import { BellIcon, LogOutIcon, Airplay, User, ChevronDown, CheckCheck } from "lucide-react";
+import { BellIcon, LogOutIcon, User, ChevronDown, CheckCheck } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";
@@ -88,7 +88,7 @@ const Navbar = () => {
           {/* Logo - responsive sizing */}
           <div className="shrink-0 min-w-0">
             <Link to="/" className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5">
-              <Airplay className="size-6 sm:size-7 md:size-8 lg:size-9 text-primary shrink-0" />
+              <img src="/go-grind-logo.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
               <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider truncate">
                 GoGrind
               </span>
@@ -116,7 +116,7 @@ const Navbar = () => {
 
               {/* Notifications Dropdown */}
               {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-[calc(100vw-1rem)] sm:w-80 md:w-96 max-w-md bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 max-h-[70vh] sm:max-h-96 overflow-hidden flex flex-col">
+                <div className="absolute -right-20 mt-2 w-[calc(100vw-3rem)] sm:w-80 md:w-96  bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 max-h-[70vh] sm:max-h-96 overflow-hidden flex flex-col">
                   <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-base-300 flex items-center justify-between gap-2">
                     <h3 className="font-semibold text-xs sm:text-sm">Notifications</h3>
                     <div className="flex items-center gap-1 sm:gap-2">
