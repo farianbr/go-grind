@@ -90,7 +90,7 @@ const FriendsActivity = () => {
                   key={`${space._id}-${stream.user?._id || stream.user}`}
                   className="flex items-center gap-3 p-2 rounded-lg bg-base-300/50"
                 >
-                  <div className="avatar">
+                  <div className="avatar avatar-online">
                     <div className="w-8 h-8 rounded-full overflow-hidden">
                       <img
                         src={
