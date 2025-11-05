@@ -28,6 +28,12 @@ app.use(
     credentials: true,
   })
 );
+// When setting cookie
+res.cookie('token', token, {
+  httpOnly: true,
+  secure: true,       // ⚠️ must be true on Vercel (HTTPS)
+  sameSite: 'none',  
+});
 app.use(express.json());
 app.use(cookieParser());
 
