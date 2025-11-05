@@ -21,15 +21,27 @@ const PORT = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" 
-      ? process.env.FRONTEND_URL 
-      : ["http://localhost:5173"],
+    origin:
+      process.env.NODE_ENV === "production"
+        ? process.env.FRONTEND_URL
+        : ["http://localhost:5173"],
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(cookieParser());
 
+// Connect to MongoDB - ensure this happens only once for serverless environments
+let isConnected = false;
+app.use((req, res, next) => {
+  if (!isConnected) {
+    connectDB();
+    isConnected = true;
+  }
+  next();
+});
+
+// Define API routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
@@ -42,7 +54,6 @@ app.use("/api/sessions", sessionRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const clientDistPath = join(__dirname, "../../frontend/dist");
-
 app.use(express.static(clientDistPath));
 
 // SPA fallback: for any non-API route, return index.html so the client router can handle it
@@ -52,11 +63,15 @@ app.get("/", (req, res) => {
 
 app.get("/*", (req, res, next) => {
   // If the request is for an API route, skip
-  if (req.path.startsWith('/api/')) return next();
+  if (req.path.startsWith("/api/")) return next();
   return res.sendFile(join(clientDistPath, "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connectDB();
-});
+// // Start the server - local development
+// app.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+//   connectDB();
+// });
+
+// Export the app for serverless deployment
+module.exports = app;
