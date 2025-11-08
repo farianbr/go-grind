@@ -3,6 +3,7 @@ import {  Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router";
 
 import useSignUp from "../hooks/useSignup";
+import useLogin from "../hooks/useLogin";
 
 // import useSignUp from "../hooks/useSignUp";
 
@@ -15,10 +16,18 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const { signupMutation, isPending, error } = useSignUp();
+  const { loginMutation, isPending: isLoginPending } = useLogin();
 
   const handleSignup = (e) => {
     e.preventDefault();
     signupMutation(signupData);
+  };
+
+  const handleDemoLogin = () => {
+    loginMutation({
+      email: "demo@gogrind.dev",
+      password: "000000",
+    });
   };
 
   return (
@@ -156,6 +165,22 @@ const SignUpPage = () => {
                     </>
                   ) : (
                     "Create Account"
+                  )}
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="btn btn-ghost w-full"
+                  disabled={isLoginPending}
+                >
+                  {isLoginPending ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Signing in...
+                    </>
+                  ) : (
+                    "Try Demo Account"
                   )}
                 </button>
 

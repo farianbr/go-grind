@@ -18,6 +18,13 @@ const LoginPage = () => {
     loginMutation(loginData);
   };
 
+  const handleDemoLogin = () => {
+    loginMutation({
+      email: "demo@gogrind.dev",
+      password: "000000",
+    });
+  };
+
   return (
     <div
       className="h-screen flex items-center justify-center p-4 sm:p-6 md:p-8"
@@ -108,6 +115,22 @@ const LoginPage = () => {
                       </>
                     ) : (
                       "Sign In"
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDemoLogin}
+                    className="btn btn-ghost   w-full"
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Signing in...
+                      </>
+                    ) : (
+                      "Use Demo Account"
                     )}
                   </button>
 
