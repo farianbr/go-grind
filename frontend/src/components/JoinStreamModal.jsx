@@ -12,7 +12,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
 
-  // Add task handler
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) {
       toast.error("Please enter a task title");
@@ -22,12 +21,10 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
     setNewTaskTitle("");
   };
 
-  // Remove task handler
   const handleRemoveTask = (index) => {
     setTasks(tasks.filter((_, i) => i !== index));
   };
 
-  // Handle join stream
   const handleJoinStream = () => {
     if (!grindingTopic.trim()) {
       toast.error("Please enter what you're grinding");
@@ -39,7 +36,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
       return;
     }
 
-    // Check if user is already in another stream room
     const allActiveStreamKeys = Object.keys(localStorage).filter(
       (key) =>
         key.startsWith(`stream_${authUser._id}_`) &&
@@ -48,12 +44,10 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
     );
 
     if (allActiveStreamKeys.length > 0) {
-      // Extract space ID from the key
       const existingStreamSpaceId = allActiveStreamKeys[0]
         .replace(`stream_${authUser._id}_`, "")
         .replace("_active", "");
 
-      // If it's a different space, show error
       if (existingStreamSpaceId !== space._id) {
         toast.error(
           "You're already in another stream room. Please leave it first."
@@ -78,7 +72,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
           <h2 className="card-title text-2xl">Join Stream Room</h2>
           <p className="text-base-content/60">Space: {space?.name}</p>
 
-          {/* Stream not initialized warning for non-creators */}
           {!isCreator && !space?.streamInitialized && (
             <div className="alert alert-warning mt-4">
               <div>
@@ -91,7 +84,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
             </div>
           )}
 
-          {/* Creator first-time message */}
           {isCreator && !space?.streamInitialized && (
             <div className="alert alert-info mt-4">
               <div>
@@ -123,7 +115,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
               Target Duration
             </label>
 
-            {/* Quick Select Buttons */}
             <div className="flex flex-wrap gap-2 mb-2">
               {[5, 15, 30, 60, 120, 180].map((mins) => (
                 <button
@@ -139,7 +130,6 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
               ))}
             </div>
 
-            {/* Custom Duration Input */}
             <input
               id="target-duration"
               type="number"

@@ -1,13 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { UsersIcon } from "lucide-react";
 
 import { getRecommendedUsers, getUserFriends, getFriendRequests } from "../lib/api";
 import FriendCard from "../components/FriendCard";
 import NoFriendsFound from "../components/NoFriendsFound";
 import RecommendedFriends from "../components/RecommendedFriends";
 import FriendRequestsPanel from "../components/FriendRequestsPanel";
-import { Link } from "react-router";
 
 const FriendsPage = () => {
   const [activeTab, setActiveTab] = useState("my-friends");
@@ -17,13 +15,11 @@ const FriendsPage = () => {
     queryFn: getUserFriends,
   });
 
-  // Just for count badge on Discover tab
   const { data: recommendedUsers = [], isLoading: loadingRecommended } = useQuery({
     queryKey: ["users"],
     queryFn: getRecommendedUsers,
   });
 
-  // Incoming requests count for badge
   const { data: friendRequestsData } = useQuery({
     queryKey: ["friendRequests"],
     queryFn: getFriendRequests,
@@ -34,7 +30,6 @@ const FriendsPage = () => {
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="container mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Friends</h2>
@@ -43,7 +38,6 @@ const FriendsPage = () => {
           
         </div>
 
-        {/* Tabs */}
         <div className="tabs tabs-box bg-base-200 p-1 w-full sm:w-auto inline-flex">
           <button
             className={`tab tab-sm sm:tab-md ${activeTab === "my-friends" ? "tab-active" : ""}`}
@@ -68,7 +62,6 @@ const FriendsPage = () => {
           </button>
         </div>
 
-        {/* My Friends Tab */}
         {activeTab === "my-friends" && (
           <div className="space-y-4">
             {loadingFriends ? (
@@ -92,14 +85,12 @@ const FriendsPage = () => {
           </div>
         )}
 
-        {/* Discover Tab */}
         {activeTab === "find" && (
           <div className="space-y-4">
             <RecommendedFriends />
           </div>
         )}
 
-        {/* Requests Tab */}
         {activeTab === "requests" && (
           <div className="space-y-4">
             <FriendRequestsPanel />

@@ -2,12 +2,11 @@ import Session from "../models/Session.model.js";
 import Space from "../models/Space.model.js";
 import Notification from "../models/Notification.model.js";
 
-// Get current active session for a user in a space
 export async function getCurrentSession(req, res) {
   try {
     const { spaceId } = req.params;
-    const { userId } = req.query; // Optional query param to get other user's session
-    const requestUserId = userId || req.user.id; // Use query param or authenticated user
+    const { userId } = req.query;
+    const requestUserId = userId || req.user.id;
 
     const session = await Session.findOne({
       user: requestUserId,
@@ -26,7 +25,6 @@ export async function getCurrentSession(req, res) {
   }
 }
 
-// Update task completion status
 export async function updateSessionTask(req, res) {
   try {
     const { sessionId, taskId } = req.params;
@@ -64,7 +62,6 @@ export async function updateSessionTask(req, res) {
   }
 }
 
-// Add a new task to an active session
 export async function addSessionTask(req, res) {
   try {
     const { sessionId } = req.params;
@@ -78,7 +75,7 @@ export async function addSessionTask(req, res) {
     const session = await Session.findOne({
       _id: sessionId,
       user: userId,
-      isCompleted: false, // Only allow adding tasks to active sessions
+      isCompleted: false,
     });
 
     if (!session) {
@@ -99,24 +96,21 @@ export async function addSessionTask(req, res) {
   }
 }
 
-// Get user's sessions
 export async function getUserSessions(req, res) {
   try {
     const { userId } = req.params;
     const requesterId = req.user.id;
 
-    // Allow viewing own sessions
     if (userId === requesterId) {
       const sessions = await Session.find({ user: userId })
         .populate("space", "name skill")
         .populate("user", "fullName profilePic")
         .sort({ startTime: -1 })
-        .limit(50); // Limit to recent 50 sessions
+        .limit(50);
 
       return res.status(200).json(sessions);
     }
 
-    // Check if requester is a friend of the user
     const User = (await import("../models/User.model.js")).default;
     const targetUser = await User.findById(userId).select("friends");
 
@@ -134,12 +128,11 @@ export async function getUserSessions(req, res) {
       });
     }
 
-    // Return sessions for friend
     const sessions = await Session.find({ user: userId })
       .populate("space", "name skill")
       .populate("user", "fullName profilePic")
       .sort({ startTime: -1 })
-      .limit(50); // Limit to recent 50 sessions
+      .limit(50);
 
     res.status(200).json(sessions);
   } catch (error) {
@@ -148,7 +141,6 @@ export async function getUserSessions(req, res) {
   }
 }
 
-// Get session statistics for a space
 export async function getSpaceSessionStats(req, res) {
   try {
     const { spaceId } = req.params;
@@ -160,15 +152,11 @@ export async function getSpaceSessionStats(req, res) {
       return res.status(404).json({ message: "Space not found" });
     }
 
-  
-
-    // Get all completed sessions for this space
     const sessions = await Session.find({
       space: spaceId,
       isCompleted: true,
     }).populate("user", "fullName profilePic");
 
-    // Calculate statistics
     const totalSessions = sessions.length;
     const totalMinutes = sessions.reduce(
       (sum, session) => sum + session.actualDuration,
@@ -179,7 +167,6 @@ export async function getSpaceSessionStats(req, res) {
     const avgDuration =
       totalSessions > 0 ? totalMinutes / totalSessions : 0;
 
-    // Task completion rate
     let totalTasks = 0;
     let completedTasks = 0;
 
@@ -191,19 +178,16 @@ export async function getSpaceSessionStats(req, res) {
     const taskCompletionRate =
       totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-    // Session completion rate (met target duration)
     const targetMetSessions = sessions.filter(
       (session) => session.actualDuration >= session.targetDuration
     ).length;
     const sessionCompletionRate =
       totalSessions > 0 ? (targetMetSessions / totalSessions) * 100 : 0;
 
-    // Get unique participants
     const uniqueParticipants = new Set(
       sessions.map((s) => s.user._id.toString())
     ).size;
 
-    // Recent sessions (last 10)
     const recentSessions = sessions.slice(0, 10).map((session) => ({
       _id: session._id,
       user: session.user,
@@ -231,7 +215,6 @@ export async function getSpaceSessionStats(req, res) {
   }
 }
 
-// Encourage a participant in their session
 export async function encourageParticipant(req, res) {
   try {
     const { sessionId } = req.params;
@@ -239,12 +222,10 @@ export async function encourageParticipant(req, res) {
 
     const session = await Session.findById(sessionId).populate("user", "fullName profilePic");
     
-
     if (!session) {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // Check if user already encouraged this session
     const alreadyEncouraged = session.encouragements.some(
       (e) => e.user.toString() === userId
     );
@@ -253,11 +234,9 @@ export async function encourageParticipant(req, res) {
       return res.status(400).json({ message: "You've already encouraged this participant" });
     }
 
-    // Add encouragement
     session.encouragements.push({ user: userId });
     await session.save();
 
-    // Create notification for the session owner (if not encouraging themselves)
     if (session.user._id.toString() !== userId) {
       await Notification.create({
         recipient: session.user._id,
@@ -281,7 +260,6 @@ export async function encourageParticipant(req, res) {
   }
 }
 
-// Remove encouragement from a participant's session
 export async function removeEncouragement(req, res) {
   try {
     const { sessionId } = req.params;
@@ -293,7 +271,6 @@ export async function removeEncouragement(req, res) {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // Check if user has encouraged this session
     const encouragementIndex = session.encouragements.findIndex(
       (e) => e.user.toString() === userId
     );
@@ -302,11 +279,9 @@ export async function removeEncouragement(req, res) {
       return res.status(400).json({ message: "You haven't encouraged this participant" });
     }
 
-    // Remove encouragement
     session.encouragements.splice(encouragementIndex, 1);
     await session.save();
 
-    // Delete the related notification
     await Notification.findOneAndDelete({
       recipient: session.user._id,
       sender: userId,

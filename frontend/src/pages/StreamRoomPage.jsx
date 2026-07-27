@@ -39,12 +39,11 @@ const StreamRoomPage = () => {
 
   const { authUser, isLoading: authLoading } = useAuthUser();
 
-  // Fetch space data and refresh every 10 seconds
   const { data: space, isLoading: spaceLoading } = useQuery({
     queryKey: ["space", spaceId],
     queryFn: () => getSpaceById(spaceId),
     enabled: !!spaceId,
-    refetchInterval: 10000, // Auto-refresh every 10 seconds
+    refetchInterval: 10000,
   });
 
   const { data: tokenData } = useQuery({
@@ -53,7 +52,6 @@ const StreamRoomPage = () => {
     enabled: !!authUser,
   });
 
-  // Join stream mutation
   const { mutate: joinStreamMutation, isPending: isJoining } = useMutation({
     mutationFn: ({
       spaceId,
@@ -89,7 +87,6 @@ const StreamRoomPage = () => {
     },
   });
 
-  // Remove from stream mutation (admin only)
   const { mutate: removeUserMutation } = useMutation({
     mutationFn: ({ spaceId, userId, reason }) =>
       removeFromStream(spaceId, userId, reason),
@@ -108,16 +105,13 @@ const StreamRoomPage = () => {
     },
   });
 
-  // Check if user is already in stream
   const isUserInStream = space?.activeStreams?.some(
     (stream) =>
       stream.user?._id === authUser?._id || stream.user === authUser?._id
   );
 
-  // Check if user is creator
   const isCreator = space?.creator._id === authUser?._id;
 
-  // Check localStorage for active stream state and manage join modal
   useEffect(() => {
     if (authUser && spaceId) {
       const storageKey = `stream_${authUser._id}_${spaceId}_active`;
@@ -131,7 +125,6 @@ const StreamRoomPage = () => {
     }
   }, [authUser, spaceId, isUserInStream]);
 
-  // Initialize StreamVideoClient - following best practices
   useEffect(() => {
     if (!tokenData?.token || !authUser || showJoinModal) {
       return;
@@ -152,7 +145,6 @@ const StreamRoomPage = () => {
 
     setClient(videoClient);
 
-    // Cleanup function - disconnect user when component unmounts
     return () => {
       videoClient
         .disconnectUser()
@@ -163,7 +155,6 @@ const StreamRoomPage = () => {
     };
   }, [tokenData, authUser, showJoinModal]);
 
-  // Initialize and join call
   useEffect(() => {
     if (!client || !spaceId || !isUserInStream || showJoinModal) {
       return;
@@ -172,10 +163,8 @@ const StreamRoomPage = () => {
     const callInstance = client.call("default", spaceId);
     const kickedRef = wasKickedRef; // Capture the ref itself for cleanup
 
-    // Disable speaking while muted notification
     callInstance.microphone.disableSpeakingWhileMutedNotification();
 
-    // Set initial media states based on user preferences
     const videoStorageKey = `stream_${authUser._id}_${spaceId}_video`;
     const audioStorageKey = `stream_${authUser._id}_${spaceId}_audio`;
 
@@ -187,14 +176,12 @@ const StreamRoomPage = () => {
       callInstance.microphone.disable();
     }
 
-    // Join the call
     callInstance
       .join({ create: true })
       .then(() => {
         setCall(callInstance);
         toast.success("Joined the stream!");
 
-        // Store active stream state in localStorage
         if (authUser) {
           const storageKey = `stream_${authUser._id}_${spaceId}_active`;
           localStorage.setItem(storageKey, "active");
@@ -205,9 +192,7 @@ const StreamRoomPage = () => {
         navigate(`/spaces/${spaceId}`);
       });
 
-    // Cleanup function - leave call when component unmounts
     return () => {
-      // Only leave if the call hasn't already been left and user wasn't kicked
       try {
         const callingState = callInstance?.state?.callingState;
         if (!kickedRef.current && callingState !== CallingState.LEFT) {
@@ -222,7 +207,6 @@ const StreamRoomPage = () => {
     };
   }, [client, spaceId, isUserInStream, showJoinModal, authUser, navigate]);
 
-  // Handle join stream from modal
   const handleJoinStream = (joinData) => {
     joinStreamMutation({
       spaceId,
@@ -230,13 +214,10 @@ const StreamRoomPage = () => {
     });
   };
 
-  // Handle leave stream
   const handleLeaveStream = async () => {
     try {
-      // Leave backend stream
       await leaveStream(spaceId);
 
-      // Clear localStorage
       if (authUser) {
         localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
         localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
@@ -253,12 +234,10 @@ const StreamRoomPage = () => {
     }
   };
 
-  // Handle remove user - open modal
   const handleRemoveUser = (userId, userName) => {
     setKickTargetUser({ id: userId, name: userName });
   };
 
-  // Detect if current user was kicked from stream
   useEffect(() => {
     if (!authUser || !spaceId) return;
 
@@ -267,15 +246,12 @@ const StreamRoomPage = () => {
       "active";
 
     if (wasInStream && !isUserInStream && space) {
-      // User was in stream but is no longer - they were kicked
-      wasKickedRef.current = true; // Set flag to prevent duplicate leave call
+      wasKickedRef.current = true;
 
-      // Clear localStorage
       localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
       localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
       localStorage.removeItem(`stream_${authUser._id}_${spaceId}_audio`);
 
-      // Show toast and navigate
       toast.error("You have been removed from the stream");
       navigate(`/spaces/${spaceId}`);
     }
@@ -290,7 +266,6 @@ const StreamRoomPage = () => {
     return <PageLoader />;
   }
 
-  // Join Modal
   if (showJoinModal && !isUserInStream) {
     return (
       <JoinStreamModal
@@ -305,16 +280,13 @@ const StreamRoomPage = () => {
 
   return (
     <>
-      {/* Kick User Modal */}
       <KickUserModal
         kickTargetUser={kickTargetUser}
         onConfirm={async (reason) => {
           if (!kickTargetUser || !call) return;
           setIsRemoving(true);
           try {
-            // Kick from Stream SDK call first
             await call.kickUser({ user_id: kickTargetUser.id });
-            // Then remove from backend
             removeUserMutation({
               spaceId,
               userId: kickTargetUser.id,

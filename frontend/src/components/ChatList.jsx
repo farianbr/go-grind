@@ -32,7 +32,6 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
 
     fetchChannels();
 
-    // Listen for new messages to update the list
     const handleEvent = () => {
       fetchChannels();
     };
@@ -57,7 +56,6 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
     const now = new Date();
     const diff = now - date;
 
-    // Less than a day
     if (diff < 86400000) {
       return date.toLocaleTimeString("en-US", {
         hour: "numeric",
@@ -66,7 +64,6 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
       });
     }
 
-    // Less than a week
     if (diff < 604800000) {
       return date.toLocaleDateString("en-US", { weekday: "short" });
     }
@@ -120,7 +117,7 @@ const ChatList = ({ onSelectChat, selectedChatId }) => {
               <div className="avatar">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full">
                   <img
-                    src={otherMember?.image || "/avatar.png"}
+                    src={otherMember?.image || "/blank-pp.png"}
                     alt={otherMember?.name || "User"}
                   />
                 </div>

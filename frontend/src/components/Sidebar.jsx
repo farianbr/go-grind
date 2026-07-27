@@ -11,7 +11,6 @@ const Sidebar = () => {
         <NavLinks/>
       </nav>
 
-      {/* USER PROFILE SECTION */}
       <Link 
         to={`/profile/${authUser?._id}`} 
         className="p-3 lg:p-4 border-t border-base-300 mt-auto hover:bg-base-300/50 transition-colors"

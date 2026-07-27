@@ -55,7 +55,6 @@ const ChatsPage = () => {
     initChat();
 
     return () => {
-      // Cleanup: Disconnect and clear the chat client when component unmounts or user changes
       chatClient
         ?.disconnectUser()
         .catch(() => {
@@ -64,7 +63,6 @@ const ChatsPage = () => {
     };
   }, [tokenData?.token, chatClient, authUser]);
 
-  // Handle URL parameter to open specific chat
   useEffect(() => {
     const loadChannelFromUrl = async () => {
       if (!chatClient || !targetUserId || !authUser) return;
@@ -87,8 +85,6 @@ const ChatsPage = () => {
 
   const handleSelectChat = (channel) => {
     setSelectedChannel(channel);
-    // Optionally update URL without page reload
-    // navigate(`/chats/${getOtherMemberId(channel)}`, { replace: true });
   };
 
   const handleBackToList = () => {
@@ -103,7 +99,6 @@ const ChatsPage = () => {
   return (
     <div className="h-[calc(100vh-4rem)] flex overflow-hidden">
       <Chat client={chatClient}>
-        {/* Left sidebar - Chat list */}
         <div
           className={`w-full sm:w-50 md:w-62 lg:w-[300px] xl:w-[350px] 2xl:w-[400px] border-r border-base-300 bg-base-100 shrink-0 ${
             selectedChannel ? "hidden sm:block" : "block"
@@ -115,7 +110,6 @@ const ChatsPage = () => {
           />
         </div>
 
-        {/* Right side - Chat window */}
         <div
           className={`flex-1 bg-base-100 min-w-0 ${
             !selectedChannel ? "hidden sm:flex" : "flex"

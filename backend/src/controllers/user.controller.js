@@ -15,9 +15,9 @@ export async function getRecommendedUsers(req, res) {
 
     const recommendedUsers = await User.find({
       $and: [
-        { _id: { $ne: currentUserId } }, //exclude current user
-        { _id: { $nin: currentUser.friends } }, //exclude current user's friends
-        { _id: { $nin: senders } }, // exclude who already sent you a request
+        { _id: { $ne: currentUserId } },
+        { _id: { $nin: currentUser.friends } },
+        { _id: { $nin: senders } },
         { isOnboarded: true },
       ],
     });
@@ -50,7 +50,6 @@ export async function sendFriendRequest(req, res) {
     const myId = req.user.id;
     const { id: recipientId } = req.params;
 
-    // prevent sending req to yourself
     if (myId === recipientId) {
       return res
         .status(400)
@@ -62,14 +61,12 @@ export async function sendFriendRequest(req, res) {
       return res.status(404).json({ message: "Recipient not found" });
     }
 
-    // check if user is already friends
     if (recipient.friends.includes(myId)) {
       return res
         .status(400)
         .json({ message: "You are already friends with this user" });
     }
 
-    // check if a req already exists
     const existingRequest = await FriendRequest.findOne({
       $or: [
         { sender: myId, recipient: recipientId },
@@ -88,7 +85,6 @@ export async function sendFriendRequest(req, res) {
       recipient: recipientId,
     });
 
-    // Create notification for recipient
     await createNotification({
       recipient: recipientId,
       sender: myId,
@@ -116,7 +112,6 @@ export async function acceptFriendRequest(req, res) {
       return res.status(404).json({ message: "Friend request not found" });
     }
 
-    // Verify the current user is the recipient
     if (friendRequest.recipient.toString() !== req.user.id) {
       return res
         .status(403)
@@ -126,7 +121,6 @@ export async function acceptFriendRequest(req, res) {
     friendRequest.status = "accepted";
     await friendRequest.save();
 
-    // add each user to the other's friends array
     // $addToSet: adds elements to an array only if they do not already exist.
     await User.findByIdAndUpdate(friendRequest.sender, {
       $addToSet: { friends: friendRequest.recipient },
@@ -136,7 +130,6 @@ export async function acceptFriendRequest(req, res) {
       $addToSet: { friends: friendRequest.sender },
     });
 
-    // Create notification for the sender
     await createNotification({
       recipient: friendRequest.sender,
       sender: friendRequest.recipient,
@@ -144,7 +137,6 @@ export async function acceptFriendRequest(req, res) {
       message: `${req.user.fullName} accepted your friend request`,
     });
 
-    // Delete the friend_request notification for the recipient
     await Notification.deleteOne({
       recipient: friendRequest.recipient,
       sender: friendRequest.sender,
@@ -182,24 +174,6 @@ export async function getFriendRequests(req, res) {
   }
 }
 
-export async function markNotificationsSeen(req, res) {
-  try {
-    await FriendRequest.updateMany(
-      {
-        sender: req.user.id,
-        status: "accepted",
-        isNotificationSeen: { $ne: true },
-      },
-      { $set: { isNotificationSeen: true } }
-    );
-
-    res.status(200).json({ message: "Notifications marked as seen" });
-  } catch (error) {
-    console.log("Error in markNotificationsSeen controller", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-}
-
 export async function getOutgoingFriendRequests(req, res) {
   try {
     const outgoingRequests = await FriendRequest.find({
@@ -227,17 +201,14 @@ export async function declineFriendRequest(req, res) {
       return res.status(404).json({ message: "Friend request not found" });
     }
 
-    // Verify the current user is the recipient
     if (friendRequest.recipient.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: "You are not authorized to decline this request" });
     }
 
-    // Delete the friend request
     await FriendRequest.findByIdAndDelete(requestId);
 
-    // Delete the friend_request notification for the recipient
     await Notification.deleteOne({
       recipient: friendRequest.recipient,
       sender: friendRequest.sender,
@@ -262,14 +233,12 @@ export async function cancelFriendRequest(req, res) {
       return res.status(404).json({ message: "Friend request not found" });
     }
 
-    // Verify the current user is the sender
     if (friendRequest.sender.toString() !== req.user.id) {
       return res
         .status(403)
         .json({ message: "You are not authorized to cancel this request" });
     }
 
-    // Delete the friend request
     await FriendRequest.findByIdAndDelete(requestId);
 
     res.status(200).json({ message: "Friend request cancelled" });
@@ -288,7 +257,6 @@ export async function unfriend(req, res) {
       return res.status(400).json({ message: "You cannot unfriend yourself" });
     }
 
-    // Check if they are friends
     const myUser = await User.findById(myId);
     const friendUser = await User.findById(friendId);
 
@@ -300,7 +268,6 @@ export async function unfriend(req, res) {
       return res.status(400).json({ message: "You are not friends with this user" });
     }
 
-    // Remove from both users' friend lists
     await User.findByIdAndUpdate(myId, {
       $pull: { friends: friendId },
     });
@@ -309,7 +276,6 @@ export async function unfriend(req, res) {
       $pull: { friends: myId },
     });
 
-    // Delete the friend request record
     await FriendRequest.deleteMany({
       $or: [
         { sender: myId, recipient: friendId, status: "accepted" },
@@ -332,10 +298,8 @@ export async function uploadPhoto(req, res) {
         .json({ success: false, message: "No file uploaded" });
     }
 
-    // Convert buffer to base64 string
     const base64Image = req.file.buffer.toString("base64");
 
-    // Send to ImgBB
     const imgbbRes = await fetch(
       `https://api.imgbb.com/1/upload?key=${process.env.IMGBB_API_KEY}`,
       {
@@ -359,7 +323,6 @@ export async function uploadPhoto(req, res) {
   }
 }
 
-// Get user profile by ID
 export async function getUserProfile(req, res) {
   try {
     const { userId } = req.params;
@@ -373,13 +336,11 @@ export async function getUserProfile(req, res) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the requesting user is a friend or viewing their own profile
     const isFriend = user.friends.some(
       (friend) => friend._id.toString() === currentUserId
     );
     const isOwnProfile = userId === currentUserId;
 
-    // If not a friend and not own profile, return limited information
     if (!isFriend && !isOwnProfile) {
       return res.status(200).json({
         _id: user._id,
@@ -393,7 +354,6 @@ export async function getUserProfile(req, res) {
       });
     }
 
-    // Return full profile for friends and own profile
     res.status(200).json(user);
   } catch (error) {
     console.error("Error in getUserProfile controller", error.message);
@@ -401,19 +361,16 @@ export async function getUserProfile(req, res) {
   }
 }
 
-// Get user statistics
 export async function getUserStatistics(req, res) {
   try {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    // Check if user exists
     const user = await User.findById(userId).populate("friends", "_id");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the requesting user is a friend or viewing their own profile
     const isFriend = user.friends.some(
       (friend) => friend._id.toString() === currentUserId
     );
@@ -425,14 +382,11 @@ export async function getUserStatistics(req, res) {
       });
     }
 
-    // Import Space and Session models
     const Session = (await import("../models/Session.model.js")).default;
 
-    // Get all sessions for the user
     const sessions = await Session.find({ user: userId });
     const totalSessions = sessions.length;
 
-    // Calculate total time spent (in seconds)
     const totalTimeSpent = sessions.reduce((total, session) => {
       if (session.endTime && session.startTime) {
         const duration = Math.floor(
@@ -443,11 +397,9 @@ export async function getUserStatistics(req, res) {
       return total;
     }, 0);
 
-    // Calculate average session duration
     const averageSessionDuration =
       totalSessions > 0 ? Math.floor(totalTimeSpent / totalSessions) : 0;
 
-    // Calculate total tasks completed
     const totalTasksCompleted = sessions.reduce((total, session) => {
       return total + session.tasks.filter((task) => task.isCompleted).length;
     }, 0);
@@ -464,19 +416,16 @@ export async function getUserStatistics(req, res) {
   }
 }
 
-// Get user spaces (spaces they are a member of or created)
 export async function getUserSpaces(req, res) {
   try {
     const { userId } = req.params;
     const currentUserId = req.user.id;
 
-    // Check if user exists
     const user = await User.findById(userId).populate("friends", "_id");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if the requesting user is a friend or viewing their own profile
     const isFriend = user.friends.some(
       (friend) => friend._id.toString() === currentUserId
     );
@@ -488,10 +437,8 @@ export async function getUserSpaces(req, res) {
       });
     }
 
-    // Import Space model
     const Space = (await import("../models/Space.model.js")).default;
 
-    // Get spaces where user is creator or member
     const spaces = await Space.find({
       $or: [{ creator: userId }, { members: userId }],
     })

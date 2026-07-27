@@ -6,7 +6,6 @@ const FloatingSideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -20,7 +19,6 @@ const FloatingSideBar = () => {
 
   return (
     <div className="relative ml-auto lg:hidden" ref={dropdownRef}>
-      {/* DROPDOWN TRIGGER */}
       <button
         className="btn btn-circle bg-base-100 hover:bg-base-300 border-0 w-8 h-8 min-h-8 sm:w-10 sm:h-10 sm:min-h-10"
         onClick={() => setIsOpen(!isOpen)}

@@ -23,7 +23,6 @@ const CustomChannelHeader = ({ onBack }) => {
 
   return (
     <div className="str-chat__header-livestream flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border-b border-base-300 bg-base-100">
-      {/* Mobile back button */}
       <button
         onClick={onBack}
         className="sm:hidden btn btn-ghost btn-xs btn-circle shrink-0"
@@ -32,13 +31,12 @@ const CustomChannelHeader = ({ onBack }) => {
         <ArrowLeft size={18} />
       </button>
 
-      {/* User info */}
       <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
         <Link to={`/profile/${otherMember?.id}`}>
         <div className="avatar">
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
             <img
-              src={otherMember?.image || "/avatar.png"}
+              src={otherMember?.image || "/blank-pp.png"}
               alt={otherMember?.name || "User"}
             />
           </div>

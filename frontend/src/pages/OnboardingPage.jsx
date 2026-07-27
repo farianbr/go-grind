@@ -11,6 +11,7 @@ import {
 
 import useAuthUser from "../hooks/useAuthUser";
 import { completeOnboarding, uploadPhoto } from "../lib/api";
+import { getRandomAvatarUrl } from "../lib/avatar";
 import { LANGUAGES, SKILLS } from "../constants";
 
 const OnboardingPage = () => {
@@ -46,8 +47,7 @@ const OnboardingPage = () => {
   };
 
   const handleRandomAvatar = () => {
-    const idx = Math.floor(Math.random() * 100) + 1; // 1-100 included
-    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}`;
+    const randomAvatar = getRandomAvatarUrl();
 
     setFormState({ ...formState, profilePic: randomAvatar });
     toast.success("Random profile picture generated!");
@@ -75,9 +75,7 @@ const OnboardingPage = () => {
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* PROFILE PIC CONTAINER */}
             <div className="flex flex-col items-center justify-center space-y-4">
-              {/* IMAGE PREVIEW */}
               <div className="size-32 rounded-full bg-base-300 overflow-hidden">
                 {formState.profilePic ? (
                   <img
@@ -92,7 +90,6 @@ const OnboardingPage = () => {
                 )}
               </div>
 
-              {/* Generate Random Avatar BTN */}
               <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
@@ -103,7 +100,6 @@ const OnboardingPage = () => {
                   <span className="hidden sm:inline">Generate Random Avatar</span>
                   <span className="sm:hidden">Random Avatar</span>
                 </button>
-                {/* Upload Photo BTN */}
                 <label
                   htmlFor="upload-photo"
                   className="btn btn-secondary cursor-pointer w-full sm:w-auto"
@@ -130,7 +126,6 @@ const OnboardingPage = () => {
               </div>
             </div>
 
-            {/* FULL NAME */}
             <fieldset className="fieldset">
               <label className="label" htmlFor="fullName">
                 Full Name
@@ -148,7 +143,6 @@ const OnboardingPage = () => {
               />
             </fieldset>
 
-            {/* BIO */}
             <fieldset className="fieldset">
               <label className="label" htmlFor="bio">
                 Bio
@@ -165,9 +159,7 @@ const OnboardingPage = () => {
               />
             </fieldset>
 
-            {/* LANGUAGES AND SKILLS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* NATIVE LANGUAGE */}
               <fieldset className="fieldset">
                 <label className="label" htmlFor="nativeLanguage">
                   Native Language
@@ -193,7 +185,6 @@ const OnboardingPage = () => {
                 </select>
               </fieldset>
 
-              {/* FOCUS SKILL */}
               <fieldset className="fieldset">
                 <label className="label" htmlFor="focusSkill">
                   Focus Skill
@@ -220,7 +211,6 @@ const OnboardingPage = () => {
               </fieldset>
             </div>
 
-            {/* LOCATION */}
             <fieldset className="fieldset">
               <label className="label" htmlFor="location">
                 Location
@@ -240,8 +230,6 @@ const OnboardingPage = () => {
                 />
               </div>
             </fieldset>
-
-            {/* SUBMIT BUTTON */}
 
             <button
               className="btn btn-primary w-full"

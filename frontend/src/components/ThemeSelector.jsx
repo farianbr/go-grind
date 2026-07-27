@@ -8,7 +8,6 @@ const ThemeSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -27,7 +26,6 @@ const ThemeSelector = () => {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* DROPDOWN TRIGGER */}
       <button
         className="btn btn-circle bg-base-100 hover:bg-base-300 border-0 w-8 h-8 min-h-8 sm:w-10 sm:h-10 sm:min-h-10"
         onClick={() => setIsOpen(!isOpen)}
@@ -56,7 +54,6 @@ const ThemeSelector = () => {
               >
                 <PaletteIcon className="size-4" />
                 <span className="text-sm font-medium">{themeOption.label}</span>
-                {/* THEME PREVIEW COLORS */}
                 <div className="ml-auto flex gap-1">
                   {themeOption.colors.map((color, i) => (
                     <span

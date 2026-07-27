@@ -1,6 +1,5 @@
 import Notification from "../models/Notification.model.js";
 
-// Get all notifications for the authenticated user
 export const getNotifications = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -33,7 +32,6 @@ export const getNotifications = async (req, res) => {
   }
 };
 
-// Get unread count
 export const getUnreadCount = async (req, res) => {
   try {
     const count = await Notification.countDocuments({
@@ -48,7 +46,6 @@ export const getUnreadCount = async (req, res) => {
   }
 };
 
-// Mark notification as read
 export const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
@@ -70,7 +67,6 @@ export const markAsRead = async (req, res) => {
   }
 };
 
-// Mark all notifications as read
 export const markAllAsRead = async (req, res) => {
   try {
     await Notification.updateMany(
@@ -85,7 +81,6 @@ export const markAllAsRead = async (req, res) => {
   }
 };
 
-// Delete a notification
 export const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
@@ -106,7 +101,6 @@ export const deleteNotification = async (req, res) => {
   }
 };
 
-// Helper function to create notifications (exported for use in other controllers)
 export const createNotification = async ({
   recipient,
   sender,

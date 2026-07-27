@@ -25,7 +25,6 @@ export const useChatUnreadCount = () => {
       try {
         client = StreamChat.getInstance(STREAM_API_KEY);
 
-        // Check if already connected
         if (!client.userID) {
           await client.connectUser(
             {
@@ -37,7 +36,6 @@ export const useChatUnreadCount = () => {
           );
         }
 
-        // Get unread count
         const filter = {
           type: "messaging",
           members: { $in: [client.userID] },
@@ -53,9 +51,7 @@ export const useChatUnreadCount = () => {
 
         setUnreadCount(totalUnread);
 
-        // Listen for new messages
         const handleNewMessage = () => {
-          // Refetch unread count
           client.queryChannels(filter, {}, { state: true }).then((channels) => {
             const totalUnread = channels.reduce((acc, channel) => {
               return acc + (channel.countUnread() || 0);

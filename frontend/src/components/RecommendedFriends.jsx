@@ -59,7 +59,6 @@ const RecommendedFriends = () => {
     setOutgoingRequestsMap(requestsMap);
   }, [outgoingFriendReqs]);
 
-  // Get unique locations from users
   const availableLocations = useMemo(() => {
     const locations = new Set();
     recommendedUsers.forEach((u) => {
@@ -72,7 +71,6 @@ const RecommendedFriends = () => {
     if (!recommendedUsers) return [];
     
     return recommendedUsers.filter((u) => {
-      // Search filter
       const term = search.trim().toLowerCase();
       if (term) {
         const hay = [u.fullName, u.location, u.nativeLanguage, u.learningSkill, u.bio]
@@ -82,12 +80,10 @@ const RecommendedFriends = () => {
         if (!hay.includes(term)) return false;
       }
 
-      // Skill filter
       if (selectedSkill && u.learningSkill?.toLowerCase() !== selectedSkill.toLowerCase()) {
         return false;
       }
 
-      // Location filter
       if (selectedLocation && u.location !== selectedLocation) {
         return false;
       }
@@ -98,9 +94,7 @@ const RecommendedFriends = () => {
 
   return (
     <section>
-      {/* Filters */}
       <div className="mb-4 space-y-3">
-        {/* Search */}
         <label className="input input-bordered w-full flex items-center gap-2">
           <Search className="size-4 opacity-70" />
           <input
@@ -112,7 +106,6 @@ const RecommendedFriends = () => {
           />
         </label>
 
-        {/* Skill and Location Filters */}
         <div className="flex flex-col sm:flex-row gap-2">
           <select
             className="select select-bordered w-full sm:flex-1 text-sm"
@@ -195,7 +188,6 @@ const RecommendedFriends = () => {
                     </div>
                   </Link>
 
-                  {/* Languages and Skills */}
                   <div className="flex flex-wrap gap-1.5">
                     <span className="badge badge-secondary text-xs">
                       {getLanguageFlag(user.nativeLanguage)}
@@ -210,7 +202,6 @@ const RecommendedFriends = () => {
 
                   {user.bio && <p className="text-xs sm:text-sm opacity-70 line-clamp-2">{user.bio}</p>}
 
-                  {/* Action button */}
                   <div className="flex gap-2">
                     <button
                       className={`btn btn-sm flex-1 mt-2 ${

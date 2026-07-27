@@ -15,7 +15,6 @@ import SessionContributionGrid from "../components/SessionContributionGrid";
 import FriendsActivity from "../components/FriendsActivity";
 import TopSpaces from "../components/TopSpaces";
 
-
 const HomePage = () => {
   const { authUser } = useAuthUser();
   const unreadCount = useNotificationUnreadCount();
@@ -43,7 +42,6 @@ const HomePage = () => {
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="container mx-auto space-y-6 sm:space-y-8">
-        {/* Hero */}
         <div className="card overflow-hidden border border-base-300 bg-linear-to-r from-primary/10 via-secondary/10 to-accent/10">
           <div className="card-body p-5 sm:p-7 md:p-8 lg:p-10">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-8">
@@ -76,7 +74,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="card bg-base-200">
             <div className="card-body p-4 sm:p-5">
@@ -150,7 +147,6 @@ const HomePage = () => {
           </div>
   </div>
 
-  {/* Quick actions */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Link
             to="/spaces"
@@ -234,17 +230,13 @@ const HomePage = () => {
           </Link>
         </div>
 
-        {/* Session Activity Grid */}
         <SessionContributionGrid />
 
-        {/* Friends Activity */}
         <FriendsActivity />
 
-        {/* Global Top Spaces */}
         <TopSpaces />
       </div>
 
-      
     </div>
   );
 };

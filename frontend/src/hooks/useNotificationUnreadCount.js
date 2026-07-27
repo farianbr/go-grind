@@ -9,7 +9,7 @@ export const useNotificationUnreadCount = () => {
     queryKey: ["notificationUnreadCount"],
     queryFn: getUnreadCount,
     enabled: !!authUser,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
   });
 
   return data?.count || 0;

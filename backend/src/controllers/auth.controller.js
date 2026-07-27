@@ -1,10 +1,10 @@
 import { upsertStreamUser } from "../lib/stream.js";
 import User from "../models/User.model.js";
 import jwt from "jsonwebtoken";
+import { cookieOptions } from "../lib/config.js";
+import { getRandomAvatarUrl } from "../lib/avatar.js";
 
 export async function signup(req, res) {
-  //TODO --> welcome email on signup
-
   const { email, password, fullName } = req.body;
 
   try {
@@ -30,8 +30,9 @@ export async function signup(req, res) {
         .json({ message: "Email already exists, please use a different one" });
     }
 
-    const idx = Math.floor(Math.random() * 100) + 1; // generate a num between 1-100
-    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
+    // Random seed rather than something derived from the user: the URL is stored on
+    // the document and is visible to other users, so it must not leak the email.
+    const randomAvatar = getRandomAvatarUrl();
 
     const newUser = await User.create({
       email,
@@ -59,11 +60,8 @@ export async function signup(req, res) {
     );
 
     res.cookie("jwt", token, {
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true, 
-      path: "/",
     });
 
     res.status(201).json({
@@ -99,11 +97,8 @@ export async function login(req, res) {
     });
 
     res.cookie("jwt", token, {
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: "none",
-      secure: true, 
-      path: "/",
     });
 
     res.status(200).json({ success: true, user, token }); // Send token in response as fallback for mobile
@@ -114,12 +109,7 @@ export async function login(req, res) {
 }
 
 export function logout(req, res) {
-  res.clearCookie("jwt", {
-    httpOnly: true,
-    secure: true, 
-    sameSite: "none",
-    path: "/",
-  });
+  res.clearCookie("jwt", cookieOptions);
   res.status(200).json({ success: true, message: "Logout successful" });
 }
 

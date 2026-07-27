@@ -30,7 +30,6 @@ const FriendCard = ({ friend, showUnfriend = true, showViewProfile = false }) =>
   return (
     <div className="card bg-base-200 hover:shadow-md transition-shadow">
       <div className="card-body p-3 sm:p-4">
-        {/* USER INFO */}
         <Link to={`/profile/${friend._id}`} className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3 hover:opacity-80 transition-opacity">
           <div className="avatar size-12 sm:size-16 rounded-full overflow-hidden shrink-0">
             <img src={friend.profilePic} alt={friend.fullName} />

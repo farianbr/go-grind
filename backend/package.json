@@ -5,10 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "build:client": "cd ../frontend && npm install && npm run build",
-    "start": "node src/server.js",
-    "vercel-start": "node src/server.js",
-    "start:prod": "npm run build:client && node src/server.js"
+    "start": "node src/server.js"
   },
   "type": "module",
   "keywords": [],

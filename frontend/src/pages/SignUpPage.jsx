@@ -5,8 +5,6 @@ import { Link } from "react-router";
 import useSignUp from "../hooks/useSignup";
 import useLogin from "../hooks/useLogin";
 
-// import useSignUp from "../hooks/useSignUp";
-
 const SignUpPage = () => {
   const [signupData, setSignupData] = useState({
     fullName: "",
@@ -36,9 +34,7 @@ const SignUpPage = () => {
       data-theme="dark"
     >
       <div className="border border-primary/25 flex flex-col lg:flex-row w-full max-w-5xl mx-auto bg-base-100 rounded-xl shadow-lg overflow-hidden">
-        {/* SIGNUP FORM - LEFT SIDE */}
         <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
-          {/* LOGO */}
           <div className="mb-4 flex items-center justify-start gap-2">
             <img src="/go-grind.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
 
@@ -47,7 +43,6 @@ const SignUpPage = () => {
             </span>
           </div>
 
-          {/* ERROR MESSAGE IF ANY */}
           {error && (
             <div className="alert alert-error mb-4">
               <span>{error.response.data.message}</span>
@@ -65,7 +60,6 @@ const SignUpPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {/* FULLNAME */}
                   <fieldset className="fieldset">
                     <label htmlFor="fullName" className="label">
                       Full Name
@@ -85,7 +79,6 @@ const SignUpPage = () => {
                       required
                     />
                   </fieldset>
-                  {/* EMAIL */}
                   <fieldset className="fieldset">
                     <label htmlFor="email" className="label">
                       Email
@@ -102,7 +95,6 @@ const SignUpPage = () => {
                       required
                     />
                   </fieldset>
-                  {/* PASSWORD */}
                   <fieldset className="fieldset">
                     <label htmlFor="password" className="label">
                       Password
@@ -197,10 +189,8 @@ const SignUpPage = () => {
           </div>
         </div>
 
-        {/* SIGNUP FORM - RIGHT SIDE */}
         <div className="hidden lg:flex w-full lg:w-1/2 bg-primary/10 items-center justify-center">
           <div className="max-w-md p-8">
-            {/* Illustration */}
             <div className="relative aspect-square max-w-sm mx-auto">
               <img
                 src="/illustration.png"

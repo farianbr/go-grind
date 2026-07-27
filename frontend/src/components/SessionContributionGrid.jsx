@@ -13,7 +13,6 @@ const SessionContributionGrid = () => {
     enabled: !!authUser,
   });
 
-  // Scroll to rightmost on mount
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollLeft =
@@ -21,13 +20,11 @@ const SessionContributionGrid = () => {
     }
   }, [sessions]);
 
-  // Generate last 1 year of data (365 days ≈ 52 weeks)
   const contributionData = useMemo(() => {
     const days = [];
     const today = new Date();
     const sessionMap = new Map();
 
-    // Build session map by date
     sessions.forEach((s) => {
       const date = new Date(s.startTime || s.createdAt);
       const dateKey = date.toISOString().split("T")[0];
@@ -35,7 +32,6 @@ const SessionContributionGrid = () => {
       sessionMap.set(dateKey, (sessionMap.get(dateKey) || 0) + duration);
     });
 
-    // Generate 365 days (52 weeks)
     for (let i = 364; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
@@ -52,7 +48,6 @@ const SessionContributionGrid = () => {
       });
     }
 
-    // Group by weeks
     const weeks = [];
     for (let i = 0; i < days.length; i += 7) {
       weeks.push(days.slice(i, i + 7));
@@ -84,7 +79,6 @@ const SessionContributionGrid = () => {
   );
   const totalHours = Math.floor(totalMinutes / 60);
 
-  // Calculate streak data
   const streakData = useMemo(() => {
     if (sessions.length === 0)
       return { currentStreak: 0, longestStreak: 0, lastStreamDate: null };
@@ -101,7 +95,6 @@ const SessionContributionGrid = () => {
       .toISOString()
       .split("T")[0];
 
-    // Calculate current streak
     let currentStreak = 0;
     let checkDate =
       sortedDates[0] === today || sortedDates[0] === yesterday
@@ -121,7 +114,6 @@ const SessionContributionGrid = () => {
       }
     }
 
-    // Calculate longest streak
     let longestStreak = 0;
     let tempStreak = 1;
 
@@ -148,7 +140,6 @@ const SessionContributionGrid = () => {
 
   return (
     <div className="grid grid-cols-1 2xl:grid-cols-[1fr_1fr] gap-4">
-      {/* Contribution Grid Section */}
       <div className="card bg-base-200 ">
         <div className="card-body p-3 sm:p-4 md:p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
@@ -161,7 +152,6 @@ const SessionContributionGrid = () => {
           </div>
 
           <div className="flex gap-1 sm:gap-2">
-            {/* Fixed week labels on the left */}
             <div className="flex flex-col gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] text-base-content/60 pr-1 pt-2 sm:pr-2 sticky left-0 bg-base-200 z-10">
               <div className="h-2 sm:h-3"></div>
               <div className="h-2 sm:h-3">Mon</div>
@@ -172,7 +162,6 @@ const SessionContributionGrid = () => {
               <div className="h-2 sm:h-3"></div>
             </div>
 
-            {/* Scrollable contribution grid */}
             <div
               className="flex-1 overflow-x-auto py-2 pl-1"
               ref={scrollContainerRef}
@@ -210,7 +199,6 @@ const SessionContributionGrid = () => {
           </div>
         </div>
       </div>
-      {/* Daily Streak Section */}
       <div className="card bg-base-200">
         <div className="card-body p-3 sm:p-4 md:p-5">
           <h3 className="font-semibold text-sm sm:text-base mb-3">
@@ -218,7 +206,6 @@ const SessionContributionGrid = () => {
           </h3>
 
           <div className="flex flex-col sm:flex-row m-auto gap-4">
-            {/* Current Streak */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
                 <svg
@@ -240,7 +227,6 @@ const SessionContributionGrid = () => {
               </div>
             </div>
 
-            {/* Longest Streak */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-warning/10 flex items-center justify-center">
                 <svg
@@ -268,7 +254,6 @@ const SessionContributionGrid = () => {
               </div>
             </div>
 
-            {/* Total Sessions */}
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-success/10 flex items-center justify-center">
                 <svg

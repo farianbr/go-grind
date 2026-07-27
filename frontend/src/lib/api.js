@@ -39,19 +39,16 @@ export async function getRecommendedUsers() {
   return response.data;
 }
 
-// Get user profile by ID
 export async function getUserProfile(userId) {
   const response = await axiosInstance.get(`/users/profile/${userId}`);
   return response.data;
 }
 
-// Get user statistics
 export async function getUserStatistics(userId) {
   const response = await axiosInstance.get(`/users/${userId}/statistics`);
   return response.data;
 }
 
-// Get user spaces
 export async function getUserSpaces(userId) {
   const response = await axiosInstance.get(`/users/${userId}/spaces`);
   return response.data;
@@ -98,17 +95,11 @@ export async function unfriend(friendId) {
   return response.data;
 }
 
-export async function markNotificationsSeen() {
-  const response = await axiosInstance.put("/users/notifications/mark-seen");
-  return response.data;
-}
-
 export async function getStreamToken() {
   const response = await axiosInstance.get("/chat/token");
   return response.data;
 }
 
-// Spaces API
 export async function createSpace(spaceData) {
   const response = await axiosInstance.post("/spaces", spaceData);
   return response.data;
@@ -158,18 +149,6 @@ export async function deleteSpace(spaceId) {
   return response.data;
 }
 
-// Sessions
-export async function createSession(spaceId, sessionData) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/sessions`, sessionData);
-  return response.data;
-}
-
-export async function updateSessionStatus(spaceId, sessionId, statusData) {
-  const response = await axiosInstance.patch(`/spaces/${spaceId}/sessions/${sessionId}`, statusData);
-  return response.data;
-}
-
-// Announcements
 export async function createAnnouncement(spaceId, announcementData) {
   const response = await axiosInstance.post(`/spaces/${spaceId}/announcements`, announcementData);
   return response.data;
@@ -180,7 +159,6 @@ export async function deleteAnnouncement(spaceId, announcementId) {
   return response.data;
 }
 
-// Streams
 export async function joinStream(spaceId, streamData) {
   const response = await axiosInstance.post(`/spaces/${spaceId}/streams/join`, streamData);
   return response.data;
@@ -188,16 +166,6 @@ export async function joinStream(spaceId, streamData) {
 
 export async function leaveStream(spaceId) {
   const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/leave`);
-  return response.data;
-}
-
-export async function updateGrindingTopic(spaceId, grindingTopic) {
-  const response = await axiosInstance.patch(`/spaces/${spaceId}/streams/topic`, { grindingTopic });
-  return response.data;
-}
-
-export async function toggleStreamMedia(spaceId, mediaSettings) {
-  const response = await axiosInstance.patch(`/spaces/${spaceId}/streams/media`, mediaSettings);
   return response.data;
 }
 
@@ -220,7 +188,6 @@ export async function uploadPhoto(file) {
   }
 }
 
-// Notifications API
 export async function getNotifications(page = 1, limit = 20) {
   const response = await axiosInstance.get(`/notifications?page=${page}&limit=${limit}`);
   return response.data;
@@ -246,7 +213,6 @@ export async function deleteNotification(notificationId) {
   return response.data;
 }
 
-// User Sessions API
 export async function getUserSessions(userId) {
   const response = await axiosInstance.get(`/sessions/user/${userId}`);
   return response.data;

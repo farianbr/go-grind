@@ -22,18 +22,15 @@ const Navbar = () => {
 
   const { logoutMutation } = useLogout();
 
-  // Use the unread count hook
   const unreadCount = useNotificationUnreadCount();
 
-  // Fetch recent notifications with polling for real-time updates
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: getNotifications,
-    refetchInterval: 5000, // Poll every 5 seconds
-    refetchIntervalInBackground: false, // Only poll when tab is active
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
   });
 
-  // Mark all as read mutation
   const { mutate: markAllAsReadMutation, isPending: isMarkingAllAsRead } = useMutation({
     mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
@@ -43,11 +40,8 @@ const Navbar = () => {
     },
   });
 
-
-  // Get recent 5 notifications
   const recentNotifications = notifications?.notifications?.slice(0, 5);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target)) {
@@ -85,7 +79,6 @@ const Navbar = () => {
     <nav className="bg-base-200 border-b border-base-300 fixed top-0 left-0 right-0 z-30 h-16 flex items-center">
       <div className="w-full px-2 sm:px-4 lg:px-8">
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
-          {/* Logo - responsive sizing */}
           <div className="shrink-0 min-w-0">
             <Link to="/" className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5">
               <img src="/go-grind-logo.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
@@ -95,12 +88,9 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Right side controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Mobile sidebar toggle */}
             <FloatingSideBar />
             
-            {/* Notifications Button with Dropdown */}
             <div className="relative" ref={notificationDropdownRef}>
               <button
                 className="btn btn-circle bg-base-100 hover:bg-base-300 border-0 w-9 h-9 min-h-9 sm:w-10 sm:h-10 sm:min-h-10 relative"
@@ -114,7 +104,6 @@ const Navbar = () => {
                 )}
               </button>
 
-              {/* Notifications Dropdown */}
               {showNotificationDropdown && (
                 <div className="absolute -right-20 mt-2 w-[calc(100vw-3rem)] sm:w-80 md:w-96  bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 max-h-[70vh] sm:max-h-96 overflow-hidden flex flex-col">
                   <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-base-300 flex items-center justify-between gap-2">
@@ -139,7 +128,6 @@ const Navbar = () => {
                     </div>
                   </div>
 
-                  {/* Notifications List */}
                   <div className="overflow-y-auto flex-1">
                     {recentNotifications.length > 0 ? (
                       recentNotifications.map((notification) => (
@@ -186,7 +174,6 @@ const Navbar = () => {
                     )}
                   </div>
 
-                  {/* See All Button */}
                   {notifications?.notifications.length > 0 && (
                     <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-base-300">
                       <button
@@ -203,7 +190,6 @@ const Navbar = () => {
 
             <ThemeSelector />
 
-            {/* Profile Dropdown */}
             <div className="relative" ref={profileDropdownRef}>
               <button
                 className="btn bg-base-100 hover:bg-base-300 border-0 rounded-full h-9 min-h-9 sm:h-10 sm:min-h-10 pl-1 pr-2 sm:pr-3 flex items-center gap-1"
@@ -221,7 +207,6 @@ const Navbar = () => {
                 <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>
 
-              {/* Dropdown Menu */}
               {showProfileDropdown && (
                 <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 py-2">
                   <div className="px-4 pt-2 pb-4 border-b border-base-300">

@@ -17,15 +17,13 @@ const ParticipantActions = ({
   const [showTasks, setShowTasks] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch participant's session
   const { data: session } = useQuery({
     queryKey: ["participantSession", spaceId, participantUserId],
     queryFn: () => getCurrentSession(spaceId, participantUserId),
     enabled: !!spaceId && !!participantUserId,
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
   });
 
-  // Encourage mutation
   const { mutate: encourage, isPending: isEncouraging } = useMutation({
     mutationFn: () => encourageParticipant(session._id),
     onSuccess: () => {
@@ -41,7 +39,6 @@ const ParticipantActions = ({
     },
   });
 
-  // Remove encouragement mutation
   const { mutate: removeEncourage, isPending: isRemoving } = useMutation({
     mutationFn: () => removeEncouragement(session._id),
     onSuccess: () => {
@@ -68,7 +65,6 @@ const ParticipantActions = ({
   );
   const isOwnView = participantUserId === authUserId;
 
-  // Determine task status icon (larger default size for better touch targets on small screens)
   const taskStatusIcon =
     totalTasks === 0 ? (
       <Circle className="size-4 sm:size-5 text-base-content/60" />
@@ -90,7 +86,6 @@ const ParticipantActions = ({
 
   return (
     <div className="flex items-center gap-1">
-      {/* Task Status Button */}
       <div className="relative group">
         <button
           onMouseEnter={() => setShowTasks(true)}
@@ -102,7 +97,6 @@ const ParticipantActions = ({
           {taskStatusIcon}
         </button>
 
-        {/* Task Tooltip */}
         {showTasks && (
           <div
             className="absolute bottom-full right-0 mb-1 sm:mb-2 bg-base-100 rounded-lg shadow-xl border border-base-300 p-2 sm:p-3 min-w-[150px] sm:min-w-[180px] z-50"
@@ -147,7 +141,6 @@ const ParticipantActions = ({
         )}
       </div>
 
-      {/* Encourage Button */}
       <button
         onClick={handleEncourageClick}
         disabled={isOwnView || isEncouraging || isRemoving}

@@ -26,14 +26,11 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     return true;
   });
   
-  // Use external visibility if provided, otherwise use internal state
   const isVisible = externalVisible !== undefined ? externalVisible : internalVisible;
   const setIsVisible = (value) => {
     if (externalVisible !== undefined && onToggleVisibility) {
-      // If controlled from parent, notify parent
       onToggleVisibility(value);
     } else {
-      // Otherwise use internal state
       setInternalVisible(value);
       if (onToggleVisibility) {
         onToggleVisibility(value);
@@ -47,22 +44,19 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
   const queryClient = useQueryClient();
 
-  // Notify parent component when visibility changes (for uncontrolled mode)
   useEffect(() => {
     if (externalVisible === undefined && onToggleVisibility) {
       onToggleVisibility(internalVisible);
     }
   }, [internalVisible, onToggleVisibility, externalVisible]);
 
-  // Fetch current session
   const { data: session, isLoading } = useQuery({
     queryKey: ["currentSession", spaceId, authUser._id],
     queryFn: () => getCurrentSession(spaceId),
     enabled: !!spaceId && !!authUser,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
-  // Update task mutation
   const { mutate: updateTask, isPending: isUpdatingTask } = useMutation({
     mutationFn: ({ sessionId, taskId, isCompleted }) =>
       updateSessionTask(sessionId, taskId, isCompleted),
@@ -78,10 +72,8 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     },
   });
 
-  // Add task mutation (we'll need to create this API endpoint)
   const { mutate: addTask, isPending: isAddingTaskMutation } = useMutation({
     mutationFn: async ({ sessionId, title }) => {
-      // For now, we'll need to create this endpoint
       
       const response = await axiosInstance.post(
         `/sessions/${sessionId}/tasks`,
@@ -102,14 +94,13 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     },
   });
 
-  // Timer effect - only count when in call (component is mounted)
   useEffect(() => {
     if (!session) return;
 
     const startTime = new Date(session.startTime).getTime();
     const interval = setInterval(() => {
       const now = Date.now();
-      const elapsed = Math.floor((now - startTime) / 1000); // in seconds
+      const elapsed = Math.floor((now - startTime) / 1000);
       setElapsedTime(elapsed);
     }, 1000);
 
@@ -172,7 +163,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
 
   return (
     <>
-      {/* Sidebar */}
       <div
         className={`bg-base-200 shadow-2xl overflow-y-auto border-l border-base-300 ${
           isVisible ? "w-full md:w-80 lg:w-96 translate-x-0" : "w-0 translate-x-full"
@@ -181,7 +171,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
       >
         {isVisible && (
           <div className="p-4 sm:p-6 space-y-6">
-            {/* Header with close button */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold">Session Details</h2>
@@ -198,7 +187,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
               </button>
             </div>
 
-            {/* Member Count - Only show on screens below xl */}
             {participantCount > 0 && (
               <div className="xl:hidden">
                 <div className="card bg-base-100 shadow-lg">
@@ -217,7 +205,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
               </div>
             )}
 
-            {/* Timer Section */}
             <div className="card bg-base-100 shadow-lg">
               <div className="card-body p-4">
                 <div className="flex items-center gap-2 mb-3">
@@ -225,7 +212,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   <h3 className="font-semibold">Timer</h3>
                 </div>
 
-                {/* Elapsed Time */}
                 <div className="text-center mb-4">
                   <div className="text-4xl font-bold font-mono text-primary">
                     {formatTime(elapsedTime)}
@@ -235,7 +221,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   </p>
                 </div>
 
-                {/* Progress Bar */}
                 <div className="mb-3">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs text-base-content/70">
@@ -256,7 +241,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   ></progress>
                 </div>
 
-                {/* Target Duration */}
                 <div className="flex items-center justify-between bg-base-200 p-3 rounded-lg">
                   <div className="flex items-center gap-2">
                     <Target className="size-4 text-base-content/70" />
@@ -267,7 +251,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   </span>
                 </div>
 
-                {/* Target Reached Badge */}
                 {isTargetReached() && (
                   <div className="alert alert-success mt-3 py-2">
                     <Trophy className="size-4" />
@@ -277,7 +260,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
               </div>
             </div>
 
-            {/* Tasks Section */}
             <div className="card bg-base-100 shadow-lg">
               <div className="card-body p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -304,7 +286,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   </div>
                 </div>
 
-                {/* Add Task Form */}
                 {isAddingTask && (
                   <div className="mb-3 flex gap-2">
                     <input
@@ -390,7 +371,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
                   </div>
                 )}
 
-                {/* Task Progress */}
                 {session.tasks.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-base-300">
                     <div className="flex justify-between items-center text-xs text-base-content/70 mb-2">
@@ -414,7 +394,6 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
               </div>
             </div>
 
-            {/* Session Info */}
             <div className="card bg-base-100 shadow-lg">
               <div className="card-body p-4">
                 <h3 className="font-semibold mb-3">Session Info</h3>
@@ -438,12 +417,10 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
         )}
       </div>
 
-      {/* Export toggle button state via props */}
     </>
   );
 };
 
-// Export a separate toggle button component
 export const SidebarToggleButton = ({ onClick }) => (
   <button
     onClick={onClick}

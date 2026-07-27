@@ -79,7 +79,6 @@ const NotificationsPage = () => {
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request accepted");
       
-      // Find and mark the notification as read before removing
       const notificationToMark = notifications.find(
         n => n.metadata?.friendRequestId === friendRequestId && !n.read
       );
@@ -87,7 +86,6 @@ const NotificationsPage = () => {
         markAsReadMutation(notificationToMark._id);
       }
       
-      // Immediately update the UI by filtering out the notification
       queryClient.setQueryData(["notifications", currentPage], (old) => {
         if (!old) return old;
         return {
@@ -108,7 +106,6 @@ const NotificationsPage = () => {
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request declined");
       
-      // Find and mark the notification as read before removing
       const notificationToMark = notifications.find(
         n => n.metadata?.friendRequestId === friendRequestId && !n.read
       );
@@ -116,7 +113,6 @@ const NotificationsPage = () => {
         markAsReadMutation(notificationToMark._id);
       }
       
-      // Immediately update the UI by filtering out the notification
       queryClient.setQueryData(["notifications", currentPage], (old) => {
         if (!old) return old;
         return {
@@ -132,12 +128,10 @@ const NotificationsPage = () => {
   });
 
   const handleNotificationClick = (notification) => {
-    // Mark as read
     if (!notification.read) {
       markAsReadMutation(notification._id);
     }
 
-    // Navigate based on notification type
     if (notification.relatedSpace) {
       navigate(`/spaces/${notification.relatedSpace._id}`);
     }
@@ -175,7 +169,6 @@ const NotificationsPage = () => {
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="container mx-auto max-w-4xl">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Notifications</h1>
@@ -197,7 +190,6 @@ const NotificationsPage = () => {
           )}
         </div>
 
-        {/* Notifications List */}
         {isLoading ? (
           <div className="flex justify-center py-8 sm:py-12">
             <span className="loading loading-spinner loading-md sm:loading-lg"></span>
@@ -214,24 +206,21 @@ const NotificationsPage = () => {
               >
                 <div className="card-body p-3 sm:p-4">
                   <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
-                    {/* Icon */}
                     <div className="shrink-0">
                       <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
                         {getNotificationIcon(notification.type)}
                       </div>
                     </div>
 
-                    {/* Sender Avatar */}
                     <div className="avatar shrink-0">
                       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
                         <img
-                          src={notification.sender?.profilePic || "/avatar.png"}
+                          src={notification.sender?.profilePic || "/blank-pp.png"}
                           alt={notification.sender?.fullName || "User"}
                         />
                       </div>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs sm:text-sm ${!notification.read ? 'font-semibold' : ''}`}>
                         {notification.type === "encouragement" && `${notification.sender?.fullName} ` }{notification.message}
@@ -249,7 +238,6 @@ const NotificationsPage = () => {
                         })}
                       </p>
 
-                      {/* Friend Request Actions */}
                       {notification.type === "friend_request" && 
                        notification.metadata?.friendRequestId && (
                         <div className="flex gap-2 mt-2 sm:mt-3">
@@ -287,7 +275,6 @@ const NotificationsPage = () => {
                       )}
                     </div>
 
-                    {/* Delete Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -312,7 +299,6 @@ const NotificationsPage = () => {
           </div>
         )}
 
-        {/* Pagination Controls */}
         {notifications && notifications.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-6">
             <button

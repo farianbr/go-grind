@@ -33,7 +33,6 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    // Reference to related entities
     relatedSpace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Space",
@@ -46,7 +45,6 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // Additional data for different notification types
     metadata: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -57,7 +55,6 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-// Index for efficient queries
 notificationSchema.index({ recipient: 1, createdAt: -1 });
 notificationSchema.index({ recipient: 1, read: 1 });
 

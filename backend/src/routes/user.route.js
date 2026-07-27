@@ -9,7 +9,6 @@ import {
   getMyFriends,
   getOutgoingFriendRequests,
   getRecommendedUsers,
-  markNotificationsSeen,
   sendFriendRequest,
   unfriend,
   uploadPhoto,
@@ -20,7 +19,7 @@ import {
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() }); // handle file uploads in memory
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(protectRoute);
 
@@ -36,7 +35,6 @@ router.delete("/unfriend/:id", unfriend);
 
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendRequests);
-router.put("/notifications/mark-seen", markNotificationsSeen);
 
 router.get("/profile/:userId", getUserProfile);
 router.get("/:userId/statistics", getUserStatistics);

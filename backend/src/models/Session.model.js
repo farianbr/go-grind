@@ -54,7 +54,6 @@ const sessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // Track encouragements from other users
     encouragements: [
       {
         user: {
@@ -67,7 +66,6 @@ const sessionSchema = new mongoose.Schema(
         },
       },
     ],
-    // Optional: track video/audio usage during session
     mediaUsage: {
       videoEnabled: { type: Boolean, default: false },
       audioEnabled: { type: Boolean, default: false },
@@ -76,7 +74,6 @@ const sessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Index for faster queries
 sessionSchema.index({ user: 1, space: 1 });
 sessionSchema.index({ space: 1, endTime: -1 });
 sessionSchema.index({ user: 1, endTime: -1 });

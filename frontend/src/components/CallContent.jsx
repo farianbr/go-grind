@@ -50,7 +50,6 @@ const CallContent = ({
   const [isMobile, setIsMobile] = useState(false);
   const [isVideoCover, setIsVideoCover] = useState(false);
 
-  // Add style to ensure video elements cover container properly
   useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -64,7 +63,6 @@ const CallContent = ({
     return () => document.head.removeChild(style);
   }, [isVideoCover]);
 
-  // Detect if device is mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(
@@ -77,7 +75,6 @@ const CallContent = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Toggle microphone with proper error handling
   const toggleMicrophone = async () => {
     if (isTogglingMic) return;
     setIsTogglingMic(true);
@@ -102,7 +99,6 @@ const CallContent = ({
     }
   };
 
-  // Toggle camera with proper error handling
   const toggleCamera = async () => {
     if (isTogglingCam) return;
     setIsTogglingCam(true);
@@ -128,12 +124,10 @@ const CallContent = ({
     }
   };
 
-  // Flip camera (switch between front and back on mobile devices)
   const flipCamera = async () => {
     if (isFlippingCam || isCamMuted) return;
     setIsFlippingCam(true);
     try {
-      // Use Stream's flip method
       await camera.flip();
       toast.success("Camera flipped");
     } catch (error) {
@@ -149,7 +143,6 @@ const CallContent = ({
     await onLeaveStream();
   };
 
-  // Handle calling state - show appropriate UI
   if (callingState === CallingState.LEFT) {
     return null;
   }
@@ -176,7 +169,6 @@ const CallContent = ({
     );
   }
 
-  // Get grinding info for each participant from space.activeStreams
   const getGrindingInfo = (participantUserId) => {
     const stream = space?.activeStreams?.find(
       (s) => s.user?._id === participantUserId || s.user === participantUserId
@@ -184,7 +176,6 @@ const CallContent = ({
     return stream?.grindingTopic || "";
   };
 
-  // Only render UI when in JOINED state
   if (callingState !== CallingState.JOINED) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -198,28 +189,21 @@ const CallContent = ({
 
   return (
     <>
-      {/* Video Call Area - Takes remaining space */}
       <div className="flex-1 overflow-auto bg-base-300 relative">
         <StreamTheme className="h-full w-full flex flex-col">
-          {/* Header with Controls - Modern Sleek Design */}
           <div className="bg-linear-to-r from-base-100 via-base-200 to-base-100 border-b border-base-300 shrink-0">
             <div className="max-w-full mx-auto px-3 sm:px-6 py-3 sm:py-4">
               <div className="flex items-center justify-between gap-3 sm:gap-6">
-                {/* Left Section - Space Info & Stats */}
                 <div className="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
-                  {/* Space Name */}
                   <div className="shrink min-w-0">
                     <h1 className="text-lg sm:text-xl lg:text-2xl font-bold truncate">
                       {space?.name}
                     </h1>
                   </div>
 
-                  {/* Divider - Only show on larger screens */}
                   <div className="hidden xl:block h-10 w-px bg-base-300"></div>
 
-                  {/* Stats Pills - Only show on xl and above */}
                   <div className="hidden xl:flex items-center gap-3">
-                    {/* Participant Count */}
                     <div className="flex items-center gap-2 bg-base-300/50 px-3 py-1.5 rounded-full border border-base-300">
                       <Users size={16} className="text-primary" />
                       <span className="text-sm font-medium">
@@ -229,9 +213,7 @@ const CallContent = ({
                   </div>
                 </div>
 
-                {/* Center Section - Media Controls */}
                 <div className="flex items-center gap-2">
-                  {/* Video cover toggle */}
 
                   <button
                     onClick={() => setIsVideoCover(!isVideoCover)}
@@ -245,7 +227,6 @@ const CallContent = ({
                     )}
                   </button>
 
-                  {/* Camera Flip Button - Only show on mobile when camera is on */}
                   {isMobile && !isCamMuted && (
                     <button
                       onClick={flipCamera}
@@ -260,7 +241,6 @@ const CallContent = ({
                       )}
                     </button>
                   )}
-                  {/* Camera Toggle */}
                   <button
                     onClick={toggleCamera}
                     className={`btn btn-circle btn-sm sm:btn-md transition-all duration-200 ${
@@ -280,7 +260,6 @@ const CallContent = ({
                     )}
                   </button>
 
-                  {/* Microphone Toggle */}
                   <button
                     onClick={toggleMicrophone}
                     className={`btn btn-circle btn-sm sm:btn-md transition-all duration-200 ${
@@ -300,7 +279,6 @@ const CallContent = ({
                     )}
                   </button>
 
-                  {/* Leave Button */}
                   <button
                     className="btn btn-error btn-circle btn-sm sm:btn-md sm:w-30 transition-all duration-200 hover:shadow-error/50"
                     onClick={handleLeave}
@@ -324,7 +302,6 @@ const CallContent = ({
                     )}
                   </button>
 
-                  {/* Sidebar Toggle - Only show when sidebar is hidden */}
                   {!sidebarVisible && (
                     <SidebarToggleButton
                       onClick={() => setSidebarVisible(true)}
@@ -335,7 +312,6 @@ const CallContent = ({
             </div>
           </div>
 
-          {/* Responsive Grid Layout for participants - aligned to top */}
           <div className="flex-1 overflow-auto bg-base-300 p-2 sm:p-4">
             <div className="w-full max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4 content-start">
               {participants.map((participant) => {
@@ -362,7 +338,6 @@ const CallContent = ({
                       />
                     </div>
 
-                    {/* Top overlay - Name and grinding topic */}
                     <div className="absolute top-1 sm:top-2 left-1 sm:left-2 right-1 sm:right-2 flex items-start justify-between gap-1 sm:gap-2">
                       <div className="flex justify-between bg-base-100/70 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-md sm:rounded-lg shadow-lg flex-1 min-w-0">
                         <div className="flex-1 min-w-0">
@@ -384,7 +359,6 @@ const CallContent = ({
                           )}
                         </div>
 
-                        {/* Remove button for creator - only show on hover */}
                         {isCreator && !isMe && (
                           <button
                             onClick={() =>
@@ -402,9 +376,7 @@ const CallContent = ({
                       </div>
                     </div>
 
-                    {/* Bottom overlay - Media status indicators + Task Status + Encourage */}
                     <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 right-1 sm:right-2 flex items-center justify-between gap-1 sm:gap-2">
-                      {/* Left side - Media status */}
                       <div className="flex items-center gap-1 sm:gap-2">
                         {hasVideoOn ? (
                           <div className="bg-base-100/90 backdrop-blur-xs p-1 sm:p-1.5 rounded-full shadow-lg">
@@ -432,7 +404,6 @@ const CallContent = ({
                         )}
                       </div>
 
-                      {/* Right side - Task Status + Encourage - Show for all participants */}
                       <ParticipantActions
                         participantUserId={participant.userId}
                         participantName={participant.name}
@@ -448,7 +419,6 @@ const CallContent = ({
         </StreamTheme>
       </div>
 
-      {/* Session Sidebar - Beside the stream window */}
       <SessionSidebar
         spaceId={spaceId}
         authUser={authUser}

@@ -44,11 +44,9 @@ const ProfilePage = () => {
   const queryClient = useQueryClient();
   const [showUnfriendModal, setShowUnfriendModal] = useState(false);
 
-  // Determine if viewing own profile or another user's
   const isOwnProfile = !userId || userId === authUser?._id;
   const targetUserId = isOwnProfile ? authUser?._id : userId;
 
-  // Fetch user profile
   const {
     data: userProfile,
     isLoading: profileLoading,
@@ -59,59 +57,50 @@ const ProfilePage = () => {
     enabled: !!targetUserId,
   });
 
-  // Check if viewing user is a friend
   const isFriend = userProfile?.friends?.some(
     (friend) => friend._id === authUser?._id || friend === authUser?._id
   );
 
-  // Fetch incoming friend requests to check if there's a pending request
   const { data: friendRequestsData } = useQuery({
     queryKey: ["friendRequests"],
     queryFn: getFriendRequests,
     enabled: !isOwnProfile && !!authUser,
   });
 
-  // Fetch outgoing friend requests to check if we've already sent a request
   const { data: outgoingRequests = [] } = useQuery({
     queryKey: ["outgoingFriendReqs"],
     queryFn: getOutgoingFriendReqs,
     enabled: !isOwnProfile && !!authUser,
   });
 
-  // Check if there's an incoming friend request from this user
   const incomingRequest = friendRequestsData?.incomingRequests?.find(
     (req) => req.sender?._id === targetUserId || req.sender === targetUserId
   );
 
-  // Check if we've sent a friend request to this user
   const hasSentRequest = outgoingRequests?.some(
     (req) => req.recipient?._id === targetUserId || req.recipient === targetUserId
   );
 
   const canViewDetails = isOwnProfile || isFriend;
 
-  // Fetch user statistics - only if can view details
   const { data: statistics, isLoading: statsLoading } = useQuery({
     queryKey: ["userStatistics", targetUserId],
     queryFn: () => getUserStatistics(targetUserId),
     enabled: !!targetUserId && canViewDetails,
   });
 
-  // Fetch user sessions - only if can view details
   const { data: sessions, isLoading: sessionsLoading } = useQuery({
     queryKey: ["userSessions", targetUserId],
     queryFn: () => getUserSessions(targetUserId),
     enabled: !!targetUserId && canViewDetails,
   });
 
-  // Fetch user spaces - only if can view details
   const { data: spaces, isLoading: spacesLoading } = useQuery({
     queryKey: ["userSpaces", targetUserId],
     queryFn: () => getUserSpaces(targetUserId),
     enabled: !!targetUserId && canViewDetails,
   });
 
-  // Unfriend mutation
   const { mutate: unfriendMutation, isPending: isUnfriending } = useMutation({
     mutationFn: unfriend,
     onSuccess: () => {
@@ -128,7 +117,6 @@ const ProfilePage = () => {
     },
   });
 
-  // Send friend request mutation
   const { mutate: sendFriendRequestMutation, isPending: isSendingRequest } = useMutation({
     mutationFn: sendFriendRequest,
     onSuccess: () => {
@@ -140,7 +128,6 @@ const ProfilePage = () => {
     },
   });
 
-  // Accept friend request mutation
   const { mutate: acceptFriendRequestMutation, isPending: isAccepting } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
@@ -154,7 +141,6 @@ const ProfilePage = () => {
     },
   });
 
-  // Decline friend request mutation
   const { mutate: declineFriendRequestMutation, isPending: isDeclining } = useMutation({
     mutationFn: declineFriendRequest,
     onSuccess: () => {
@@ -194,7 +180,6 @@ const ProfilePage = () => {
     return <PageLoader />;
   }
 
-  // Show loader for additional data only if we should be loading it
   if (canViewDetails && (statsLoading || sessionsLoading || spacesLoading)) {
     return <PageLoader />;
   }
@@ -226,11 +211,9 @@ const ProfilePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      {/* Profile Header */}
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body p-4 sm:p-6 lg:p-8">
           <div className="flex flex-col gap-6">
-            {/* Profile Picture and Basic Info */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
               <div className="avatar shrink-0">
                 <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-2">
@@ -252,7 +235,6 @@ const ProfilePage = () => {
                   </p>
                 )}
 
-                {/* User Details */}
                 <div className="flex flex-wrap gap-3 sm:gap-4 justify-center sm:justify-start text-sm">
                   {userProfile.location && (
                     <div className="flex items-center gap-1.5 text-base-content/60">
@@ -274,7 +256,6 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Friends Count */}
                 <div className="mt-3 flex items-center gap-2 justify-center sm:justify-start">
                   <Users className="size-5 text-primary" />
                   <span className="font-semibold">
@@ -284,7 +265,6 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex flex-col gap-2 w-full lg:w-auto lg:ml-auto mt-4 lg:mt-0">
               {isOwnProfile ? (
                 <Link to="/update-profile" className="btn btn-primary gap-2">
@@ -370,10 +350,8 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
       {canViewDetails && statistics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {/* Total Tasks Completed */}
           <div className="card bg-base-100 shadow-lg">
             <div className="card-body p-4 sm:p-6">
               <div className="flex items-center gap-3">
@@ -392,7 +370,6 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Total Sessions */}
           <div className="card bg-base-100 shadow-lg">
             <div className="card-body p-4 sm:p-6">
               <div className="flex items-center gap-3">
@@ -411,7 +388,6 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Total Time */}
           <div className="card bg-base-100 shadow-lg">
             <div className="card-body p-4 sm:p-6">
               <div className="flex items-center gap-3">
@@ -430,7 +406,6 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Avg Session */}
           <div className="card bg-base-100 shadow-lg">
             <div className="card-body p-4 sm:p-6">
               <div className="flex items-center gap-3">
@@ -451,7 +426,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* User Spaces */}
       {canViewDetails && spaces && spaces.length > 0 && (
         <div className="card bg-base-100 shadow-xl mb-6">
           <div className="card-body p-4 sm:p-6">
@@ -487,7 +461,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Recent Sessions */}
       {canViewDetails && sessions && sessions.length > 0 && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body p-4 sm:p-6">
@@ -496,7 +469,7 @@ const ProfilePage = () => {
             </h2>
             <div className="space-y-3">
               {sessions
-                .filter((session) => session.endTime) // Only show completed sessions (those with endTime)
+                .filter((session) => session.endTime)
                 .slice(0, 5)
                 .map((session) => (
                 <div
@@ -551,7 +524,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Limited View for Non-Friends */}
       {!canViewDetails && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body p-6 sm:p-8 text-center">
@@ -613,7 +585,6 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {/* Unfriend Confirmation Modal */}
       {showUnfriendModal && (
         <div className="modal modal-open">
           <div className="modal-box">

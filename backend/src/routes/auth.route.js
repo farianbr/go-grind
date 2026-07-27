@@ -9,8 +9,6 @@ import { protectRoute } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-//TODO --> reset password
-
 router.post("/signup", signup);
 router.post("/login", login);
 router.post("/logout", logout);

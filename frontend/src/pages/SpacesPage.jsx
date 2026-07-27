@@ -69,11 +69,9 @@ const SpacesPage = () => {
     return space.pendingRequests.some((user) => user._id === authUser._id);
   };
 
-  // Separate spaces into my spaces and discover spaces
   const mySpaces = spaces.filter((space) => isUserInSpace(space));
   const discoverSpaces = spaces.filter((space) => !isUserInSpace(space));
 
-  // Filter discover spaces
   const filteredDiscoverSpaces = discoverSpaces.filter((space) => {
     const matchesSkill = selectedSkill === "" || space.skill?.toLowerCase() === selectedSkill.toLowerCase();
     const matchesSearch =
@@ -92,7 +90,6 @@ const SpacesPage = () => {
     return (
       <div className="card bg-base-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-base-300">
         <div className="card-body p-4 sm:p-5 space-y-3 sm:space-y-4">
-          {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-base sm:text-lg mb-1.5 line-clamp-2">
@@ -108,12 +105,10 @@ const SpacesPage = () => {
             )}
           </div>
 
-          {/* Description */}
           <p className="text-xs sm:text-sm opacity-70 line-clamp-2">
             {space.description}
           </p>
 
-          {/* Creator */}
           <div className="flex items-center gap-2">
             <div className="avatar">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-base-300">
@@ -130,7 +125,6 @@ const SpacesPage = () => {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm pt-2 border-t border-base-300">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <Users className="size-3.5 sm:size-4" />
@@ -144,7 +138,6 @@ const SpacesPage = () => {
             )}
           </div>
 
-          {/* Action button */}
           <div className="card-actions justify-end pt-2">
             {isMember ? (
               <button
@@ -182,7 +175,6 @@ const SpacesPage = () => {
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8">
       <div className="container mx-auto  space-y-4 sm:space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
@@ -207,7 +199,6 @@ const SpacesPage = () => {
           </div>
         ) : (
           <>
-            {/* Tabs */}
             <div className="tabs tabs-box bg-base-200 p-1 w-full sm:w-auto inline-flex">
               <button
                 className={`tab tab-sm sm:tab-md ${activeTab === "my-spaces" ? "tab-active" : ""}`}
@@ -225,7 +216,6 @@ const SpacesPage = () => {
               </button>
             </div>
 
-            {/* My Spaces Tab */}
             {activeTab === "my-spaces" && (
               <div className="space-y-4">
                 {mySpaces.length === 0 ? (
@@ -246,12 +236,9 @@ const SpacesPage = () => {
               </div>
             )}
 
-            {/* Discover Spaces Tab */}
             {activeTab === "discover" && (
               <div className="space-y-4">
-                {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Search */}
                   <div className="flex-1">
                     <label className="input input-sm sm:input-md flex items-center gap-2 w-full">
                       <Search className="size-4 sm:size-5 opacity-70" />
@@ -266,7 +253,6 @@ const SpacesPage = () => {
                     </label>
                   </div>
 
-                  {/* Skill Filter */}
                   <select
                     className="select select-sm sm:select-md w-full sm:w-auto sm:min-w-[200px]"
                     value={selectedSkill}
@@ -304,7 +290,6 @@ const SpacesPage = () => {
         )}
       </div>
 
-      {/* Create Space Modal */}
       {showCreateModal && (
         <dialog className="modal modal-open">
           <div className="modal-box max-w-lg">

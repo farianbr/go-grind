@@ -14,7 +14,6 @@ const TopSpaces = () => {
   const topSpaces = useMemo(() => {
     return [...spaces]
       .map((space) => {
-        // Use backend-calculated totalStreamedMinutes
         const totalMinutes = space.totalStreamedMinutes || 0;
         const totalHours = totalMinutes / 60;
         return { ...space, totalHours };

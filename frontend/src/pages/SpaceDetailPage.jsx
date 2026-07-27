@@ -59,20 +59,16 @@ const SpaceDetailPage = () => {
     (member) => member._id === authUser?._id
   );
 
-  // Check if user is currently in this space's stream
   const isUserInThisStream = space?.activeStreams?.some(
     (stream) => stream.user._id === authUser?._id
   );
 
-  // Fetch session statistics
   const { data: sessionStats, isLoading: statsLoading } = useQuery({
     queryKey: ["sessionStats", id],
     queryFn: () => getSpaceSessionStats(id),
-    // Show stats to non-members as well (anyone viewing the space)
     enabled: !!id,
   });
 
-  // Notifications (shared cache with Navbar) - used to compute unread announcement count for this space
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: getNotifications,
@@ -84,7 +80,6 @@ const SpaceDetailPage = () => {
       if (!n) return false;
       if (n.type !== "announcement") return false;
       if (n.read) return false;
-      // relatedSpace may be an id string or an object
       const related = n.relatedSpace;
       return (
         String(related) === String(id) ||
@@ -237,9 +232,7 @@ const SpaceDetailPage = () => {
         {activeTab === "dashboard" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* If user is not a member show action button here in Dashboard */}
 
-              {/* Currently Grinding Section */}
               {isMember && (
                 <div className="card bg-base-200">
                   <div className="card-body p-3 sm:p-4 md:p-6">
@@ -271,7 +264,6 @@ const SpaceDetailPage = () => {
                       )}
                     </div>
 
-                    {/* Stream initialization notice */}
                     {!space.streamInitialized && !isCreator && (
                       <div className="alert alert-warning mb-3 sm:mb-4 py-2 sm:py-3">
                         <div className="text-xs sm:text-sm">
@@ -310,7 +302,7 @@ const SpaceDetailPage = () => {
                             <div className="avatar">
                               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 sm:ring-3 ring-primary ring-offset-base-100 ring-offset-1">
                                 <img
-                                  src={stream.user.profilePic || "/avatar.png"}
+                                  src={stream.user.profilePic || "/blank-pp.png"}
                                   alt={stream.user.fullName}
                                 />
                               </div>
@@ -341,7 +333,6 @@ const SpaceDetailPage = () => {
                 </div>
               )}
 
-              {/* Space Statistics Section */}
               {sessionStats && (
                 <div className="card bg-base-200">
                   <div className="card-body">
@@ -351,7 +342,6 @@ const SpaceDetailPage = () => {
 
                     {sessionStats.totalSessions > 0 ? (
                       <div className="flex flex-col lg:flex-row gap-4">
-                        {/* Stats Grid */}
                         <div className="flex-1">
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             <div className="stat bg-base-100 rounded-lg p-4">
@@ -454,7 +444,6 @@ const SpaceDetailPage = () => {
                 </div>
               )}
             </div>
-            {/* Right column - Recent Sessions */}
             {(isMember || isCreator) && (
               <div className="space-y-6">
                 <div className="card bg-base-200">
@@ -477,7 +466,7 @@ const SpaceDetailPage = () => {
                                   <div className="w-12 h-12 sm:w-10 sm:h-10 rounded-full">
                                     <img
                                       src={
-                                        session.user.profilePic || "/avatar.png"
+                                        session.user.profilePic || "/blank-pp.png"
                                       }
                                       alt={session.user.fullName}
                                     />
@@ -495,7 +484,6 @@ const SpaceDetailPage = () => {
                                       </p>
                                     </div>
 
-                                    {/* Badge */}
                                     <div className="shrink-0 ">
                                       <div
                                         className={`badge badge-sm  ${
@@ -524,7 +512,6 @@ const SpaceDetailPage = () => {
 
                                   <div className="flex items-center justify-between gap-3 mt-2">
                                     <div className="text-xs text-base-content/50 flex items-center gap-2">
-                                      {/* tasks: use icon on small screens */}
                                       <span className="inline-flex items-center gap-1">
                                         <span className="hidden xl:inline">
                                           {session.tasksCompleted}/
@@ -538,7 +525,6 @@ const SpaceDetailPage = () => {
                                       </span>
                                     </div>
 
-                                    {/* Date/time for xl+ on the right */}
                                     <div className="hidden xl:block text-right ml-2 text-[11px] text-base-content/50 shrink-0">
                                       <div>
                                         {format(
@@ -547,7 +533,6 @@ const SpaceDetailPage = () => {
                                         )}
                                       </div>
                                     </div>
-                                    {/* Date/time for small screens below name */}
                                     <div className="block xl:hidden text-xs text-base-content/50 mt-1">
                                       {format(
                                         new Date(session.endTime),
@@ -593,7 +578,6 @@ const SpaceDetailPage = () => {
         {activeTab === "about" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
-              {/* Members Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold text-lg mb-4">
@@ -632,7 +616,6 @@ const SpaceDetailPage = () => {
                       </Link>
                     ))}
                   </div>
-                  {/* Pending Requests - moved inside Members card */}
                   {isCreator && space.pendingRequests.length > 0 && (
                     <div className="mt-4">
                       <h4 className="font-semibold mb-3">
@@ -699,7 +682,6 @@ const SpaceDetailPage = () => {
                 </div>
               </div>
 
-              {/* About/Description Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold text-lg mb-2">About</h3>
@@ -709,7 +691,6 @@ const SpaceDetailPage = () => {
             </div>
 
             <div className="space-y-6">
-              {/* Creator Section */}
               <div className="card bg-base-200">
                 <div className="card-body">
                   <h3 className="font-semibold mb-4">Created By</h3>
@@ -736,7 +717,6 @@ const SpaceDetailPage = () => {
                 </div>
               </div>
 
-              {/* Actions Section - show inside About only for creators or members */}
               {(isCreator || isMember) && (
                 <div className="card bg-base-200">
                   <div className="card-body">
@@ -790,7 +770,6 @@ const SpaceDetailPage = () => {
                 </div>
               )}
 
-              {/* Pending requests moved into Members section above */}
             </div>
           </div>
         )}

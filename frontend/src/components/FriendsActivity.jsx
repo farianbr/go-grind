@@ -27,12 +27,11 @@ const FriendsActivity = () => {
       space.activeStreams?.forEach((s) => {
         const uid = s.user?._id || s.user;
         if (friendIds.has(uid)) {
-          // Find the friend object to get full user data including profile pic
           const friend = friends.find((f) => f._id === uid);
           list.push({
             space,
             stream: s,
-            friend: friend || s.user, // fallback to s.user if friend not found
+            friend: friend || s.user,
           });
         }
       });
@@ -40,7 +39,6 @@ const FriendsActivity = () => {
     return list;
   }, [mySpaces, friendIds, friends]);
 
-  // Fetch all completed sessions from friends
   const { data: allFriendSessions = [] } = useQuery({
     queryKey: ["friendSessions", friends.map((f) => f._id).join(",")],
     queryFn: async () => {
@@ -75,7 +73,6 @@ const FriendsActivity = () => {
 
   return (
     <div className="space-y-4">
-      {/* Streaming now */}
       <div className="card bg-base-200">
         <div className="card-body p-4 sm:p-5">
           <h3 className="font-semibold mb-3">Friends Streaming Now</h3>
@@ -96,7 +93,7 @@ const FriendsActivity = () => {
                         src={
                           friend?.profilePic ||
                           stream.user?.profilePic ||
-                          "/avatar.png"
+                          "/blank-pp.png"
                         }
                         alt={
                           friend?.fullName || stream.user?.fullName || "Friend"
@@ -125,7 +122,6 @@ const FriendsActivity = () => {
         </div>
       </div>
 
-      {/* Recent completed sessions */}
       <div className="card bg-base-200">
         <div className="card-body p-4 sm:p-5">
           <h3 className="font-semibold mb-3">Recent Friends Activity</h3>
@@ -156,7 +152,7 @@ const FriendsActivity = () => {
                                 src={
                                   session.user?.profilePic ||
                                   friend?.profilePic ||
-                                  "/avatar.png"
+                                  "/blank-pp.png"
                                 }
                                 alt={session.user?.fullName || "Friend"}
                               />
