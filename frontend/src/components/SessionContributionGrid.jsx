@@ -3,6 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { getUserSessions } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
 
+// Bucket by the viewer's local calendar day. toISOString() is UTC, so a session
+// finished at 11pm local time was filed under the next day and silently broke
+// the streak this component exists to reward.
+const dateKey = (d) =>
+  [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+
 const SessionContributionGrid = () => {
   const { authUser } = useAuthUser();
   const scrollContainerRef = useRef(null);
@@ -27,18 +37,18 @@ const SessionContributionGrid = () => {
 
     sessions.forEach((s) => {
       const date = new Date(s.startTime || s.createdAt);
-      const dateKey = date.toISOString().split("T")[0];
+      const key = dateKey(date);
       const duration = s.actualDuration || 0;
-      sessionMap.set(dateKey, (sessionMap.get(dateKey) || 0) + duration);
+      sessionMap.set(key, (sessionMap.get(key) || 0) + duration);
     });
 
     for (let i = 364; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateKey = date.toISOString().split("T")[0];
-      const minutes = sessionMap.get(dateKey) || 0;
+      const key = dateKey(date);
+      const minutes = sessionMap.get(key) || 0;
       days.push({
-        date: dateKey,
+        date: key,
         minutes,
         day: date.getDay(),
         label: date.toLocaleDateString("en-US", {
@@ -68,13 +78,15 @@ const SessionContributionGrid = () => {
     if (minutes === 0) return "No sessions";
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours === 0) return `Streamed ${mins}m`;
-    if (mins === 0) return `Streamed ${hours}h`;
-    return `Streamed ${hours}h ${mins}m`;
+    if (hours === 0) return `${mins}m of work`;
+    if (mins === 0) return `${hours}h of work`;
+    return `${hours}h ${mins}m of work`;
   };
 
+  // Abandoned sessions carry an estimated duration, not an observed one. Keep
+  // them out of the headline total so a dropped connection can't inflate it.
   const totalMinutes = sessions.reduce(
-    (sum, s) => sum + (s.actualDuration || 0),
+    (sum, s) => sum + (s.abandoned ? 0 : s.actualDuration || 0),
     0
   );
   const totalHours = Math.floor(totalMinutes / 60);
@@ -86,14 +98,12 @@ const SessionContributionGrid = () => {
     const sessionDates = new Set();
     sessions.forEach((s) => {
       const date = new Date(s.startTime || s.createdAt);
-      sessionDates.add(date.toISOString().split("T")[0]);
+      sessionDates.add(dateKey(date));
     });
 
     const sortedDates = Array.from(sessionDates).sort().reverse();
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000)
-      .toISOString()
-      .split("T")[0];
+    const today = dateKey(new Date());
+    const yesterday = dateKey(new Date(Date.now() - 86400000));
 
     let currentStreak = 0;
     let checkDate =
@@ -103,10 +113,8 @@ const SessionContributionGrid = () => {
 
     if (checkDate) {
       for (let i = 0; i < 365; i++) {
-        const dateKey = new Date(checkDate.getTime() - i * 86400000)
-          .toISOString()
-          .split("T")[0];
-        if (sessionDates.has(dateKey)) {
+        const key = dateKey(new Date(checkDate.getTime() - i * 86400000));
+        if (sessionDates.has(key)) {
           currentStreak++;
         } else {
           break;
@@ -139,151 +147,67 @@ const SessionContributionGrid = () => {
   }, [sessions]);
 
   return (
-    <div className="grid grid-cols-1 2xl:grid-cols-[1fr_1fr] gap-4">
-      <div className="card bg-base-200 ">
-        <div className="card-body p-3 sm:p-4 md:p-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-            <h3 className="font-semibold text-sm sm:text-base">
-              Your Stream Activity
-            </h3>
-            <span className="text-[10px] sm:text-xs text-base-content/60">
-              {totalHours}h total in the Last year
-            </span>
-          </div>
+    <section>
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <h2 className="font-semibold">Your record</h2>
+        <span className="text-xs text-base-content/55 tabular-nums">
+          {totalHours}h logged · longest streak {streakData.longestStreak}{" "}
+          {streakData.longestStreak === 1 ? "day" : "days"}
+        </span>
+      </div>
 
-          <div className="flex gap-1 sm:gap-2">
-            <div className="flex flex-col gap-0.5 sm:gap-1 text-[8px] sm:text-[10px] text-base-content/60 pr-1 pt-2 sm:pr-2 sticky left-0 bg-base-200 z-10">
-              <div className="h-2 sm:h-3"></div>
-              <div className="h-2 sm:h-3">Mon</div>
-              <div className="h-2 sm:h-3"></div>
-              <div className="h-2 sm:h-3">Wed</div>
-              <div className="h-2 sm:h-3"></div>
-              <div className="h-2 sm:h-3">Fri</div>
-              <div className="h-2 sm:h-3"></div>
-            </div>
+      <div className="border-t border-base-300 pt-4 flex gap-2">
+        <div className="flex flex-col gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] text-base-content/50 pr-1 pt-2 shrink-0">
+          <div className="h-2 sm:h-3" />
+          <div className="h-2 sm:h-3">Mon</div>
+          <div className="h-2 sm:h-3" />
+          <div className="h-2 sm:h-3">Wed</div>
+          <div className="h-2 sm:h-3" />
+          <div className="h-2 sm:h-3">Fri</div>
+          <div className="h-2 sm:h-3" />
+        </div>
 
-            <div
-              className="flex-1 overflow-x-auto py-2 pl-1"
-              ref={scrollContainerRef}
-            >
-              <div className="flex gap-0.5 sm:gap-1">
-                {contributionData.map((week, weekIdx) => (
-                  <div key={weekIdx} className="flex flex-col gap-0.5 sm:gap-1">
-                    {week.map((day, dayIdx) => (
-                      <div
-                        key={dayIdx}
-                        className={`w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm ${getIntensityClass(
-                          day.minutes
-                        )} 
-                        hover:ring-1 sm:hover:ring-2 hover:ring-primary hover:scale-110 sm:hover:scale-125 
-                        transition-all cursor-pointer`}
-                        title={`${formatDuration(day.minutes)} on ${day.label}`}
-                      />
-                    ))}
-                  </div>
+        <div
+          className="flex-1 min-w-0 overflow-x-auto py-2 pl-1"
+          ref={scrollContainerRef}
+        >
+          <div className="flex gap-0.5 sm:gap-1 w-max">
+            {contributionData.map((week, weekIdx) => (
+              <div key={weekIdx} className="flex flex-col gap-0.5 sm:gap-1">
+                {week.map((day, dayIdx) => (
+                  <div
+                    key={dayIdx}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm ${getIntensityClass(
+                      day.minutes
+                    )} hover:ring-1 hover:ring-primary transition-all`}
+                    title={`${formatDuration(day.minutes)} on ${day.label}`}
+                  />
                 ))}
               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-base-content/60 mt-2">
-            <span>Less</span>
-            <div className="flex gap-0.5 sm:gap-1">
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm bg-base-300/90" />
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm bg-success/30" />
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm bg-success/50" />
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm bg-success/70" />
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm bg-success" />
-            </div>
-            <span>More</span>
+            ))}
           </div>
         </div>
       </div>
-      <div className="card bg-base-200">
-        <div className="card-body p-3 sm:p-4 md:p-5">
-          <h3 className="font-semibold text-sm sm:text-base mb-3">
-            Daily Streak
-          </h3>
 
-          <div className="flex flex-col sm:flex-row m-auto gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 sm:w-7 sm:h-7 text-primary"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2c1.5 3 3.5 4.5 6 5 0 4-2 7-6 10-4-3-6-6-6-10 2.5-.5 4.5-2 6-5z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-2xl sm:text-3xl font-bold text-primary">
-                  {streakData.currentStreak}
-                </div>
-                <div className="text-xs sm:text-sm text-base-content/60">
-                  Day{streakData.currentStreak !== 1 ? "s" : ""} Current Streak
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-warning/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 sm:w-7 sm:h-7 text-warning"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-2xl sm:text-3xl font-bold text-warning">
-                  {streakData.longestStreak}
-                </div>
-                <div className="text-xs sm:text-sm text-base-content/60">
-                  Day{streakData.longestStreak !== 1 ? "s" : ""} Longest Streak
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-success/10 flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 sm:w-7 sm:h-7 text-success"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-2xl sm:text-3xl font-bold text-success">
-                  {sessions.length}
-                </div>
-                <div className="text-xs sm:text-sm text-base-content/60">
-                  Total Session{sessions.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-center gap-2 text-xs text-base-content/50 mt-2">
+        <span>Less</span>
+        <div className="flex gap-0.5 sm:gap-1">
+          {[
+            "bg-base-300/90",
+            "bg-success/30",
+            "bg-success/50",
+            "bg-success/70",
+            "bg-success",
+          ].map((c) => (
+            <div
+              key={c}
+              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-xs sm:rounded-sm ${c}`}
+            />
+          ))}
         </div>
+        <span>More</span>
       </div>
-    </div>
+    </section>
   );
 };
 

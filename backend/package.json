@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:demo": "node src/scripts/seed-demo.js"
   },
   "type": "module",
   "keywords": [],
@@ -20,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "multer": "^2.0.2",
+    "nodemailer": "^9.0.3",
     "stream-chat": "^8.60.0"
   },
   "devDependencies": {

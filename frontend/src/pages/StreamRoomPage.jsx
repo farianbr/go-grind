@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getSpaceById,
+  getRoomById,
   getStreamToken,
   joinStream,
   leaveStream,
@@ -27,7 +27,7 @@ import CallContent from "../components/CallContent";
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const StreamRoomPage = () => {
-  const { id: spaceId } = useParams();
+  const { id: roomId } = useParams();
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(true);
@@ -39,10 +39,10 @@ const StreamRoomPage = () => {
 
   const { authUser, isLoading: authLoading } = useAuthUser();
 
-  const { data: space, isLoading: spaceLoading } = useQuery({
-    queryKey: ["space", spaceId],
-    queryFn: () => getSpaceById(spaceId),
-    enabled: !!spaceId,
+  const { data: room, isLoading: spaceLoading } = useQuery({
+    queryKey: ["room", roomId],
+    queryFn: () => getRoomById(roomId),
+    enabled: !!roomId,
     refetchInterval: 10000,
   });
 
@@ -54,32 +54,32 @@ const StreamRoomPage = () => {
 
   const { mutate: joinStreamMutation, isPending: isJoining } = useMutation({
     mutationFn: ({
-      spaceId,
-      grindingTopic,
+      roomId,
+      workTopic,
       targetDuration,
       tasks,
       isVideoEnabled,
       isAudioEnabled,
     }) =>
-      joinStream(spaceId, {
-        grindingTopic,
+      joinStream(roomId, {
+        workTopic,
         targetDuration,
         tasks,
         isVideoEnabled,
         isAudioEnabled,
       }),
     onSuccess: (data, variables) => {
-      const storageKey = `stream_${authUser._id}_${spaceId}_active`;
+      const storageKey = `stream_${authUser._id}_${roomId}_active`;
       localStorage.setItem(storageKey, "active");
       localStorage.setItem(
-        `stream_${authUser._id}_${spaceId}_audio`,
+        `stream_${authUser._id}_${roomId}_audio`,
         variables.isAudioEnabled ? "active" : "inactive"
       );
       localStorage.setItem(
-        `stream_${authUser._id}_${spaceId}_video`,
+        `stream_${authUser._id}_${roomId}_video`,
         variables.isVideoEnabled ? "active" : "inactive"
       );
-      queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["room", roomId] });
       setShowJoinModal(false);
     },
     onError: (error) => {
@@ -88,13 +88,13 @@ const StreamRoomPage = () => {
   });
 
   const { mutate: removeUserMutation } = useMutation({
-    mutationFn: ({ spaceId, userId, reason }) =>
-      removeFromStream(spaceId, userId, reason),
+    mutationFn: ({ roomId, userId, reason }) =>
+      removeFromStream(roomId, userId, reason),
     onSuccess: (data) => {
       toast.success("User removed from stream");
-      queryClient.setQueryData(["space", spaceId], data);
-      queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
-      queryClient.invalidateQueries({ queryKey: ["stream", spaceId] });
+      queryClient.setQueryData(["room", roomId], data);
+      queryClient.invalidateQueries({ queryKey: ["room", roomId] });
+      queryClient.invalidateQueries({ queryKey: ["stream", roomId] });
 
       setKickTargetUser(null);
       setIsRemoving(false);
@@ -105,16 +105,16 @@ const StreamRoomPage = () => {
     },
   });
 
-  const isUserInStream = space?.activeStreams?.some(
+  const isUserInStream = room?.activeStreams?.some(
     (stream) =>
       stream.user?._id === authUser?._id || stream.user === authUser?._id
   );
 
-  const isCreator = space?.creator._id === authUser?._id;
+  const isCreator = room?.creator._id === authUser?._id;
 
   useEffect(() => {
-    if (authUser && spaceId) {
-      const storageKey = `stream_${authUser._id}_${spaceId}_active`;
+    if (authUser && roomId) {
+      const storageKey = `stream_${authUser._id}_${roomId}_active`;
       const storedState = localStorage.getItem(storageKey);
 
       if (storedState === "active" && isUserInStream) {
@@ -123,7 +123,7 @@ const StreamRoomPage = () => {
         setShowJoinModal(false);
       }
     }
-  }, [authUser, spaceId, isUserInStream]);
+  }, [authUser, roomId, isUserInStream]);
 
   useEffect(() => {
     if (!tokenData?.token || !authUser || showJoinModal) {
@@ -156,17 +156,17 @@ const StreamRoomPage = () => {
   }, [tokenData, authUser, showJoinModal]);
 
   useEffect(() => {
-    if (!client || !spaceId || !isUserInStream || showJoinModal) {
+    if (!client || !roomId || !isUserInStream || showJoinModal) {
       return;
     }
 
-    const callInstance = client.call("default", spaceId);
+    const callInstance = client.call("default", roomId);
     const kickedRef = wasKickedRef; // Capture the ref itself for cleanup
 
     callInstance.microphone.disableSpeakingWhileMutedNotification();
 
-    const videoStorageKey = `stream_${authUser._id}_${spaceId}_video`;
-    const audioStorageKey = `stream_${authUser._id}_${spaceId}_audio`;
+    const videoStorageKey = `stream_${authUser._id}_${roomId}_video`;
+    const audioStorageKey = `stream_${authUser._id}_${roomId}_audio`;
 
     if (localStorage.getItem(videoStorageKey) === "inactive") {
       callInstance.camera.disable();
@@ -183,13 +183,13 @@ const StreamRoomPage = () => {
         toast.success("Joined the stream!");
 
         if (authUser) {
-          const storageKey = `stream_${authUser._id}_${spaceId}_active`;
+          const storageKey = `stream_${authUser._id}_${roomId}_active`;
           localStorage.setItem(storageKey, "active");
         }
       })
       .catch(() => {
         toast.error("Could not join the video call. Please try again.");
-        navigate(`/spaces/${spaceId}`);
+        navigate(`/rooms/${roomId}`);
       });
 
     return () => {
@@ -205,30 +205,30 @@ const StreamRoomPage = () => {
       }
       setCall(null);
     };
-  }, [client, spaceId, isUserInStream, showJoinModal, authUser, navigate]);
+  }, [client, roomId, isUserInStream, showJoinModal, authUser, navigate]);
 
   const handleJoinStream = (joinData) => {
     joinStreamMutation({
-      spaceId,
+      roomId,
       ...joinData,
     });
   };
 
   const handleLeaveStream = async () => {
     try {
-      await leaveStream(spaceId);
+      await leaveStream(roomId);
 
       if (authUser) {
-        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
-        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
-        localStorage.removeItem(`stream_${authUser._id}_${spaceId}_audio`);
+        localStorage.removeItem(`stream_${authUser._id}_${roomId}_active`);
+        localStorage.removeItem(`stream_${authUser._id}_${roomId}_video`);
+        localStorage.removeItem(`stream_${authUser._id}_${roomId}_audio`);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["space", spaceId] });
-      queryClient.invalidateQueries({ queryKey: ["mySpaces"] });
+      queryClient.invalidateQueries({ queryKey: ["room", roomId] });
+      queryClient.invalidateQueries({ queryKey: ["myRooms"] });
       toast.success("Left the stream");
 
-      navigate(`/spaces/${spaceId}`);
+      navigate(`/rooms/${roomId}`);
     } catch {
       toast.error("Failed to leave stream");
     }
@@ -239,23 +239,23 @@ const StreamRoomPage = () => {
   };
 
   useEffect(() => {
-    if (!authUser || !spaceId) return;
+    if (!authUser || !roomId) return;
 
     const wasInStream =
-      localStorage.getItem(`stream_${authUser._id}_${spaceId}_active`) ===
+      localStorage.getItem(`stream_${authUser._id}_${roomId}_active`) ===
       "active";
 
-    if (wasInStream && !isUserInStream && space) {
+    if (wasInStream && !isUserInStream && room) {
       wasKickedRef.current = true;
 
-      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_active`);
-      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_video`);
-      localStorage.removeItem(`stream_${authUser._id}_${spaceId}_audio`);
+      localStorage.removeItem(`stream_${authUser._id}_${roomId}_active`);
+      localStorage.removeItem(`stream_${authUser._id}_${roomId}_video`);
+      localStorage.removeItem(`stream_${authUser._id}_${roomId}_audio`);
 
       toast.error("You have been removed from the stream");
-      navigate(`/spaces/${spaceId}`);
+      navigate(`/rooms/${roomId}`);
     }
-  }, [isUserInStream, authUser, spaceId, space, navigate]);
+  }, [isUserInStream, authUser, roomId, room, navigate]);
 
   if (
     authLoading ||
@@ -269,8 +269,7 @@ const StreamRoomPage = () => {
   if (showJoinModal && !isUserInStream) {
     return (
       <JoinStreamModal
-        space={space}
-        isCreator={isCreator}
+        room={room}
         onJoin={handleJoinStream}
         isJoining={isJoining}
         authUser={authUser}
@@ -288,7 +287,7 @@ const StreamRoomPage = () => {
           try {
             await call.kickUser({ user_id: kickTargetUser.id });
             removeUserMutation({
-              spaceId,
+              roomId,
               userId: kickTargetUser.id,
               reason: reason.trim() || "No reason provided",
             });
@@ -305,18 +304,18 @@ const StreamRoomPage = () => {
 
       <div
         className="flex bg-base-200"
-        style={{ height: "calc(100vh - 64px)" }}
+        style={{ height: "calc(100dvh - 64px)" }}
       >
         {client && call ? (
           <StreamVideo client={client}>
             <StreamCall call={call}>
               <CallContent
-                space={space}
+                room={room}
                 authUser={authUser}
                 isCreator={isCreator}
                 removeUser={handleRemoveUser}
                 onLeaveStream={handleLeaveStream}
-                spaceId={spaceId}
+                roomId={roomId}
               />
             </StreamCall>
           </StreamVideo>

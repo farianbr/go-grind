@@ -10,6 +10,32 @@ import {
 } from "../lib/api";
 import { Link } from "react-router";
 
+const RequestRow = ({ user, caption, children }) => (
+  <li className="flex items-center gap-3 py-3">
+    <Link to={`/profile/${user._id}`} className="shrink-0">
+      <img
+        src={user.profilePic || "/blank-pp.png"}
+        alt=""
+        className="size-10 rounded-full object-cover"
+      />
+    </Link>
+    <div className="min-w-0 flex-1">
+      <Link
+        to={`/profile/${user._id}`}
+        className="font-medium text-sm truncate block hover:text-primary transition-colors"
+      >
+        {user.fullName}
+      </Link>
+      <p className="text-xs text-base-content/55 truncate">{caption}</p>
+    </div>
+    <div className="flex items-center gap-2 shrink-0">{children}</div>
+  </li>
+);
+
+const Empty = ({ children }) => (
+  <p className="text-sm text-base-content/60 py-4">{children}</p>
+);
+
 const FriendRequestsPanel = () => {
   const queryClient = useQueryClient();
 
@@ -25,7 +51,13 @@ const FriendRequestsPanel = () => {
     queryFn: getOutgoingFriendReqs,
   });
 
-  const { mutate: acceptReq, isPending: isAccepting } = useMutation({
+  // Each mutation's `variables` is the request id, so the spinner shows on the
+  // row that was clicked rather than on every row at once.
+  const {
+    mutate: acceptReq,
+    isPending: isAccepting,
+    variables: acceptingId,
+  } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
       toast.success("Friend request accepted");
@@ -34,7 +66,11 @@ const FriendRequestsPanel = () => {
     },
   });
 
-  const { mutate: declineReq, isPending: isDeclining } = useMutation({
+  const {
+    mutate: declineReq,
+    isPending: isDeclining,
+    variables: decliningId,
+  } = useMutation({
     mutationFn: declineFriendRequest,
     onSuccess: () => {
       toast.success("Friend request declined");
@@ -42,7 +78,11 @@ const FriendRequestsPanel = () => {
     },
   });
 
-  const { mutate: cancelReq, isPending: isCancelling } = useMutation({
+  const {
+    mutate: cancelReq,
+    isPending: isCancelling,
+    variables: cancellingId,
+  } = useMutation({
     mutationFn: cancelFriendRequest,
     onSuccess: () => {
       toast.success("Friend request cancelled");
@@ -50,105 +90,91 @@ const FriendRequestsPanel = () => {
     },
   });
 
-  return (
-    <div className="grid grid-cols-1 gap-6 my-4">
-      <div className="space-y-3">
-        <h3 className="font-semibold text-lg">Incoming Requests</h3>
-        {loadingIncoming ? (
-          <div className="flex justify-center py-6">
-            <span className="loading loading-spinner loading-lg" />
-          </div>
-        ) : incoming.length === 0 ? (
-          <div className="card bg-base-200 p-4 h-24 text-center text-sm text-base-content/60">
-            <span className="my-auto">No incoming requests</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {incoming.map((req) => (
-              <div key={req._id} className="card bg-base-200 hover:bg-base-300 transition-colors">
-                <div className="card-body p-3 flex flex-col items-center text-center gap-2">
-                  <div className="avatar">
-                    <div className="w-16 h-16 rounded-full overflow-hidden ring ring-primary ring-offset-base-100 ring-offset-2">
-                      <img src={req.sender.profilePic} alt={req.sender.fullName} />
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <p className="font-semibold text-sm truncate">{req.sender.fullName}</p>
-                    <p className="text-xs text-base-content/60 mt-0.5">wants to connect</p>
-                  </div>
-                  <div className="flex flex-col gap-2 w-full mt-1">
-                    <div className="flex gap-2 w-full">
-                      <button
-                        className="btn btn-success btn-sm flex-1"
-                        onClick={() => acceptReq(req._id)}
-                        disabled={isAccepting || isDeclining}
-                      >
-                        <Check className="size-4" />
-                      </button>
-                      <button
-                        className="btn btn-error btn-sm flex-1"
-                        onClick={() => declineReq(req._id)}
-                        disabled={isAccepting || isDeclining}
-                      >
-                        <X className="size-4" />
-                      </button>
-                    </div>
-                    <Link 
-                      to={`/profile/${req.sender._id}`} 
-                      className="btn btn-primary btn-sm btn-outline w-full"
-                    >
-                      View Profile
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+  const busy = (pending, id, target) => pending && id === target;
 
-      <div className="space-y-3">
-        <h3 className="font-semibold text-lg">Outgoing Requests</h3>
-        {loadingOutgoing ? (
-          <div className="flex justify-center py-6">
-            <span className="loading loading-spinner loading-lg" />
-          </div>
-        ) : outgoing.length === 0 ? (
-          <div className="card bg-base-200 p-4 h-24 text-center text-sm text-base-content/60">
-            <span className="my-auto">No outgoing requests</span>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {outgoing.map((req) => (
-              <div key={req._id} className="card bg-base-200 hover:bg-base-300 transition-colors">
-                <div className="card-body p-3 flex flex-col items-center text-center gap-2">
-                  <div className="avatar">
-                    <div className="w-16 h-16 rounded-full overflow-hidden ring ring-primary ring-offset-base-100 ring-offset-2">
-                      <img src={req.recipient.profilePic} alt={req.recipient.fullName} />
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <p className="font-semibold text-sm truncate">{req.recipient.fullName}</p>
-                    <p className="text-xs text-base-content/60 mt-0.5">request sent</p>
-                  </div>
-                  <div className="flex flex-col gap-2 w-full mt-1">
-                    <Link to={`/profile/${req.recipient._id}`} className="btn btn-primary btn-sm btn-outline w-full">
-                      View Profile
-                    </Link>
-                    <button
-                      className="btn btn-ghost btn-sm w-full"
-                      onClick={() => cancelReq(req._id)}
-                      disabled={isCancelling}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+  return (
+    <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 my-2">
+      <section className="min-w-0">
+        <h3 className="font-semibold mb-1">Waiting on you</h3>
+        <div className="border-t border-base-300">
+          {loadingIncoming ? (
+            <div className="py-4">
+              <span className="loading loading-dots loading-sm" />
+            </div>
+          ) : incoming.length === 0 ? (
+            <Empty>Nobody has asked to connect right now.</Empty>
+          ) : (
+            <ul className="divide-y divide-base-300">
+              {incoming.map((req) => (
+                <RequestRow
+                  key={req._id}
+                  user={req.sender}
+                  caption="Wants to connect"
+                >
+                  <button
+                    className="btn btn-primary btn-sm gap-1.5"
+                    onClick={() => acceptReq(req._id)}
+                    disabled={isAccepting || isDeclining}
+                  >
+                    {busy(isAccepting, acceptingId, req._id) ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      <Check className="size-4" />
+                    )}
+                    Accept
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm btn-square"
+                    onClick={() => declineReq(req._id)}
+                    disabled={isAccepting || isDeclining}
+                    aria-label={`Decline ${req.sender.fullName}`}
+                  >
+                    {busy(isDeclining, decliningId, req._id) ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      <X className="size-4" />
+                    )}
+                  </button>
+                </RequestRow>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="min-w-0">
+        <h3 className="font-semibold mb-1">Sent by you</h3>
+        <div className="border-t border-base-300">
+          {loadingOutgoing ? (
+            <div className="py-4">
+              <span className="loading loading-dots loading-sm" />
+            </div>
+          ) : outgoing.length === 0 ? (
+            <Empty>You have no requests out.</Empty>
+          ) : (
+            <ul className="divide-y divide-base-300">
+              {outgoing.map((req) => (
+                <RequestRow
+                  key={req._id}
+                  user={req.recipient}
+                  caption="Waiting for a reply"
+                >
+                  <button
+                    className="btn btn-ghost btn-sm gap-1.5"
+                    onClick={() => cancelReq(req._id)}
+                    disabled={isCancelling}
+                  >
+                    {busy(isCancelling, cancellingId, req._id) && (
+                      <span className="loading loading-spinner loading-xs" />
+                    )}
+                    Cancel
+                  </button>
+                </RequestRow>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

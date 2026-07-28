@@ -8,17 +8,15 @@ import {
   Square,
   PanelRightClose,
   PanelRightOpen,
-  Target,
   Plus,
   X,
-  ListTodo,
   Trophy,
   Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
-const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantCount = 0, onToggleVisibility, externalVisible }) => {
+const SessionSidebar = ({ roomId, authUser, defaultVisible = true, participantCount = 0, onToggleVisibility, externalVisible }) => {
   const [internalVisible, setInternalVisible] = useState(() => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       return defaultVisible;
@@ -51,9 +49,9 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
   }, [internalVisible, onToggleVisibility, externalVisible]);
 
   const { data: session, isLoading } = useQuery({
-    queryKey: ["currentSession", spaceId, authUser._id],
-    queryFn: () => getCurrentSession(spaceId),
-    enabled: !!spaceId && !!authUser,
+    queryKey: ["currentSession", roomId, authUser._id],
+    queryFn: () => getCurrentSession(roomId),
+    enabled: !!roomId && !!authUser,
     refetchInterval: 30000,
   });
 
@@ -62,7 +60,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
       updateSessionTask(sessionId, taskId, isCompleted),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["currentSession", spaceId, authUser._id],
+        queryKey: ["currentSession", roomId, authUser._id],
       });
       setUpdatingTaskId(null);
     },
@@ -83,7 +81,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["currentSession", spaceId, authUser._id],
+        queryKey: ["currentSession", roomId, authUser._id],
       });
       setNewTaskTitle("");
       setIsAddingTask(false);
@@ -140,9 +138,7 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
   const formatTargetTime = (minutes) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    if (hours > 0) {
-      return `${hours}h ${mins}m`;
-    }
+    if (hours > 0) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     return `${mins}m`;
   };
 
@@ -161,273 +157,209 @@ const SessionSidebar = ({ spaceId, authUser, defaultVisible = true, participantC
     return null;
   }
 
+  const doneCount = session.tasks.filter((t) => t.isCompleted).length;
+
   return (
-    <>
-      <div
-        className={`bg-base-200 shadow-2xl overflow-y-auto border-l border-base-300 ${
-          isVisible ? "w-full md:w-80 lg:w-96 translate-x-0" : "w-0 translate-x-full"
-        }`}
-        style={{ height: "100%" }}
-      >
-        {isVisible && (
-          <div className="p-4 sm:p-6 space-y-6">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold">Session Details</h2>
-                <p className="text-sm text-base-content/70 mt-1 truncate">
-                  {session.grindingTopic}
-                </p>
-              </div>
-              <button
-                onClick={() => setIsVisible(false)}
-                className="btn btn-circle btn-sm sm:btn-md btn-primary shadow-lg transition-all duration-200 hover:scale-110"
-                title="Close sidebar"
-              >
-                <PanelRightClose className="size-4 sm:size-5" />
-              </button>
+    <div
+      className={`bg-base-100 overflow-y-auto border-l border-base-300 shrink-0 ${
+        isVisible ? "w-full md:w-80 lg:w-96" : "w-0"
+      }`}
+      style={{ height: "100%" }}
+    >
+      {isVisible && (
+        <div className="p-4 sm:p-5 space-y-6">
+          {/* Your own desk, from your side. Nested cards on a panel this
+              narrow were four boxes deep; hairlines carry the sections. */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-base-content/50">
+                Your desk
+              </p>
+              <h2 className="font-semibold leading-snug mt-0.5">
+                {session.workTopic}
+              </h2>
+            </div>
+            <button
+              onClick={() => setIsVisible(false)}
+              className="btn btn-ghost btn-sm btn-circle shrink-0"
+              title="Hide this panel"
+              aria-label="Hide this panel"
+            >
+              <PanelRightClose className="size-4" />
+            </button>
+          </div>
+
+          <section className="border-t border-base-300 pt-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="font-mono text-3xl font-bold tabular-nums tracking-tight">
+                {formatTime(elapsedTime)}
+              </span>
+              <span className="text-xs text-base-content/55">
+                of {formatTargetTime(session.targetDuration)}
+              </span>
             </div>
 
-            {participantCount > 0 && (
-              <div className="xl:hidden">
-                <div className="card bg-base-100 shadow-lg">
-                  <div className="card-body p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="size-5 text-primary" />
-                        <h3 className="font-semibold">Participants</h3>
-                      </div>
-                      <span className="text-2xl font-bold text-primary">
-                        {participantCount}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <progress
+              className={`progress w-full mt-2.5 ${
+                isTargetReached() ? "progress-success" : "progress-primary"
+              }`}
+              value={getProgress()}
+              max="100"
+            />
 
-            <div className="card bg-base-100 shadow-lg">
-              <div className="card-body p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="size-5 text-primary" />
-                  <h3 className="font-semibold">Timer</h3>
-                </div>
+            <p className="text-xs text-base-content/55 mt-1.5 inline-flex items-center gap-1.5">
+              {isTargetReached() ? (
+                <>
+                  <Trophy className="size-3.5 text-success" />
+                  Target reached. Keep going or close it out.
+                </>
+              ) : (
+                <>
+                  <Clock className="size-3.5" />
+                  Started {format(new Date(session.startTime), "h:mm a")}
+                </>
+              )}
+            </p>
+          </section>
 
-                <div className="text-center mb-4">
-                  <div className="text-4xl font-bold font-mono text-primary">
-                    {formatTime(elapsedTime)}
-                  </div>
-                  <p className="text-xs text-base-content/60 mt-1">
-                    Elapsed Time
-                  </p>
-                </div>
-
-                <div className="mb-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs text-base-content/70">
-                      Progress
-                    </span>
-                    <span className="text-xs font-semibold">
-                      {getProgress().toFixed(0)}%
-                    </span>
-                  </div>
-                  <progress
-                    className={`progress ${
-                      isTargetReached()
-                        ? "progress-success"
-                        : "progress-primary"
-                    } w-full`}
-                    value={getProgress()}
-                    max="100"
-                  ></progress>
-                </div>
-
-                <div className="flex items-center justify-between bg-base-200 p-3 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Target className="size-4 text-base-content/70" />
-                    <span className="text-sm">Target Duration</span>
-                  </div>
-                  <span className="font-semibold">
-                    {formatTargetTime(session.targetDuration)}
+          <section>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h3 className="font-semibold text-sm">Tasks</h3>
+              <div className="flex items-center gap-2">
+                {session.tasks.length > 0 && (
+                  <span className="text-xs font-mono tabular-nums text-base-content/55">
+                    {doneCount}/{session.tasks.length}
                   </span>
-                </div>
-
-                {isTargetReached() && (
-                  <div className="alert alert-success mt-3 py-2">
-                    <Trophy className="size-4" />
-                    <span className="text-sm">Target reached!</span>
-                  </div>
                 )}
+                <button
+                  className="btn btn-ghost btn-xs btn-circle"
+                  onClick={() => setIsAddingTask(!isAddingTask)}
+                  title={isAddingTask ? "Cancel" : "Add a task"}
+                  aria-label={isAddingTask ? "Cancel" : "Add a task"}
+                >
+                  {isAddingTask ? (
+                    <X className="size-4" />
+                  ) : (
+                    <Plus className="size-4" />
+                  )}
+                </button>
               </div>
             </div>
 
-            <div className="card bg-base-100 shadow-lg">
-              <div className="card-body p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <ListTodo className="size-5 text-primary" />
-                    <h3 className="font-semibold">Tasks</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="badge badge-primary">
-                      {session.tasks.filter((t) => t.isCompleted).length}/
-                      {session.tasks.length}
-                    </div>
-                    <button
-                      className="btn btn-ghost btn-xs btn-circle"
-                      onClick={() => setIsAddingTask(!isAddingTask)}
-                      title="Add new task"
-                    >
-                      {isAddingTask ? (
-                        <X className="size-4" />
-                      ) : (
-                        <Plus className="size-4" />
-                      )}
-                    </button>
-                  </div>
+            <div className="border-t border-base-300 pt-2">
+              {isAddingTask && (
+                <div className="mb-2 flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="What's next?"
+                    className="input input-sm flex-1"
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyUp={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTask();
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={handleAddTask}
+                    disabled={isAddingTaskMutation || !newTaskTitle.trim()}
+                  >
+                    {isAddingTaskMutation ? (
+                      <span className="loading loading-spinner loading-xs"></span>
+                    ) : (
+                      "Add"
+                    )}
+                  </button>
                 </div>
+              )}
 
-                {isAddingTask && (
-                  <div className="mb-3 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="New task..."
-                      className="input  input-sm flex-1"
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      onKeyUp={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddTask();
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <button
-                      className="btn btn-primary btn-sm rounded"
-                      onClick={handleAddTask}
-                      disabled={isAddingTaskMutation || !newTaskTitle.trim()}
-                    >
-                      {isAddingTaskMutation ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : (
-                        "Add"
-                      )}
-                    </button>
-                  </div>
-                )}
-
-                {session.tasks.length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {session.tasks.map((task) => {
-                      const isTaskUpdating = updatingTaskId === task._id;
-                      return (
-                        <div
-                          key={task._id}
-                          className={`flex items-start gap-3 p-3 bg-base-200 rounded-lg transition-colors ${
+              {session.tasks.length > 0 ? (
+                <ul className="divide-y divide-base-300 max-h-72 overflow-y-auto">
+                  {session.tasks.map((task) => {
+                    const isTaskUpdating = updatingTaskId === task._id;
+                    return (
+                      <li key={task._id}>
+                        <button
+                          type="button"
+                          className={`w-full flex items-start gap-2.5 py-2.5 text-left -mx-2 px-2 rounded-field transition-colors ${
                             isTaskUpdating
                               ? "opacity-60 cursor-wait"
-                              : "hover:bg-base-300 cursor-pointer"
+                              : "hover:bg-base-200"
                           }`}
                           onClick={() => {
                             if (!isTaskUpdating) {
                               handleToggleTask(task._id, task.isCompleted);
                             }
                           }}
+                          disabled={isTaskUpdating}
                         >
-                          <div className="pt-0.5">
+                          <span className="pt-0.5 shrink-0">
                             {isTaskUpdating ? (
-                              <span className="loading loading-spinner loading-sm text-primary"></span>
+                              <span className="loading loading-spinner loading-xs text-primary" />
                             ) : task.isCompleted ? (
-                              <CheckSquare className="size-5 text-success shrink-0" />
+                              <CheckSquare className="size-4 text-success" />
                             ) : (
-                              <Square className="size-5 text-base-content/50 shrink-0" />
+                              <Square className="size-4 text-base-content/40" />
                             )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-sm wrap-break-word ${
+                          </span>
+                          <span className="flex-1 min-w-0">
+                            <span
+                              className={`block text-sm wrap-break-word ${
                                 task.isCompleted
-                                  ? "line-through text-base-content/60"
+                                  ? "line-through text-base-content/45"
                                   : ""
                               }`}
                             >
                               {task.title}
-                            </p>
+                            </span>
                             {task.isCompleted && task.completedAt && (
-                              <p className="text-xs text-base-content/50 mt-1">
-                                Completed{" "}
+                              <span className="block text-xs text-base-content/45 mt-0.5">
+                                Ticked off at{" "}
                                 {format(new Date(task.completedAt), "h:mm a")}
-                              </p>
+                              </span>
                             )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-base-content/60">
-                    <p className="text-sm">No tasks yet</p>
-                    <p className="text-xs mt-1">Click + to add a task</p>
-                  </div>
-                )}
-
-                {session.tasks.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-base-300">
-                    <div className="flex justify-between items-center text-xs text-base-content/70 mb-2">
-                      <span>Task Completion</span>
-                      <span>
-                        {(
-                          (session.tasks.filter((t) => t.isCompleted).length /
-                            session.tasks.length) *
-                          100
-                        ).toFixed(0)}
-                        %
-                      </span>
-                    </div>
-                    <progress
-                      className="progress progress-success w-full"
-                      value={session.tasks.filter((t) => t.isCompleted).length}
-                      max={session.tasks.length}
-                    ></progress>
-                  </div>
-                )}
-              </div>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="text-sm text-base-content/60 py-3">
+                  Break the block into pieces you can tick off. Everyone at the
+                  desks beside you can see how far along you are.
+                </p>
+              )}
             </div>
+          </section>
 
-            <div className="card bg-base-100 shadow-lg">
-              <div className="card-body p-4">
-                <h3 className="font-semibold mb-3">Session Info</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-base-content/70">Started at</span>
-                    <span className="font-semibold">
-                      {format(new Date(session.startTime), "h:mm a")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-base-content/70">Date</span>
-                    <span className="font-semibold">
-                      {new Date(session.startTime).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-    </>
+          {/* participantCount includes you, so the copy counts the others. */}
+          <p className="text-xs text-base-content/50 border-t border-base-300 pt-3 inline-flex items-center gap-1.5">
+            <Users className="size-3.5" />
+            {participantCount > 1
+              ? `${participantCount - 1} ${
+                  participantCount === 2 ? "person" : "people"
+                } at the desks beside you`
+              : "You have the floor to yourself"}
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 
 export const SidebarToggleButton = ({ onClick }) => (
   <button
     onClick={onClick}
-    className="btn btn-circle btn-sm sm:btn-md btn-primary shadow-lg transition-all duration-200 hover:scale-110"
-    title="Show sidebar"
+    className="btn btn-ghost btn-sm gap-2"
+    title="Show your desk"
   >
-    <PanelRightOpen className="size-4 sm:size-5" />
+    <PanelRightOpen className="size-4" />
+    <span className="hidden sm:inline">Your desk</span>
   </button>
 );
 

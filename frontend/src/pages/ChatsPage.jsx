@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router";
 import { Chat } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
 import toast from "react-hot-toast";
+import { Building2, DoorOpen, MessagesSquare } from "lucide-react";
 
 import useAuthUser from "../hooks/useAuthUser";
-import { getStreamToken } from "../lib/api";
+import { getStreamToken, syncChatChannels } from "../lib/api";
 import ChatLoader from "../components/ChatLoader";
 import ChatList from "../components/ChatList";
 import ChatWindow from "../components/ChatWindow";
@@ -15,11 +16,15 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const ChatsPage = () => {
   const { id: targetUserId } = useParams();
+  const [searchParams] = useSearchParams();
+  // Rooms and teams link straight at their channel, e.g. /chats?channel=room-abc
+  const targetChannelId = searchParams.get("channel");
   const navigate = useNavigate();
 
   const [chatClient, setChatClient] = useState(null);
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const clientRef = useRef(null);
 
   const { authUser } = useAuthUser();
 
@@ -29,39 +34,67 @@ const ChatsPage = () => {
     enabled: !!authUser,
   });
 
+  // Reconcile room and team channels before connecting, so a member who joined
+  // a room five minutes ago finds its conversation already waiting.
+  // isFetched, not isSuccess: a failed sync still has to release the list, and
+  // waiting for it to settle means the list is queried once instead of twice.
+  const { isFetched: syncSettled } = useQuery({
+    queryKey: ["chatChannelSync"],
+    queryFn: syncChatChannels,
+    enabled: !!authUser,
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  const userId = authUser?._id;
+  const userName = authUser?.fullName;
+  const userImage = authUser?.profilePic;
+
   useEffect(() => {
+    if (!tokenData?.token || !userId) return;
+
+    let cancelled = false;
+    const client = StreamChat.getInstance(STREAM_API_KEY);
+
     const initChat = async () => {
-      if (!tokenData?.token || !authUser) return;
-
       try {
-        const client = StreamChat.getInstance(STREAM_API_KEY);
-        await client.connectUser(
-          {
-            id: authUser._id,
-            name: authUser.fullName,
-            image: authUser.profilePic,
-          },
-          tokenData.token
-        );
+        // getInstance hands back a singleton. Reconnecting a user who is
+        // already connected drops the channel state the list just watched,
+        // which made every conversation load a second time.
+        if (client.userID !== userId) {
+          await client.connectUser(
+            { id: userId, name: userName, image: userImage },
+            tokenData.token
+          );
+        }
 
-        setChatClient(client);
+        if (!cancelled) {
+          clientRef.current = client;
+          setChatClient(client);
+        }
       } catch {
-        toast.error("Could not connect to chat. Please try again.");
+        if (!cancelled) toast.error("Could not connect to chat. Please try again.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     initChat();
 
     return () => {
-      chatClient
-        ?.disconnectUser()
-        .catch(() => {
-          // Ignore disconnect errors during cleanup
-        });
+      cancelled = true;
     };
-  }, [tokenData?.token, chatClient, authUser]);
+  }, [tokenData?.token, userId, userName, userImage]);
+
+  // Disconnect belongs to leaving the page, not to every dependency change.
+  useEffect(
+    () => () => {
+      clientRef.current?.disconnectUser().catch(() => {
+        // Ignore disconnect errors during cleanup
+      });
+    },
+    []
+  );
 
   useEffect(() => {
     const loadChannelFromUrl = async () => {
@@ -76,16 +109,29 @@ const ChatsPage = () => {
         await channel.watch();
         setSelectedChannel(channel);
       } catch {
-        toast.error("Could not load chat. Please try again.");
+        toast.error("Could not load that conversation.");
       }
     };
 
     loadChannelFromUrl();
   }, [chatClient, targetUserId, authUser]);
 
-  const handleSelectChat = (channel) => {
-    setSelectedChannel(channel);
-  };
+  useEffect(() => {
+    const loadGroupChannel = async () => {
+      if (!chatClient || !targetChannelId) return;
+
+      try {
+        const channel = chatClient.channel("team", targetChannelId);
+        await channel.watch();
+        setSelectedChannel(channel);
+      } catch {
+        toast.error("That conversation isn't available yet.");
+      }
+    };
+
+    // Waiting on the sync means a channel created moments ago still resolves.
+    if (syncSettled) loadGroupChannel();
+  }, [chatClient, targetChannelId, syncSettled]);
 
   const handleBackToList = () => {
     setSelectedChannel(null);
@@ -100,12 +146,13 @@ const ChatsPage = () => {
     <div className="h-[calc(100vh-4rem)] flex overflow-hidden">
       <Chat client={chatClient}>
         <div
-          className={`w-full sm:w-50 md:w-62 lg:w-[300px] xl:w-[350px] 2xl:w-[400px] border-r border-base-300 bg-base-100 shrink-0 ${
+          className={`w-full sm:w-64 md:w-72 lg:w-[320px] xl:w-[360px] border-r border-base-300 bg-base-100 shrink-0 ${
             selectedChannel ? "hidden sm:block" : "block"
           }`}
         >
           <ChatList
-            onSelectChat={handleSelectChat}
+            ready={syncSettled}
+            onSelectChat={setSelectedChannel}
             selectedChatId={selectedChannel?.id}
           />
         </div>
@@ -120,17 +167,27 @@ const ChatsPage = () => {
               <ChatWindow channel={selectedChannel} onBack={handleBackToList} />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full w-full p-4 sm:p-6 md:p-8 text-center">
-              <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-3 sm:mb-4 md:mb-6">
-                💬
-              </div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">
-                Welcome to Messages
+            <div className="flex flex-col items-center justify-center h-full w-full p-6 sm:p-8 text-center">
+              <span className="grid place-items-center size-14 rounded-field bg-base-200 mb-4">
+                <MessagesSquare className="size-7 text-base-content/50" />
+              </span>
+              <h2 className="text-lg sm:text-xl font-bold mb-2">
+                Pick a conversation
               </h2>
-              <p className="text-base-content/60 text-sm sm:text-base md:text-lg max-w-md px-4">
-                Select a conversation from the left to start chatting with your
-                friends.
+              <p className="text-sm text-base-content/60 max-w-sm">
+                Rooms and teams each get their own channel. Direct messages sit
+                alongside them.
               </p>
+              <div className="flex flex-col sm:flex-row gap-2 mt-5">
+                <Link to="/rooms" className="btn btn-sm btn-outline gap-1.5">
+                  <DoorOpen className="size-4" />
+                  Browse rooms
+                </Link>
+                <Link to="/teams" className="btn btn-sm btn-outline gap-1.5">
+                  <Building2 className="size-4" />
+                  Your teams
+                </Link>
+              </div>
             </div>
           )}
         </div>

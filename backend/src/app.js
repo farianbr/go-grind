@@ -6,12 +6,14 @@ import cors from "cors";
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
 import chatRoutes from "./routes/chat.route.js";
-import spaceRoutes from "./routes/space.route.js";
+import spaceRoutes from "./routes/room.route.js";
 import notificationRoutes from "./routes/notification.route.js";
 import sessionRoutes from "./routes/session.route.js";
+import teamRoutes from "./routes/team.route.js";
 
 import { connectDB } from "./lib/db.js";
 import { isProduction } from "./lib/config.js";
+import { maybeSweep } from "./lib/session.js";
 
 dotenv.config();
 
@@ -21,7 +23,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5000",
   process.env.FRONTEND_URL,
-  "https://go-grind.vercel.app", // Add your deployed frontend URL
+  "https://kendro.vercel.app", // Add your deployed frontend URL
 ].filter(Boolean);
 
 app.use(
@@ -48,6 +50,10 @@ app.use(cookieParser());
 app.use("/api", async (req, res, next) => {
   try {
     await connectDB();
+    // Fire-and-forget, throttled to once per 10 min per process. Keeps abandoned
+    // sessions from accruing wall-clock time on a platform where a long-lived
+    // interval would not survive between invocations.
+    maybeSweep();
     next();
   } catch (error) {
     console.error("Database connection failed", error);
@@ -58,9 +64,10 @@ app.use("/api", async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
-app.use("/api/spaces", spaceRoutes);
+app.use("/api/rooms", spaceRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/teams", teamRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", env: process.env.NODE_ENV || "development" });
@@ -69,7 +76,7 @@ app.get("/api/health", (req, res) => {
 // API-only: the frontend is a separate Vercel deployment and is never served here.
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "go-grind API is running",
+    message: "kendro API is running",
     env: isProduction ? "production" : "development",
   });
 });

@@ -10,7 +10,7 @@ export const getNotifications = async (req, res) => {
       recipient: req.user._id,
     })
       .populate("sender", "fullName profilePic")
-      .populate("relatedSpace", "name")
+      .populate("relatedRoom", "name")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -106,7 +106,7 @@ export const createNotification = async ({
   sender,
   type,
   message,
-  relatedSpace = null,
+  relatedRoom = null,
   relatedSession = null,
   metadata = {},
 }) => {
@@ -116,7 +116,7 @@ export const createNotification = async ({
       sender,
       type,
       message,
-      relatedSpace,
+      relatedRoom,
       relatedSession,
       metadata,
     });

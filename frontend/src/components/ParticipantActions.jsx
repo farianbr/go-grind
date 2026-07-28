@@ -11,16 +11,16 @@ import {
 const ParticipantActions = ({
   participantUserId,
   participantName,
-  spaceId,
+  roomId,
   authUserId,
 }) => {
   const [showTasks, setShowTasks] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: session } = useQuery({
-    queryKey: ["participantSession", spaceId, participantUserId],
-    queryFn: () => getCurrentSession(spaceId, participantUserId),
-    enabled: !!spaceId && !!participantUserId,
+    queryKey: ["participantSession", roomId, participantUserId],
+    queryFn: () => getCurrentSession(roomId, participantUserId),
+    enabled: !!roomId && !!participantUserId,
     refetchInterval: 10000,
   });
 
@@ -29,7 +29,7 @@ const ParticipantActions = ({
     onSuccess: () => {
       toast.success(`Encouraged ${participantName}!`);
       queryClient.invalidateQueries({
-        queryKey: ["participantSession", spaceId, participantUserId],
+        queryKey: ["participantSession", roomId, participantUserId],
       });
     },
     onError: (error) => {
@@ -44,7 +44,7 @@ const ParticipantActions = ({
     onSuccess: () => {
       toast.success("Encouragement removed");
       queryClient.invalidateQueries({
-        queryKey: ["participantSession", spaceId, participantUserId],
+        queryKey: ["participantSession", roomId, participantUserId],
       });
     },
     onError: (error) => {
@@ -67,11 +67,11 @@ const ParticipantActions = ({
 
   const taskStatusIcon =
     totalTasks === 0 ? (
-      <Circle className="size-4 sm:size-5 text-base-content/60" />
+      <Circle className="size-4 text-base-content/40" />
     ) : completedTasks === totalTasks ? (
-      <CheckCircle2 className="size-4 sm:size-5 text-success" />
+      <CheckCircle2 className="size-4 text-success" />
     ) : (
-      <ListTodo className="size-4 sm:size-5 text-warning" />
+      <ListTodo className="size-4 text-warning" />
     );
 
   const handleEncourageClick = () => {
@@ -91,7 +91,7 @@ const ParticipantActions = ({
           onMouseEnter={() => setShowTasks(true)}
           onMouseLeave={() => setShowTasks(false)}
           onTouchStart={() => setShowTasks((prev) => !prev)} // handles first tap
-          className="bg-base-100/90 backdrop-blur-xs p-2 sm:p-1.5 rounded-full shadow-lg hover:scale-110 transition-all"
+          className="btn btn-ghost btn-xs btn-circle"
           aria-label="Tasks"
         >
           {taskStatusIcon}
@@ -144,12 +144,8 @@ const ParticipantActions = ({
       <button
         onClick={handleEncourageClick}
         disabled={isOwnView || isEncouraging || isRemoving}
-        className={`bg-base-100/90 backdrop-blur-xs p-2 sm:p-1.5 rounded-full shadow-lg transition-all flex items-center gap-1 sm:gap-1 ${
-          isOwnView
-            ? "cursor-not-allowed opacity-70"
-            : hasEncouraged
-            ? "hover:scale-110"
-            : "hover:scale-110"
+        className={`btn btn-ghost btn-xs gap-1 px-1.5 ${
+          isOwnView ? "cursor-default" : ""
         }`}
         title={
           isOwnView
@@ -160,13 +156,17 @@ const ParticipantActions = ({
         }
         aria-label={isOwnView ? "Your encouragements" : "Encourage"}
       >
-        <Heart
-          className={`size-4 sm:size-5 ${
-            hasEncouraged ? "fill-error text-error" : "text-error"
-          }`}
-        />
+        {isEncouraging || isRemoving ? (
+          <span className="loading loading-spinner loading-xs text-error" />
+        ) : (
+          <Heart
+            className={`size-4 ${
+              hasEncouraged ? "fill-error text-error" : "text-error"
+            }`}
+          />
+        )}
         {encouragementCount > 0 && (
-          <span className="text-[10px] sm:text-[10px] font-bold pr-0.5 sm:pr-1">
+          <span className="text-[10px] font-bold tabular-nums">
             {encouragementCount}
           </span>
         )}

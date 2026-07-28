@@ -35,7 +35,7 @@ export async function getMyFriends(req, res) {
       .select("friends")
       .populate(
         "friends",
-        "fullName bio location profilePic nativeLanguage learningSkill"
+        "fullName bio location profilePic role"
       );
 
     res.status(200).json(user.friends);
@@ -158,7 +158,7 @@ export async function getFriendRequests(req, res) {
       status: "pending",
     }).populate(
       "sender",
-      "fullName profilePic nativeLanguage learningSkill"
+      "fullName profilePic role"
     );
 
     const acceptedRequests = await FriendRequest.find({
@@ -181,7 +181,7 @@ export async function getOutgoingFriendRequests(req, res) {
       status: "pending",
     }).populate(
       "recipient",
-      "fullName profilePic nativeLanguage learningSkill"
+      "fullName profilePic role"
     );
 
     res.status(200).json(outgoingRequests);
@@ -348,8 +348,7 @@ export async function getUserProfile(req, res) {
         profilePic: user.profilePic,
         bio: user.bio,
         location: user.location,
-        nativeLanguage: user.nativeLanguage,
-        learningSkill: user.learningSkill,
+        role: user.role,
         friends: user.friends,
       });
     }
@@ -416,7 +415,7 @@ export async function getUserStatistics(req, res) {
   }
 }
 
-export async function getUserSpaces(req, res) {
+export async function getUserRooms(req, res) {
   try {
     const { userId } = req.params;
     const currentUserId = req.user.id;
@@ -433,22 +432,22 @@ export async function getUserSpaces(req, res) {
 
     if (!isFriend && !isOwnProfile) {
       return res.status(403).json({
-        message: "You must be friends with this user to view their spaces",
+        message: "You must be friends with this user to view their rooms",
       });
     }
 
-    const Space = (await import("../models/Space.model.js")).default;
+    const Room = (await import("../models/Room.model.js")).default;
 
-    const spaces = await Space.find({
+    const rooms = await Room.find({
       $or: [{ creator: userId }, { members: userId }],
     })
       .populate("creator", "fullName profilePic")
       .populate("members", "fullName profilePic")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(spaces);
+    res.status(200).json(rooms);
   } catch (error) {
-    console.error("Error in getUserSpaces controller", error.message);
+    console.error("Error in getUserRooms controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }

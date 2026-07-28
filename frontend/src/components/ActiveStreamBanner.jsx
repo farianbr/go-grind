@@ -2,39 +2,39 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router";
 import { Video } from "lucide-react";
 import useAuthUser from "../hooks/useAuthUser";
-import { getMySpaces } from "../lib/api";
+import { getMyRooms } from "../lib/api";
 
 const ActiveStreamBanner = () => {
   const { authUser } = useAuthUser();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { data: mySpaces } = useQuery({
-    queryKey: ["mySpaces"],
-    queryFn: getMySpaces,
+  const { data: myRooms } = useQuery({
+    queryKey: ["myRooms"],
+    queryFn: getMyRooms,
     enabled: !!authUser,
     refetchInterval: 10000,
   });
 
-  const activeStreamSpace = mySpaces?.find((space) =>
-    space.activeStreams?.some(
+  const activeStreamRoom = myRooms?.find((room) =>
+    room.activeStreams?.some(
       (stream) =>
         stream.user?._id === authUser?._id || stream.user === authUser?._id
     )
   );
 
-  if (!activeStreamSpace || location.pathname.includes("/stream")) {
+  if (!activeStreamRoom || location.pathname.includes("/stream")) {
     return null;
   }
 
   return (
-    activeStreamSpace && (
+    activeStreamRoom && (
       <div className="fixed bottom-2 sm:bottom-4 right-2 sm:right-4 z-50 animate-in slide-in-from-bottom-5 duration-300">
         <div className="group relative">
           <button
-            onClick={() => navigate(`/spaces/${activeStreamSpace._id}/stream`)}
+            onClick={() => navigate(`/rooms/${activeStreamRoom._id}/stream`)}
             className="bg-primary text-primary-content rounded-full p-3 sm:p-3 shadow-2xl flex items-center justify-center hover:scale-105 transition-all duration-200"
-            aria-label="Rejoin stream"
+            aria-label="Back to your desk"
           >
             <div className="relative">
               <Video className="size-5 sm:size-7" />
@@ -52,10 +52,10 @@ const ActiveStreamBanner = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">
-                  Grinding in Progress
+                  You&apos;re at a desk
                 </p>
                 <p className="text-xs opacity-90 truncate">
-                  {activeStreamSpace.name}
+                  {activeStreamRoom.name}
                 </p>
               </div>
             </div>

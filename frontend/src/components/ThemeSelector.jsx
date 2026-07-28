@@ -29,6 +29,8 @@ const ThemeSelector = () => {
       <button
         className="btn btn-circle bg-base-100 hover:bg-base-300 border-0 w-8 h-8 min-h-8 sm:w-10 sm:h-10 sm:min-h-10"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Change theme"
+        aria-expanded={isOpen}
       >
         <PaletteIcon className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>

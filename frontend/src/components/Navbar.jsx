@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
-import { BellIcon, LogOutIcon, User, ChevronDown, CheckCheck } from "lucide-react";
+import { BellIcon, LogOutIcon, User, ChevronDown, CheckCheck, Settings } from "lucide-react";
 import useLogout from "../hooks/useLogout";
 import ThemeSelector from "./ThemeSelector";
 import FloatingSideBar from "./FloatingSideBar";
@@ -20,14 +20,17 @@ const Navbar = () => {
   const profileDropdownRef = useRef(null);
   const notificationDropdownRef = useRef(null);
 
-  const { logoutMutation } = useLogout();
+  const { logoutMutation, isPending: isLoggingOut } = useLogout();
 
   const unreadCount = useNotificationUnreadCount();
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
-    queryFn: getNotifications,
-    refetchInterval: 5000,
+    // Passing the function by reference handed React Query's context object to
+    // the first parameter, so every poll requested ?page=[object Object].
+    queryFn: () => getNotifications(1, 20),
+    // 5s was constant network chatter in an app that sells uninterrupted focus.
+    refetchInterval: 60000,
     refetchIntervalInBackground: false,
   });
 
@@ -40,7 +43,8 @@ const Navbar = () => {
     },
   });
 
-  const recentNotifications = notifications?.notifications?.slice(0, 5);
+  const recentNotifications = notifications?.notifications?.slice(0, 5) ?? [];
+  const totalNotifications = notifications?.notifications?.length ?? 0;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -56,10 +60,9 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    setShowProfileDropdown(false);
-    logoutMutation();
-  };
+  // The menu stays open while the request is in flight. Closing it first meant
+  // the click had no visible result until the session actually dropped.
+  const handleLogout = () => logoutMutation();
 
   const handleProfileClick = () => {
     setShowProfileDropdown(false);
@@ -81,9 +84,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between w-full gap-2 sm:gap-4">
           <div className="shrink-0 min-w-0">
             <Link to="/" className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5">
-              <img src="/go-grind-logo.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
-              <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary tracking-wider truncate">
-                GoGrind
+              <img src="/logo.svg" alt="" width="40" height="40" className="w-8 h-8 sm:w-10 sm:h-10" />
+              <span className="wordmark text-xl sm:text-2xl lg:text-[1.75rem] text-base-content truncate">
+                Kendro
               </span>
             </Link>
           </div>
@@ -95,12 +98,16 @@ const Navbar = () => {
               <button
                 className="btn btn-circle bg-base-100 hover:bg-base-300 border-0 w-9 h-9 min-h-9 sm:w-10 sm:h-10 sm:min-h-10 relative"
                 onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                aria-label={
+                  unreadCount > 0
+                    ? `Notifications, ${unreadCount} unread`
+                    : "Notifications"
+                }
+                aria-expanded={showNotificationDropdown}
               >
                 <BellIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 sm:top-0 sm:right-0 badge badge-primary badge-xs sm:badge-sm min-h-4 h-4 sm:min-h-5 sm:h-5 px-1 sm:px-1.5 text-[10px] sm:text-xs">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
+                  <span className="absolute top-1 right-1 size-2.5 rounded-full bg-primary ring-2 ring-base-100" />
                 )}
               </button>
 
@@ -174,7 +181,7 @@ const Navbar = () => {
                     )}
                   </div>
 
-                  {notifications?.notifications.length > 0 && (
+                  {totalNotifications > 0 && (
                     <div className="px-3 sm:px-4 py-2 sm:py-3 border-t border-base-300">
                       <button
                         onClick={handleSeeAllNotifications}
@@ -194,6 +201,8 @@ const Navbar = () => {
               <button
                 className="btn bg-base-100 hover:bg-base-300 border-0 rounded-full h-9 min-h-9 sm:h-10 sm:min-h-10 pl-1 pr-2 sm:pr-3 flex items-center gap-1"
                 onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                aria-label="Account menu"
+                aria-expanded={showProfileDropdown}
               >
                 <div className="avatar">
                   <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full">
@@ -227,11 +236,27 @@ const Navbar = () => {
                   </button>
 
                   <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm text-error"
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      navigate("/settings");
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm"
                   >
-                    <LogOutIcon className="size-4" />
-                    <span>Logout</span>
+                    <Settings className="size-4" />
+                    <span>Settings</span>
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    className="w-full px-4 py-2 text-left hover:bg-base-200 transition-colors flex items-center gap-2 text-sm text-error disabled:opacity-60"
+                  >
+                    {isLoggingOut ? (
+                      <span className="loading loading-spinner loading-xs" />
+                    ) : (
+                      <LogOutIcon className="size-4" />
+                    )}
+                    <span>{isLoggingOut ? "Signing out..." : "Logout"}</span>
                   </button>
                 </div>
               )}

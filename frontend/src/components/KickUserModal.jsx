@@ -23,11 +23,10 @@ const KickUserModal = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-base-100 rounded-lg shadow-xl max-w-md w-full p-6">
-        <h3 className="font-bold text-lg mb-4">Remove User from Stream</h3>
+        <h3 className="font-bold text-lg mb-4">Remove from this room?</h3>
         <p className="mb-4">
-          Are you sure you want to remove{" "}
-          <span className="font-semibold">{kickTargetUser.name}</span> from
-          the stream?
+          <span className="font-semibold">{kickTargetUser.name}</span> loses
+          their desk and has to be let back in to return.
         </p>
 
         <fieldset className="fieldset mb-4">

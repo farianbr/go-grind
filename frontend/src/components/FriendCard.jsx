@@ -1,6 +1,4 @@
 import { Link } from "react-router";
-import { LANGUAGE_TO_FLAG } from "../constants";
-import { capitalize } from "../lib/utils";
 import { MapPinIcon, UserMinus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { unfriend } from "../lib/api";
@@ -46,13 +44,9 @@ const FriendCard = ({ friend, showUnfriend = true, showViewProfile = false }) =>
         </Link>
 
         <div className="flex flex-wrap gap-1.5 mb-2 sm:mb-3">
-          <span className="badge badge-secondary badge-xs sm:badge-sm">
-            {getLanguageFlag(friend.nativeLanguage)}
-            Native: {capitalize(friend.nativeLanguage)}
-          </span>
-          {friend.learningSkill && (
+          {friend.role && (
             <span className="badge badge-outline badge-xs sm:badge-sm">
-              Focus: {capitalize(friend.learningSkill)}
+              {friend.role}
             </span>
           )}
         </div>
@@ -90,21 +84,3 @@ const FriendCard = ({ friend, showUnfriend = true, showViewProfile = false }) =>
 };
 export default FriendCard;
 
-// eslint-disable-next-line react-refresh/only-export-components
-export function getLanguageFlag(language) {
-  if (!language) return null;
-
-  const langLower = language.toLowerCase();
-  const countryCode = LANGUAGE_TO_FLAG[langLower];
-
-  if (countryCode) {
-    return (
-      <img
-        src={`https://flagcdn.com/24x18/${countryCode}.png`}
-        alt={`${langLower} flag`}
-        className="h-3 mr-1 inline-block"
-      />
-    );
-  }
-  return null;
-}

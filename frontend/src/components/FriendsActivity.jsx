@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getMySpaces, getUserFriends, getUserSessions } from "../lib/api";
+import { getMyRooms, getUserFriends, getUserSessions } from "../lib/api";
 import { Video, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router";
@@ -10,9 +10,9 @@ const FriendsActivity = () => {
     queryKey: ["friends"],
     queryFn: getUserFriends,
   });
-  const { data: mySpaces = [] } = useQuery({
-    queryKey: ["mySpaces"],
-    queryFn: getMySpaces,
+  const { data: myRooms = [] } = useQuery({
+    queryKey: ["myRooms"],
+    queryFn: getMyRooms,
   });
   const [visibleCount, setVisibleCount] = useState(5);
 
@@ -23,13 +23,13 @@ const FriendsActivity = () => {
 
   const streamingFriends = useMemo(() => {
     const list = [];
-    mySpaces.forEach((space) => {
-      space.activeStreams?.forEach((s) => {
+    myRooms.forEach((room) => {
+      room.activeStreams?.forEach((s) => {
         const uid = s.user?._id || s.user;
         if (friendIds.has(uid)) {
           const friend = friends.find((f) => f._id === uid);
           list.push({
-            space,
+            room,
             stream: s,
             friend: friend || s.user,
           });
@@ -37,7 +37,7 @@ const FriendsActivity = () => {
       });
     });
     return list;
-  }, [mySpaces, friendIds, friends]);
+  }, [myRooms, friendIds, friends]);
 
   const { data: allFriendSessions = [] } = useQuery({
     queryKey: ["friendSessions", friends.map((f) => f._id).join(",")],
@@ -78,13 +78,13 @@ const FriendsActivity = () => {
           <h3 className="font-semibold mb-3">Friends Streaming Now</h3>
           {streamingFriends.length === 0 ? (
             <div className="text-sm bg-base-200 text-center text-base-content/60 h-20">
-              No friends are streaming right now.
+              No friends are working right now.
             </div>
           ) : (
             <div className="space-y-2">
-              {streamingFriends.map(({ space, stream, friend }) => (
+              {streamingFriends.map(({ room, stream, friend }) => (
                 <div
-                  key={`${space._id}-${stream.user?._id || stream.user}`}
+                  key={`${room._id}-${stream.user?._id || stream.user}`}
                   className="flex items-center gap-3 p-2 rounded-lg bg-base-300/50"
                 >
                   <div className="avatar avatar-online">
@@ -106,11 +106,11 @@ const FriendsActivity = () => {
                       {friend?.fullName || stream.user?.fullName || "Friend"}
                     </p>
                     <p className="text-xs text-base-content/60 truncate">
-                      {space.name}
+                      {room.name}
                     </p>
                   </div>
                   <Link
-                    to={`/spaces/${space._id}/stream`}
+                    to={`/rooms/${room._id}/stream`}
                     className="btn btn-primary btn-xs"
                   >
                     <Video className="size-3 mr-1" /> Join
@@ -174,15 +174,15 @@ const FriendsActivity = () => {
                             </p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span className="badge badge-sm badge-outline">
-                                {session.grindingTopic}
+                                {session.workTopic}
                               </span>
-                              {session.space?.name && (
+                              {session.room?.name && (
                                 <span className="badge badge-sm badge-ghost">
                                   <Link
-                                    to={`/spaces/${session.space._id}`}
+                                    to={`/rooms/${session.room._id}`}
                                     className="hover:text-primary"
                                   >
-                                    {session.space.name}
+                                    {session.room.name}
                                   </Link>
                                 </span>
                               )}

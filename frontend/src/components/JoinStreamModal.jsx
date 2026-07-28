@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Video, VideoOff, Mic, MicOff } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, X } from "lucide-react";
 import toast from "react-hot-toast";
 
-const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
+const JoinStreamModal = ({ room, onJoin, isJoining, authUser }) => {
   const navigate = useNavigate();
-  const [grindingTopic, setGrindingTopic] = useState("");
+  const [workTopic, setWorkTopic] = useState("");
   const [targetDuration, setTargetDuration] = useState(60);
   const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
+
+  const atDesks = room?.activeStreams?.length ?? 0;
 
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) {
@@ -26,8 +28,8 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
   };
 
   const handleJoinStream = () => {
-    if (!grindingTopic.trim()) {
-      toast.error("Please enter what you're grinding");
+    if (!workTopic.trim()) {
+      toast.error("Say what you're working on");
       return;
     }
 
@@ -44,20 +46,20 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
     );
 
     if (allActiveStreamKeys.length > 0) {
-      const existingStreamSpaceId = allActiveStreamKeys[0]
+      const existingStreamRoomId = allActiveStreamKeys[0]
         .replace(`stream_${authUser._id}_`, "")
         .replace("_active", "");
 
-      if (existingStreamSpaceId !== space._id) {
+      if (existingStreamRoomId !== room._id) {
         toast.error(
-          "You're already in another stream room. Please leave it first."
+          "You already have a desk in another room. Leave that one first."
         );
         return;
       }
     }
 
     onJoin({
-      grindingTopic: grindingTopic.trim(),
+      workTopic: workTopic.trim(),
       targetDuration,
       tasks,
       isVideoEnabled: videoEnabled,
@@ -69,50 +71,39 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
     <div className="flex h-full items-center justify-center bg-base-200 sm:py-4">
       <div className="card w-full max-w-lg bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title text-2xl">Join Stream Room</h2>
-          <p className="text-base-content/60">Space: {space?.name}</p>
-
-          {!isCreator && !space?.streamInitialized && (
-            <div className="alert alert-warning mt-4">
-              <div>
-                <p className="font-semibold">Stream Room Not Ready</p>
-                <p className="text-sm mt-1">
-                  The creator needs to enter the stream room first to initialize
-                  it.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {isCreator && !space?.streamInitialized && (
-            <div className="alert alert-info mt-4">
-              <div>
-                <p className="font-semibold">Initialize Stream Room</p>
-                <p className="text-sm mt-1">
-                  You're entering the stream room for the first time. This will
-                  make it available for all members.
-                </p>
-              </div>
-            </div>
-          )}
+          <h2 className="card-title text-2xl">Take a desk</h2>
+          {/* Who is already in there, stated before the form: it is the reason
+              to walk in rather than work alone. */}
+          <p className="text-base-content/60">
+            {room?.name}
+            {atDesks > 0 && (
+              <span className="text-success">
+                {" · "}
+                {atDesks} already {atDesks === 1 ? "at a desk" : "at desks"}
+              </span>
+            )}
+          </p>
 
           <fieldset className="fieldset mt-4">
-            <label className="label" htmlFor="grinding-topic">
-              What are you grinding?
+            <label className="label" htmlFor="working-topic">
+              What are you working on?
             </label>
             <input
-              id="grinding-topic"
+              id="working-topic"
               type="text"
-              placeholder="e.g., React components, Math problems, etc."
+              placeholder="Finish the pricing page"
               className="input w-full"
-              value={grindingTopic}
-              onChange={(e) => setGrindingTopic(e.target.value)}
+              value={workTopic}
+              onChange={(e) => setWorkTopic(e.target.value)}
             />
+            <span className="text-xs text-base-content/50">
+              Everyone at the desks beside you sees this.
+            </span>
           </fieldset>
 
           <fieldset className="fieldset mt-4">
             <label className="label" htmlFor="target-duration">
-              Target Duration
+              How long?
             </label>
 
             <div className="flex flex-wrap gap-2 mb-2">
@@ -147,13 +138,14 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
 
           <fieldset className="fieldset mt-4">
             <label className="label" htmlFor="session-task">
-              Session Tasks (Optional)
+              Plan your tasks{" "}
+              <span className="text-base-content/50">(optional)</span>
             </label>
             <div className="flex gap-2">
               <input
                 id="session-task"
                 type="text"
-                placeholder="Add a task for this session"
+                placeholder="Add a task"
                 className="input flex-1"
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
@@ -187,8 +179,9 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
                       type="button"
                       className="btn btn-ghost btn-xs btn-circle shrink-0"
                       onClick={() => handleRemoveTask(index)}
+                      aria-label={`Remove ${task.title}`}
                     >
-                      ✕
+                      <X className="size-3.5" />
                     </button>
                   </div>
                 ))}
@@ -231,20 +224,19 @@ const JoinStreamModal = ({ space, isCreator, onJoin, isJoining, authUser }) => {
           <div className="card-actions justify-end mt-6">
             <button
               className="btn btn-ghost"
-              onClick={() => navigate(`/spaces/${space._id}`)}
+              onClick={() => navigate(`/rooms/${room._id}`)}
             >
               Cancel
             </button>
             <button
               className="btn btn-primary"
               onClick={handleJoinStream}
-              disabled={isJoining || (!isCreator && !space?.streamInitialized)}
+              disabled={isJoining}
             >
-              {isJoining ? (
-                <span className="loading loading-spinner"></span>
-              ) : (
-                "Join Stream"
+              {isJoining && (
+                <span className="loading loading-spinner loading-xs"></span>
               )}
+              {isJoining ? "Taking your desk..." : "Take a desk"}
             </button>
           </div>
         </div>

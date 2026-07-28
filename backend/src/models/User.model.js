@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       minLength: 6,
+      // Never returned by default. Reads that need it must opt in with
+      // .select("+password") — see login().
+      select: false,
     },
     bio: {
       type: String,
@@ -25,17 +28,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    nativeLanguage: {
-      type: String,
-      default: "",
-    },
-    learningSkill: {
+    role: {
       type: String,
       default: "",
     },
     location: {
       type: String,
       default: "",
+    },
+    // Creating teams is the paid capability. Joining one is always free, so an
+    // invited member never meets a paywall.
+    plan: {
+      type: String,
+      enum: ["free", "pro"],
+      default: "free",
     },
     isOnboarded: {
       type: Boolean,
@@ -63,6 +69,15 @@ userSchema.pre("save", async function (next) {
   } catch (error) {
     next(error);
   }
+});
+
+// Belt and braces: even if a document is fetched with the hash selected, it must
+// never survive serialisation into an API response.
+userSchema.set("toJSON", {
+  transform: (_doc, ret) => {
+    delete ret.password;
+    return ret;
+  },
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

@@ -14,7 +14,7 @@ import {
   uploadPhoto,
   getUserProfile,
   getUserStatistics,
-  getUserSpaces,
+  getUserRooms,
 } from "../controllers/user.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
@@ -38,6 +38,6 @@ router.get("/outgoing-friend-requests", getOutgoingFriendRequests);
 
 router.get("/profile/:userId", getUserProfile);
 router.get("/:userId/statistics", getUserStatistics);
-router.get("/:userId/spaces", getUserSpaces);
+router.get("/:userId/rooms", getUserRooms);
 
 export default router;

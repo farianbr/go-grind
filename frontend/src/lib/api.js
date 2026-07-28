@@ -49,8 +49,8 @@ export async function getUserStatistics(userId) {
   return response.data;
 }
 
-export async function getUserSpaces(userId) {
-  const response = await axiosInstance.get(`/users/${userId}/spaces`);
+export async function getUserRooms(userId) {
+  const response = await axiosInstance.get(`/users/${userId}/rooms`);
   return response.data;
 }
 
@@ -100,77 +100,83 @@ export async function getStreamToken() {
   return response.data;
 }
 
-export async function createSpace(spaceData) {
-  const response = await axiosInstance.post("/spaces", spaceData);
+// Brings the caller's room and team channels in line with what they belong to.
+export async function syncChatChannels() {
+  const response = await axiosInstance.post("/chat/sync");
   return response.data;
 }
 
-export async function getAllSpaces() {
-  const response = await axiosInstance.get("/spaces");
+export async function createRoom(spaceData) {
+  const response = await axiosInstance.post("/rooms", spaceData);
   return response.data;
 }
 
-export async function getMySpaces() {
-  const response = await axiosInstance.get("/spaces/my-spaces");
+export async function getAllRooms() {
+  const response = await axiosInstance.get("/rooms");
   return response.data;
 }
 
-export async function getSpaceById(spaceId) {
-  const response = await axiosInstance.get(`/spaces/${spaceId}`);
+export async function getMyRooms() {
+  const response = await axiosInstance.get("/rooms/my-rooms");
   return response.data;
 }
 
-export async function requestToJoinSpace(spaceId) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/request-join`);
+export async function getRoomById(roomId) {
+  const response = await axiosInstance.get(`/rooms/${roomId}`);
   return response.data;
 }
 
-export async function approveJoinRequest(spaceId, userId) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/approve`, {
+export async function requestToJoinRoom(roomId) {
+  const response = await axiosInstance.post(`/rooms/${roomId}/request-join`);
+  return response.data;
+}
+
+export async function approveJoinRequest(roomId, userId) {
+  const response = await axiosInstance.post(`/rooms/${roomId}/approve`, {
     userId,
   });
   return response.data;
 }
 
-export async function rejectJoinRequest(spaceId, userId) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/reject`, {
+export async function rejectJoinRequest(roomId, userId) {
+  const response = await axiosInstance.post(`/rooms/${roomId}/reject`, {
     userId,
   });
   return response.data;
 }
 
-export async function leaveSpace(spaceId) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}/leave`);
+export async function leaveRoom(roomId) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}/leave`);
   return response.data;
 }
 
-export async function deleteSpace(spaceId) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}`);
+export async function deleteRoom(roomId) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}`);
   return response.data;
 }
 
-export async function createAnnouncement(spaceId, announcementData) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/announcements`, announcementData);
+export async function createAnnouncement(roomId, announcementData) {
+  const response = await axiosInstance.post(`/rooms/${roomId}/announcements`, announcementData);
   return response.data;
 }
 
-export async function deleteAnnouncement(spaceId, announcementId) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}/announcements/${announcementId}`);
+export async function deleteAnnouncement(roomId, announcementId) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}/announcements/${announcementId}`);
   return response.data;
 }
 
-export async function joinStream(spaceId, streamData) {
-  const response = await axiosInstance.post(`/spaces/${spaceId}/streams/join`, streamData);
+export async function joinStream(roomId, streamData) {
+  const response = await axiosInstance.post(`/rooms/${roomId}/streams/join`, streamData);
   return response.data;
 }
 
-export async function leaveStream(spaceId) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/leave`);
+export async function leaveStream(roomId) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}/streams/leave`);
   return response.data;
 }
 
-export async function removeFromStream(spaceId, userId, reason) {
-  const response = await axiosInstance.delete(`/spaces/${spaceId}/streams/${userId}`, {
+export async function removeFromStream(roomId, userId, reason) {
+  const response = await axiosInstance.delete(`/rooms/${roomId}/streams/${userId}`, {
     data: { reason }
   });
   return response.data;
@@ -218,10 +224,10 @@ export async function getUserSessions(userId) {
   return response.data;
 }
 
-export async function getCurrentSession(spaceId, userId = null) {
+export async function getCurrentSession(roomId, userId = null) {
   const url = userId 
-    ? `/sessions/current/${spaceId}?userId=${userId}`
-    : `/sessions/current/${spaceId}`;
+    ? `/sessions/current/${roomId}?userId=${userId}`
+    : `/sessions/current/${roomId}`;
   const response = await axiosInstance.get(url);
   return response.data;
 }
@@ -231,8 +237,8 @@ export async function updateSessionTask(sessionId, taskId, isCompleted) {
   return response.data;
 }
 
-export async function getSpaceSessionStats(spaceId) {
-  const response = await axiosInstance.get(`/sessions/space/${spaceId}/stats`);
+export async function getRoomSessionStats(roomId) {
+  const response = await axiosInstance.get(`/sessions/room/${roomId}/stats`);
   return response.data;
 }
 
@@ -243,5 +249,128 @@ export async function encourageParticipant(sessionId) {
 
 export async function removeEncouragement(sessionId) {
   const response = await axiosInstance.delete(`/sessions/${sessionId}/encourage`);
+  return response.data;
+}
+
+export async function startSoloSession(payload) {
+  const response = await axiosInstance.post("/sessions/solo", payload);
+  return response.data;
+}
+
+export async function getActiveSoloSession() {
+  const response = await axiosInstance.get("/sessions/solo/active");
+  // 204 means "no session running" — a normal state, not an error.
+  return response.status === 204 ? null : response.data;
+}
+
+export async function completeSession({ sessionId, reflection }) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/complete`, {
+    reflection,
+  });
+  return response.data;
+}
+
+export async function heartbeatSession(sessionId) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/heartbeat`);
+  return response.data;
+}
+
+export async function addSessionTask(sessionId, title) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/tasks`, {
+    title,
+  });
+  return response.data;
+}
+
+export async function deleteSessionTask(sessionId, taskId) {
+  const response = await axiosInstance.delete(
+    `/sessions/${sessionId}/tasks/${taskId}`
+  );
+  return response.data;
+}
+
+export async function startBreak(sessionId) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/break/start`);
+  return response.data;
+}
+
+export async function endBreak(sessionId) {
+  const response = await axiosInstance.post(`/sessions/${sessionId}/break/end`);
+  return response.data;
+}
+
+export async function extendSession(sessionId, minutes) {
+  const response = await axiosInstance.patch(`/sessions/${sessionId}/extend`, {
+    minutes,
+  });
+  return response.data;
+}
+
+// ---- teams ----------------------------------------------------------------
+
+export async function getMyTeams() {
+  const response = await axiosInstance.get("/teams");
+  return response.data;
+}
+
+export async function getTeamById(teamId) {
+  const response = await axiosInstance.get(`/teams/${teamId}`);
+  return response.data;
+}
+
+export async function createTeam(payload) {
+  const response = await axiosInstance.post("/teams", payload);
+  return response.data;
+}
+
+export async function deleteTeam(teamId) {
+  const response = await axiosInstance.delete(`/teams/${teamId}`);
+  return response.data;
+}
+
+export async function inviteToTeam(teamId, payload) {
+  const response = await axiosInstance.post(`/teams/${teamId}/invites`, payload);
+  return response.data;
+}
+
+export async function revokeInvite(teamId, token) {
+  const response = await axiosInstance.delete(
+    `/teams/${teamId}/invites/${token}`
+  );
+  return response.data;
+}
+
+export async function acceptTeamInvite(token) {
+  const response = await axiosInstance.post("/teams/invites/accept", { token });
+  return response.data;
+}
+
+export async function getPendingTeamInvites() {
+  const response = await axiosInstance.get("/teams/invites/pending");
+  return response.data;
+}
+
+export async function updateTeamMemberRole(teamId, userId, role) {
+  const response = await axiosInstance.patch(
+    `/teams/${teamId}/members/${userId}`,
+    { role }
+  );
+  return response.data;
+}
+
+export async function removeTeamMember(teamId, userId) {
+  const response = await axiosInstance.delete(
+    `/teams/${teamId}/members/${userId}`
+  );
+  return response.data;
+}
+
+export async function upgradePlan() {
+  const response = await axiosInstance.post("/teams/upgrade");
+  return response.data;
+}
+
+export async function getLivePresence() {
+  const response = await axiosInstance.get("/sessions/live");
   return response.data;
 }

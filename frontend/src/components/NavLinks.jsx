@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router";
-import { BellIcon, HomeIcon, UsersIcon, MessagesSquare, Shapes } from "lucide-react";
+import { BellIcon, HomeIcon, UsersIcon, MessagesSquare, Shapes, Timer, Building2 } from "lucide-react";
 import { useChatUnreadCount } from "../hooks/useChatUnreadCount";
-import { useNotificationUnreadCount } from "../hooks/useNotificationUnreadCount";
+import useActiveSession from "../hooks/useActiveSession";
 
 const NavLinks = () => {
   const location = useLocation();
   const currentPath = location.pathname;
   const unreadChatCount = useChatUnreadCount();
-  const unreadNotificationCount = useNotificationUnreadCount();
+  const { isActive: sessionActive, onBreak } = useActiveSession();
   
   return (
     <>
@@ -22,13 +22,45 @@ const NavLinks = () => {
       </Link>
 
       <Link
-        to="/spaces"
+        to="/focus"
         className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
-          currentPath === "/spaces" || currentPath.startsWith("/spaces/") ? "btn-active" : ""
+          currentPath === "/focus" ? "btn-active" : ""
+        }`}
+      >
+        <Timer className="size-4 lg:size-5 text-base-content opacity-70" />
+        <div className="flex items-center gap-1.5 lg:gap-2">
+          <span>Session</span>
+          {sessionActive && (
+            <span
+              className={
+                onBreak
+                  ? "inline-flex size-2 rounded-full bg-warning"
+                  : "inline-flex size-2 rounded-full bg-primary animate-pulse"
+              }
+              title={onBreak ? "On a break" : "Session in progress"}
+            />
+          )}
+        </div>
+      </Link>
+
+      <Link
+        to="/rooms"
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
+          currentPath === "/rooms" || currentPath.startsWith("/rooms/") ? "btn-active" : ""
         }`}
       >
         <Shapes className="size-4 lg:size-5 text-base-content opacity-70" />
-        <span>Spaces</span>
+        <span>Rooms</span>
+      </Link>
+
+      <Link
+        to="/teams"
+        className={`btn btn-ghost justify-start w-full gap-2 lg:gap-3 px-2 lg:px-3 normal-case text-sm lg:text-base ${
+          currentPath === "/teams" || currentPath.startsWith("/teams/") ? "btn-active" : ""
+        }`}
+      >
+        <Building2 className="size-4 lg:size-5 text-base-content opacity-70" />
+        <span>Teams</span>
       </Link>
 
       <Link
@@ -38,7 +70,7 @@ const NavLinks = () => {
         }`}
       >
         <UsersIcon className="size-4 lg:size-5 text-base-content opacity-70" />
-        <span>Friends</span>
+        <span>People</span>
       </Link>
 
       <Link
@@ -51,9 +83,10 @@ const NavLinks = () => {
         <div className="flex items-center gap-1 lg:gap-2">
           <span>Chats</span>
           {unreadChatCount > 0 && (
-            <span className="badge badge-primary badge-xs lg:badge-sm">
-              {unreadChatCount > 9 ? "9+" : unreadChatCount}
-            </span>
+            <span
+              className="inline-flex size-2 rounded-full bg-primary"
+              title="Unread messages"
+            />
           )}
         </div>
       </Link>
@@ -65,14 +98,7 @@ const NavLinks = () => {
         }`}
       >
         <BellIcon className="size-4 lg:size-5 text-base-content opacity-70" />
-        <div className="flex items-center gap-1 lg:gap-2">
-          <span>Notifications</span>
-          {unreadNotificationCount > 0 && (
-            <span className="badge badge-primary badge-xs lg:badge-sm">
-              {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
-            </span>
-          )}
-        </div>
+        <span>Notifications</span>
       </Link>
     </>
   );

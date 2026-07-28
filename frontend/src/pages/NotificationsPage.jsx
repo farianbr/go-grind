@@ -54,7 +54,7 @@ const NotificationsPage = () => {
     },
   });
 
-  const { mutate: markAllAsReadMutation } = useMutation({
+  const { mutate: markAllAsReadMutation, isPending: isMarkingAll } = useMutation({
     mutationFn: markAllNotificationsAsRead,
     onSuccess: () => {
       toast.success("All notifications marked as read");
@@ -64,7 +64,12 @@ const NotificationsPage = () => {
     },
   });
 
-  const { mutate: deleteNotificationMutation } = useMutation({
+  // `variables` is the notification id, so only the row being deleted spins.
+  const {
+    mutate: deleteNotificationMutation,
+    isPending: isDeleting,
+    variables: deletingId,
+  } = useMutation({
     mutationFn: deleteNotification,
     onSuccess: () => {
       toast.success("Notification deleted");
@@ -74,7 +79,11 @@ const NotificationsPage = () => {
     },
   });
 
-  const { mutate: acceptFriendRequestMutation, isPending: isAccepting } = useMutation({
+  const {
+    mutate: acceptFriendRequestMutation,
+    isPending: isAccepting,
+    variables: acceptingId,
+  } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request accepted");
@@ -101,7 +110,11 @@ const NotificationsPage = () => {
     },
   });
 
-  const { mutate: declineFriendRequestMutation, isPending: isDeclining } = useMutation({
+  const {
+    mutate: declineFriendRequestMutation,
+    isPending: isDeclining,
+    variables: decliningId,
+  } = useMutation({
     mutationFn: declineFriendRequest,
     onSuccess: (_, friendRequestId) => {
       toast.success("Friend request declined");
@@ -132,147 +145,178 @@ const NotificationsPage = () => {
       markAsReadMutation(notification._id);
     }
 
-    if (notification.relatedSpace) {
-      navigate(`/spaces/${notification.relatedSpace._id}`);
+    if (notification.relatedRoom) {
+      navigate(`/rooms/${notification.relatedRoom._id}`);
     }
   };
 
   const getNotificationIcon = (type) => {
     switch (type) {
       case "friend_request":
-        return <UserPlus className="size-5 text-primary" />;
+        return <UserPlus className="size-3 text-primary" />;
       case "friend_request_accepted":
-        return <UserCheck className="size-5 text-success" />;
-      case "space_join_request":
-        return <Users className="size-5 text-info" />;
-      case "space_join_approved":
-        return <ShieldCheck className="size-5 text-success" />;
-      case "space_join_rejected":
-        return <ShieldX className="size-5 text-error" />;
+        return <UserCheck className="size-3 text-success" />;
+      case "room_join_request":
+        return <Users className="size-3 text-info" />;
+      case "room_join_approved":
+        return <ShieldCheck className="size-3 text-success" />;
+      case "room_join_rejected":
+        return <ShieldX className="size-3 text-error" />;
       case "session_started":
-        return <Video className="size-5 text-secondary" />;
+        return <Video className="size-3 text-secondary" />;
       case "session_reminder":
-        return <Clock className="size-5 text-warning" />;
+        return <Clock className="size-3 text-warning" />;
       case "removed_from_stream":
-        return <UserX className="size-5 text-error" />;
+        return <UserX className="size-3 text-error" />;
       case "announcement":
-        return <Megaphone className="size-5 text-accent" />;
+        return <Megaphone className="size-3 text-accent" />;
       case "encouragement":
-        return <Heart className="size-5 text-error" />;
+        return <Heart className="size-3 text-error" />;
       default:
-        return <Bell className="size-5" />;
+        return <Bell className="size-3" />;
     }
   };
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 lg:p-8">
-      <div className="container mx-auto max-w-4xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="container mx-auto max-w-3xl">
+        <header className="flex flex-wrap items-end justify-between gap-3 pb-4 mb-1 border-b border-base-300">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Notifications</h1>
-            {unreadCount > 0 && (
-              <p className="text-xs sm:text-sm text-base-content/60 mt-1">
-                You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-              </p>
-            )}
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              Notifications
+            </h1>
+            <p className="text-sm text-base-content/60 mt-1">
+              {unreadCount > 0
+                ? `${unreadCount} unread`
+                : "Join requests, room notices and nudges from the people you work with"}
+            </p>
           </div>
 
-          {notifications && notifications.length > 0 && unreadCount > 0 && (
+          {unreadCount > 0 && (
             <button
               onClick={() => markAllAsReadMutation()}
-              className="btn btn-xs sm:btn-sm btn-ghost gap-2 w-full sm:w-auto"
+              className="btn btn-sm btn-ghost gap-2"
+              disabled={isMarkingAll}
             >
-              <CheckCheck className="size-3 sm:size-4" />
-              Mark all as read
+              {isMarkingAll ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : (
+                <CheckCheck className="size-4" />
+              )}
+              Mark all read
             </button>
           )}
-        </div>
+        </header>
 
         {isLoading ? (
-          <div className="flex justify-center py-8 sm:py-12">
-            <span className="loading loading-spinner loading-md sm:loading-lg"></span>
+          <div className="divide-y divide-base-300">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3 py-4">
+                <div className="skeleton size-10 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="skeleton h-3 w-3/4" />
+                  <div className="skeleton h-2.5 w-24" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : notifications && notifications.length > 0 ? (
-          <div className="space-y-2 sm:space-y-3">
+          /* A list, not a stack of cards: these are one-line events and card
+             chrome on each of them buries the only thing that varies. */
+          <ul className="divide-y divide-base-300">
             {notifications.map((notification) => (
-              <div
+              <li
                 key={notification._id}
-                className={`card bg-base-200 hover:bg-base-300 transition-all cursor-pointer ${
-                  !notification.read ? 'border-l-4 border-primary' : ''
+                className={`group -mx-3 px-3 transition-colors cursor-pointer hover:bg-base-200 ${
+                  !notification.read ? "bg-primary/5" : ""
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
-                <div className="card-body p-3 sm:p-4">
-                  <div className="flex items-start gap-2 sm:gap-3 md:gap-4">
-                    <div className="shrink-0">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                <div className="py-3.5">
+                  <div className="flex items-start gap-3">
+                    {/* One avatar carrying its own type badge, rather than an
+                        icon and a photo competing side by side. */}
+                    <div className="relative shrink-0">
+                      <img
+                        src={notification.sender?.profilePic || "/blank-pp.png"}
+                        alt=""
+                        className="size-9 sm:size-10 rounded-full object-cover"
+                      />
+                      <span className="absolute -bottom-1 -right-1 grid place-items-center size-5 rounded-full bg-base-100 ring-1 ring-base-300">
                         {getNotificationIcon(notification.type)}
-                      </div>
-                    </div>
-
-                    <div className="avatar shrink-0">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full">
-                        <img
-                          src={notification.sender?.profilePic || "/blank-pp.png"}
-                          alt={notification.sender?.fullName || "User"}
-                        />
-                      </div>
+                      </span>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs sm:text-sm ${!notification.read ? 'font-semibold' : ''}`}>
-                        {notification.type === "encouragement" && `${notification.sender?.fullName} ` }{notification.message}
+                      <p
+                        className={`text-sm ${
+                          !notification.read ? "font-semibold" : ""
+                        }`}
+                      >
+                        {notification.type === "encouragement" &&
+                          `${notification.sender?.fullName} `}
+                        {notification.message}
                       </p>
-                      
-                      {notification.relatedSpace && (
-                        <p className="text-[10px] sm:text-xs text-primary mt-1">
-                          {notification.relatedSpace.name}
-                        </p>
-                      )}
 
-                      <p className="text-[10px] sm:text-xs text-base-content/50 mt-1 sm:mt-2">
+                      <p className="text-xs text-base-content/50 mt-1">
                         {formatDistanceToNow(new Date(notification.createdAt), {
                           addSuffix: true,
                         })}
+                        {notification.relatedRoom && (
+                          <>
+                            <span aria-hidden="true"> · </span>
+                            <span className="text-base-content/70">
+                              {notification.relatedRoom.name}
+                            </span>
+                          </>
+                        )}
                       </p>
 
-                      {notification.type === "friend_request" && 
-                       notification.metadata?.friendRequestId && (
-                        <div className="flex gap-2 mt-2 sm:mt-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              acceptFriendRequestMutation(notification.metadata.friendRequestId);
-                            }}
-                            className="btn btn-xs sm:btn-sm btn-success gap-1 sm:gap-2"
-                            disabled={isAccepting || isDeclining}
-                          >
-                            {isAccepting ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <Check className="size-3 sm:size-4" />
-                            )}
-                            Accept
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              declineFriendRequestMutation(notification.metadata.friendRequestId);
-                            }}
-                            className="btn btn-xs sm:btn-sm btn-error gap-1 sm:gap-2"
-                            disabled={isAccepting || isDeclining}
-                          >
-                            {isDeclining ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <X className="size-3 sm:size-4" />
-                            )}
-                            Decline
-                          </button>
-                        </div>
-                      )}
+                      {notification.type === "friend_request" &&
+                        notification.metadata?.friendRequestId && (
+                          <div className="flex gap-2 mt-2.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                acceptFriendRequestMutation(
+                                  notification.metadata.friendRequestId
+                                );
+                              }}
+                              className="btn btn-xs btn-primary gap-1.5"
+                              disabled={isAccepting || isDeclining}
+                            >
+                              {isAccepting &&
+                              acceptingId ===
+                                notification.metadata.friendRequestId ? (
+                                <span className="loading loading-spinner loading-xs" />
+                              ) : (
+                                <Check className="size-3.5" />
+                              )}
+                              Accept
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                declineFriendRequestMutation(
+                                  notification.metadata.friendRequestId
+                                );
+                              }}
+                              className="btn btn-xs btn-ghost gap-1.5"
+                              disabled={isAccepting || isDeclining}
+                            >
+                              {isDeclining &&
+                              decliningId ===
+                                notification.metadata.friendRequestId ? (
+                                <span className="loading loading-spinner loading-xs" />
+                              ) : (
+                                <X className="size-3.5" />
+                              )}
+                              Decline
+                            </button>
+                          </div>
+                        )}
                     </div>
 
                     <button
@@ -280,21 +324,34 @@ const NotificationsPage = () => {
                         e.stopPropagation();
                         deleteNotificationMutation(notification._id);
                       }}
-                      className="btn btn-ghost btn-xs sm:btn-sm btn-circle"
+                      className={`btn btn-ghost btn-xs btn-circle shrink-0 transition-opacity ${
+                        isDeleting && deletingId === notification._id
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                      }`}
+                      disabled={isDeleting && deletingId === notification._id}
+                      aria-label="Delete notification"
                     >
-                      <Trash2 className="size-3 sm:size-4" />
+                      {isDeleting && deletingId === notification._id ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        <Trash2 className="size-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-16">
-            <Bell className="size-12 sm:size-14 md:size-16 text-base-content/20 mb-3 sm:mb-4" />
-            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold mb-1 sm:mb-2">No notifications yet</h3>
-            <p className="text-xs sm:text-sm md:text-base text-base-content/60 text-center max-w-md px-4">
-              You'll see notifications here when you receive space invites, session updates, and more.
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Bell className="size-10 text-base-content/20 mb-3" />
+            <h2 className="text-lg font-semibold mb-1">
+              Nothing to catch up on
+            </h2>
+            <p className="text-sm text-base-content/60 max-w-sm">
+              Join requests, room notices and nudges from the people you work
+              with land here.
             </p>
           </div>
         )}

@@ -1,35 +1,35 @@
 import express from "express";
 import {
-  createSpace,
-  getAllSpaces,
-  getMySpaces,
-  getSpaceById,
-  requestToJoinSpace,
+  createRoom,
+  getAllRooms,
+  getMyRooms,
+  getRoomById,
+  requestToJoinRoom,
   approveJoinRequest,
   rejectJoinRequest,
-  leaveSpace,
-  deleteSpace,
+  leaveRoom,
+  deleteRoom,
   createAnnouncement,
   deleteAnnouncement,
   joinStream,
   leaveStream,
   removeFromStream,
-} from "../controllers/space.controller.js";
+} from "../controllers/room.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
 router.use(protectRoute);
 
-router.post("/", createSpace);
-router.get("/", getAllSpaces);
-router.get("/my-spaces", getMySpaces);
-router.get("/:id", getSpaceById);
-router.post("/:id/request-join", requestToJoinSpace);
+router.post("/", createRoom);
+router.get("/", getAllRooms);
+router.get("/my-rooms", getMyRooms);
+router.get("/:id", getRoomById);
+router.post("/:id/request-join", requestToJoinRoom);
 router.post("/:id/approve", approveJoinRequest);
 router.post("/:id/reject", rejectJoinRequest);
-router.delete("/:id/leave", leaveSpace);
-router.delete("/:id", deleteSpace);
+router.delete("/:id/leave", leaveRoom);
+router.delete("/:id", deleteRoom);
 
 router.post("/:id/announcements", createAnnouncement);
 router.delete("/:id/announcements/:announcementId", deleteAnnouncement);

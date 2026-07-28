@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {  Eye, EyeOff } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
+
+import { useThemeStore } from "../store/useThemeStore";
 
 import useLogin from "../hooks/useLogin";
+
+const DEMO = { email: "demo@kendro.dev", password: "000000" };
+// A desk is the thing a first-time visitor can use on their own. Rooms need
+// other people in them to be worth anything, so they are not the first stop.
+const DEMO_LANDING = "/focus";
 
 const LoginPage = () => {
   const [loginData, setLoginData] = useState({
@@ -10,8 +17,22 @@ const LoginPage = () => {
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const { theme } = useThemeStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { isPending, error, loginMutation } = useLogin();
+
+  const wantsDemo = searchParams.get("demo") === "1";
+  const demoStarted = useRef(false);
+
+  // The redirect after sign-in reads ?next=, so the destination has to be on
+  // the URL before a session exists. Both entry points therefore put it there
+  // and let this effect do the signing in.
+  useEffect(() => {
+    if (!wantsDemo || demoStarted.current) return;
+    demoStarted.current = true;
+    loginMutation(DEMO);
+  }, [wantsDemo, loginMutation]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -19,29 +40,33 @@ const LoginPage = () => {
   };
 
   const handleDemoLogin = () => {
-    loginMutation({
-      email: "demo@gogrind.dev",
-      password: "000000",
-    });
+    setSearchParams({ demo: "1", next: DEMO_LANDING }, { replace: true });
   };
 
   return (
     <div
-      className="h-screen flex items-center justify-center p-4 sm:p-6 md:p-8"
-      data-theme="dark"
+      className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8"
+      data-theme={theme}
     >
       <div className="border border-primary/25 flex flex-col lg:flex-row w-full max-w-5xl mx-auto bg-base-100 rounded-xl shadow-lg overflow-hidden">
         <div className="w-full lg:w-1/2 p-4 sm:p-8 flex flex-col">
-          <div className="mb-4 flex items-center justify-start gap-2">
-            <img src="/go-grind.png" alt="GoGrind" className="w-8 h-8 sm:w-10 sm:h-10" />
-            <span className="text-3xl font-bold font-mono bg-clip-text text-transparent bg-linear-to-r from-primary to-secondary  tracking-wider">
-              GoGrind
+          <Link
+            to="/"
+            className="mb-4 flex items-center justify-start gap-2 w-fit rounded-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            aria-label="Kendro home"
+          >
+            <img src="/logo.svg" alt="" width="40" height="40" className="w-8 h-8 sm:w-10 sm:h-10" />
+            <span className="wordmark text-3xl text-base-content">
+              Kendro
             </span>
-          </div>
+          </Link>
 
           {error && (
             <div className="alert alert-error mb-4">
-              <span>{error.response.data.message}</span>
+              <span>
+                {error?.response?.data?.message ??
+                  "Can't reach the server. Check your connection and try again."}
+              </span>
             </div>
           )}
 
@@ -51,7 +76,7 @@ const LoginPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold">Welcome Back</h2>
                   <p className="text-sm opacity-70">
-                    Sign in to your account to continue your journey
+                    Your room is waiting.
                   </p>
                 </div>
 
@@ -63,7 +88,8 @@ const LoginPage = () => {
                     <input
                       id="email"
                       type="email"
-                      placeholder="hello@example.com"
+                      autoComplete="email"
+                      placeholder="you@example.com"
                       className="input w-full"
                       value={loginData.email}
                       onChange={(e) =>
@@ -81,6 +107,7 @@ const LoginPage = () => {
                       <input
                         id="password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
                         placeholder="••••••••"
                         className="input w-full pr-10"
                         value={loginData.password}
@@ -105,7 +132,7 @@ const LoginPage = () => {
                     className="btn btn-primary w-full"
                     disabled={isPending}
                   >
-                    {isPending ? (
+                    {isPending && !wantsDemo ? (
                       <>
                         <span className="loading loading-spinner loading-xs"></span>
                         Signing in...
@@ -118,16 +145,16 @@ const LoginPage = () => {
                   <button
                     type="button"
                     onClick={handleDemoLogin}
-                    className="btn btn-ghost   w-full"
+                    className="btn btn-outline w-full"
                     disabled={isPending}
                   >
-                    {isPending ? (
+                    {wantsDemo && isPending ? (
                       <>
                         <span className="loading loading-spinner loading-xs"></span>
-                        Signing in...
+                        Taking you to a desk...
                       </>
                     ) : (
-                      "Use Demo Account"
+                      "Take a desk, no signup"
                     )}
                   </button>
 
@@ -149,22 +176,43 @@ const LoginPage = () => {
         </div>
 
         <div className="hidden lg:flex w-full lg:w-1/2 bg-primary/10 items-center justify-center">
-          <div className="max-w-md p-8">
-            <div className="relative aspect-square max-w-sm mx-auto">
-              <img
-                src="/illustration.png"
-                alt="Language connection illustration"
-                className="w-full h-full"
-              />
+          <div className="max-w-md p-8 space-y-6">
+            <div className="rounded-xl border border-primary/20 bg-base-100/60 p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs text-base-content/60">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-success animate-pulse" />
+                  3 at their desks right now
+                </span>
+                <span className="font-mono">24:11</span>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { name: "Priya", task: "Finish the pricing page" },
+                  { name: "Marcus", task: "Chapter 4 problem set" },
+                  { name: "Ada", task: "Refactor the auth module" },
+                ].map((row) => (
+                  <div
+                    key={row.name}
+                    className="flex items-center gap-2.5 rounded-lg bg-base-200/70 px-3 py-2"
+                  >
+                    <span className="size-6 rounded-full bg-primary/20 grid place-items-center text-[10px] font-bold">
+                      {row.name[0]}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{row.name}</p>
+                      <p className="text-[11px] text-base-content/60 truncate">
+                        {row.task}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="text-center space-y-3 mt-6">
-              <h2 className="text-xl font-semibold">
-                Connect with focus partners worldwide
-              </h2>
-              <p className="opacity-70 ">
-                Practice daily, make friends, and improve your 
-                skills together
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-semibold">A room where work gets done</h2>
+              <p className="opacity-70 text-sm">
+                Take a desk, work the block alongside your team, and log what you finished.
               </p>
             </div>
           </div>

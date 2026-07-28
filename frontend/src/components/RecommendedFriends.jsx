@@ -9,9 +9,7 @@ import {
   getRecommendedUsers,
   sendFriendRequest,
 } from "../lib/api";
-import { getLanguageFlag } from "../components/FriendCard";
-import { capitalize } from "../lib/utils.js";
-import { SKILLS } from "../constants";
+import { ROLES } from "../constants";
 import { Link } from "react-router";
 
 const RecommendedFriends = () => {
@@ -19,7 +17,7 @@ const RecommendedFriends = () => {
 
   const [outgoingRequestsMap, setOutgoingRequestsMap] = useState(new Map());
   const [search, setSearch] = useState("");
-  const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedRole, setSelectedSkill] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
 
   const { data: recommendedUsers = [], isLoading: loadingUsers } = useQuery({
@@ -32,7 +30,13 @@ const RecommendedFriends = () => {
     queryFn: getOutgoingFriendReqs,
   });
 
-  const { mutate: sendRequestMutation, isPending: isSending } = useMutation({
+  // `variables` carries the id being mutated, so the spinner lands on the card
+  // that was clicked instead of every card on the page at once.
+  const {
+    mutate: sendRequestMutation,
+    isPending: isSending,
+    variables: sendingUserId,
+  } = useMutation({
     mutationFn: sendFriendRequest,
     onSuccess: () => {
       toast.success("Friend request sent!");
@@ -40,7 +44,11 @@ const RecommendedFriends = () => {
     },
   });
 
-  const { mutate: cancelRequestMutation, isPending: isCancelling } = useMutation({
+  const {
+    mutate: cancelRequestMutation,
+    isPending: isCancelling,
+    variables: cancellingRequestId,
+  } = useMutation({
     mutationFn: cancelFriendRequest,
     onSuccess: () => {
       toast.success("Friend request cancelled");
@@ -73,14 +81,14 @@ const RecommendedFriends = () => {
     return recommendedUsers.filter((u) => {
       const term = search.trim().toLowerCase();
       if (term) {
-        const hay = [u.fullName, u.location, u.nativeLanguage, u.learningSkill, u.bio]
+        const hay = [u.fullName, u.location, u.role, u.bio]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
         if (!hay.includes(term)) return false;
       }
 
-      if (selectedSkill && u.learningSkill?.toLowerCase() !== selectedSkill.toLowerCase()) {
+      if (selectedRole && u.role?.toLowerCase() !== selectedRole.toLowerCase()) {
         return false;
       }
 
@@ -90,7 +98,7 @@ const RecommendedFriends = () => {
 
       return true;
     });
-  }, [recommendedUsers, search, selectedSkill, selectedLocation]);
+  }, [recommendedUsers, search, selectedRole, selectedLocation]);
 
   return (
     <section>
@@ -99,7 +107,7 @@ const RecommendedFriends = () => {
           <Search className="size-4 opacity-70" />
           <input
             type="text"
-            placeholder="Search by name, skill, or location..."
+            placeholder="Search by name, role, or location..."
             className="grow text-sm sm:text-base"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -109,13 +117,13 @@ const RecommendedFriends = () => {
         <div className="flex flex-col sm:flex-row gap-2">
           <select
             className="select select-bordered w-full sm:flex-1 text-sm"
-            value={selectedSkill}
+            value={selectedRole}
             onChange={(e) => setSelectedSkill(e.target.value)}
           >
             <option value="">All Skills</option>
-            {SKILLS.map((skill) => (
-              <option key={skill} value={skill.toLowerCase()}>
-                {skill}
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
               </option>
             ))}
           </select>
@@ -133,7 +141,7 @@ const RecommendedFriends = () => {
             ))}
           </select>
 
-          {(search || selectedSkill || selectedLocation) && (
+          {(search || selectedRole || selectedLocation) && (
             <button
               className="btn btn-ghost btn-sm sm:btn-md"
               onClick={() => {
@@ -172,13 +180,18 @@ const RecommendedFriends = () => {
                 className="card bg-base-200 hover:shadow-lg transition-all duration-300"
               >
                 <div className="card-body p-4 sm:p-5 space-y-3 sm:space-y-4">
-                  <Link to={`/profile/${user._id}`} className="flex items-center gap-2 sm:gap-3">
+                  <Link
+                    to={`/profile/${user._id}`}
+                    className="group/name flex items-center gap-2 sm:gap-3"
+                  >
                     <div className="avatar size-12 sm:size-16 rounded-full overflow-hidden shrink-0">
                       <img src={user.profilePic} alt={user.fullName} />
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-base sm:text-lg truncate">{user.fullName}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg truncate group-hover/name:text-primary transition-colors">
+                        {user.fullName}
+                      </h3>
                       {user.location && (
                         <div className="flex items-center text-xs opacity-70 mt-1">
                           <MapPinIcon className="size-3 mr-1 shrink-0" />
@@ -189,57 +202,52 @@ const RecommendedFriends = () => {
                   </Link>
 
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="badge badge-secondary text-xs">
-                      {getLanguageFlag(user.nativeLanguage)}
-                      Native: {capitalize(user.nativeLanguage)}
-                    </span>
-                    {user.learningSkill && (
+                    {user.role && (
                       <span className="badge badge-outline text-xs">
-                        Focus: {capitalize(user.learningSkill)}
+                        {user.role}
                       </span>
                     )}
                   </div>
 
                   {user.bio && <p className="text-xs sm:text-sm opacity-70 line-clamp-2">{user.bio}</p>}
 
-                  <div className="flex gap-2">
-                    <button
-                      className={`btn btn-sm flex-1 mt-2 ${
-                        hasRequestBeenSent ? "btn-disabled" : "btn-primary"
-                      } `}
-                      onClick={() => sendRequestMutation(user._id)}
-                      disabled={hasRequestBeenSent || isSending}
-                    >
-                      {hasRequestBeenSent ? (
-                        <>
-                          <CheckCircleIcon className="size-4 mr-1 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">Request Sent</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlusIcon className="size-4 mr-1 sm:mr-2" />
-                          <span className="text-xs sm:text-sm">Send Request</span>
-                        </>
-                      )}
-                    </button>
-                    <Link
-                      to={`/profile/${user._id}`}
-                      className="btn btn-outline btn-sm mt-2"
-                      aria-label="View profile"
-                    >
-                      View Profile
-                    </Link>
-                    {hasRequestBeenSent && (
+                  {/* One action per card. "Send Request" used to sit beside a
+                      "View Profile" button, and at card width neither label
+                      fit; the name and avatar above already open the profile. */}
+                  {hasRequestBeenSent ? (
+                    <div className="flex items-center gap-2 mt-2 min-w-0">
+                      <span className="inline-flex items-center gap-1.5 text-sm text-success flex-1 min-w-0">
+                        <CheckCircleIcon className="size-4 shrink-0" />
+                        <span className="truncate">Request sent</span>
+                      </span>
                       <button
-                        className="btn btn-ghost btn-circle btn-sm mt-2"
+                        className="btn btn-ghost btn-xs gap-1 shrink-0"
                         onClick={() => cancelRequestMutation(requestId)}
                         disabled={isCancelling}
-                        aria-label="Cancel request"
+                        aria-label={`Cancel request to ${user.fullName}`}
                       >
-                        <X className="h-4 w-4" />
+                        {isCancelling && cancellingRequestId === requestId ? (
+                          <span className="loading loading-spinner loading-xs" />
+                        ) : (
+                          <X className="size-3.5" />
+                        )}
+                        Cancel
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm btn-block mt-2 gap-2"
+                      onClick={() => sendRequestMutation(user._id)}
+                      disabled={isSending && sendingUserId === user._id}
+                    >
+                      {isSending && sendingUserId === user._id ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : (
+                        <UserPlusIcon className="size-4" />
+                      )}
+                      Add friend
+                    </button>
+                  )}
                 </div>
               </div>
             );

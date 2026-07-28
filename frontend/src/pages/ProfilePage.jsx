@@ -4,7 +4,8 @@ import {
   getUserProfile,
   getUserStatistics,
   getUserSessions,
-  getUserSpaces,
+  getUserRooms,
+  getMyRooms,
   unfriend,
   sendFriendRequest,
   acceptFriendRequest,
@@ -17,19 +18,13 @@ import toast from "react-hot-toast";
 import PageLoader from "../components/PageLoader";
 import {
   MapPin,
-  Globe,
-  BookOpen,
-  Edit,
+  Briefcase,
+  Pencil,
   Users,
-  Calendar,
   Clock,
-  Target,
-  TrendingUp,
   MessageSquare,
   UserPlus,
   UserX,
-  CheckCircle,
-  Shapes,
   Check,
   X,
 } from "lucide-react";
@@ -78,7 +73,8 @@ const ProfilePage = () => {
   );
 
   const hasSentRequest = outgoingRequests?.some(
-    (req) => req.recipient?._id === targetUserId || req.recipient === targetUserId
+    (req) =>
+      req.recipient?._id === targetUserId || req.recipient === targetUserId
   );
 
   const canViewDetails = isOwnProfile || isFriend;
@@ -95,16 +91,27 @@ const ProfilePage = () => {
     enabled: !!targetUserId && canViewDetails,
   });
 
-  const { data: spaces, isLoading: spacesLoading } = useQuery({
-    queryKey: ["userSpaces", targetUserId],
-    queryFn: () => getUserSpaces(targetUserId),
+  const { data: rooms, isLoading: spacesLoading } = useQuery({
+    queryKey: ["userRooms", targetUserId],
+    queryFn: () => getUserRooms(targetUserId),
     enabled: !!targetUserId && canViewDetails,
   });
+
+  // Rooms both of you are in. In a co-working product this is the useful fact
+  // about another person, more than any lifetime total.
+  const { data: myRooms = [] } = useQuery({
+    queryKey: ["myRooms"],
+    queryFn: getMyRooms,
+    enabled: !isOwnProfile && !!authUser && canViewDetails,
+  });
+  const sharedRoomIds = new Set(myRooms.map((room) => room._id));
+
+  const liveSession = sessions?.find((session) => !session.isCompleted);
 
   const { mutate: unfriendMutation, isPending: isUnfriending } = useMutation({
     mutationFn: unfriend,
     onSuccess: () => {
-      toast.success("Friend removed successfully");
+      toast.success("Removed.");
       setShowUnfriendModal(false);
       queryClient.invalidateQueries({
         queryKey: ["userProfile", targetUserId],
@@ -112,90 +119,59 @@ const ProfilePage = () => {
       queryClient.invalidateQueries({ queryKey: ["friends"] });
     },
     onError: () => {
-      toast.error("Failed to remove friend");
+      toast.error("Couldn't remove them.");
       setShowUnfriendModal(false);
     },
   });
 
-  const { mutate: sendFriendRequestMutation, isPending: isSendingRequest } = useMutation({
-    mutationFn: sendFriendRequest,
-    onSuccess: () => {
-      toast.success("Friend request sent");
-      queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
-    },
-    onError: () => {
-      toast.error("Failed to send friend request");
-    },
-  });
+  const { mutate: sendFriendRequestMutation, isPending: isSendingRequest } =
+    useMutation({
+      mutationFn: sendFriendRequest,
+      onSuccess: () => {
+        toast.success("Request sent.");
+        queryClient.invalidateQueries({ queryKey: ["outgoingFriendReqs"] });
+      },
+      onError: () => toast.error("Couldn't send that request."),
+    });
 
-  const { mutate: acceptFriendRequestMutation, isPending: isAccepting } = useMutation({
-    mutationFn: acceptFriendRequest,
-    onSuccess: () => {
-      toast.success("Friend request accepted");
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-      queryClient.invalidateQueries({ queryKey: ["friends"] });
-      queryClient.invalidateQueries({ queryKey: ["userProfile", targetUserId] });
-    },
-    onError: () => {
-      toast.error("Failed to accept friend request");
-    },
-  });
+  const { mutate: acceptFriendRequestMutation, isPending: isAccepting } =
+    useMutation({
+      mutationFn: acceptFriendRequest,
+      onSuccess: () => {
+        toast.success("You're connected.");
+        queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+        queryClient.invalidateQueries({ queryKey: ["friends"] });
+        queryClient.invalidateQueries({
+          queryKey: ["userProfile", targetUserId],
+        });
+      },
+      onError: () => toast.error("Couldn't accept that request."),
+    });
 
-  const { mutate: declineFriendRequestMutation, isPending: isDeclining } = useMutation({
-    mutationFn: declineFriendRequest,
-    onSuccess: () => {
-      toast.success("Friend request declined");
-      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
-    },
-    onError: () => {
-      toast.error("Failed to decline friend request");
-    },
-  });
+  const { mutate: declineFriendRequestMutation, isPending: isDeclining } =
+    useMutation({
+      mutationFn: declineFriendRequest,
+      onSuccess: () => {
+        toast.success("Request declined.");
+        queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      },
+      onError: () => toast.error("Couldn't decline that request."),
+    });
 
-  const handleUnfriend = () => {
-    setShowUnfriendModal(true);
-  };
-
-  const confirmUnfriend = () => {
-    unfriendMutation(targetUserId);
-  };
-
-  const handleSendFriendRequest = () => {
-    sendFriendRequestMutation(targetUserId);
-  };
-
-  const handleAcceptRequest = () => {
-    if (incomingRequest) {
-      acceptFriendRequestMutation(incomingRequest._id);
-    }
-  };
-
-  const handleDeclineRequest = () => {
-    if (incomingRequest) {
-      declineFriendRequestMutation(incomingRequest._id);
-    }
-  };
-
-  if (profileLoading) {
+  if (profileLoading) return <PageLoader />;
+  if (canViewDetails && (statsLoading || sessionsLoading || spacesLoading))
     return <PageLoader />;
-  }
-
-  if (canViewDetails && (statsLoading || sessionsLoading || spacesLoading)) {
-    return <PageLoader />;
-  }
 
   if (profileError || !userProfile) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">User Not Found</h2>
-          <p className="text-base-content/60 mb-4">
-            The user you're looking for doesn't exist.
-          </p>
-          <button className="btn btn-primary" onClick={() => navigate("/")}>
-            Go Home
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+        <h1 className="text-xl font-bold mb-2">No such person</h1>
+        <p className="text-sm text-base-content/60 mb-4">
+          That profile doesn&apos;t exist, or it was deleted.
+        </p>
+        <button className="btn btn-primary" onClick={() => navigate("/")}>
+          Go home
+        </button>
       </div>
     );
   }
@@ -203,419 +179,294 @@ const ProfilePage = () => {
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
+  const stats = statistics
+    ? [
+        { label: "Hours logged", value: formatTime(statistics.totalTimeSpent || 0) },
+        { label: "Sessions", value: statistics.totalSessions || 0 },
+        { label: "Tasks done", value: statistics.totalTasksCompleted || 0 },
+      ]
+    : [];
+
+  const finished = (sessions || []).filter((s) => s.endTime).slice(0, 6);
+
+  const relationshipAction = isOwnProfile ? (
+    <Link to="/settings" className="btn btn-outline btn-sm gap-2">
+      <Pencil className="size-4" />
+      Edit profile
+    </Link>
+  ) : isFriend ? (
+    <div className="flex gap-2">
+      <Link
+        to={`/chats/${userProfile._id}`}
+        className="btn btn-primary btn-sm gap-2"
+      >
+        <MessageSquare className="size-4" />
+        Message
+      </Link>
+      <button
+        onClick={() => setShowUnfriendModal(true)}
+        className="btn btn-ghost btn-sm"
+        disabled={isUnfriending}
+      >
+        Remove
+      </button>
+    </div>
+  ) : incomingRequest ? (
+    <div className="flex gap-2">
+      <button
+        onClick={() => acceptFriendRequestMutation(incomingRequest._id)}
+        className="btn btn-primary btn-sm gap-2"
+        disabled={isAccepting || isDeclining}
+      >
+        {isAccepting ? (
+          <span className="loading loading-spinner loading-xs" />
+        ) : (
+          <Check className="size-4" />
+        )}
+        Accept
+      </button>
+      <button
+        onClick={() => declineFriendRequestMutation(incomingRequest._id)}
+        className="btn btn-ghost btn-sm gap-2"
+        disabled={isAccepting || isDeclining}
+      >
+        {isDeclining ? (
+          <span className="loading loading-spinner loading-xs" />
+        ) : (
+          <X className="size-4" />
+        )}
+        Decline
+      </button>
+    </div>
+  ) : hasSentRequest ? (
+    <button className="btn btn-sm btn-disabled gap-2">
+      <Clock className="size-4" />
+      Request sent
+    </button>
+  ) : (
+    <button
+      onClick={() => sendFriendRequestMutation(targetUserId)}
+      className="btn btn-primary btn-sm gap-2"
+      disabled={isSendingRequest}
+    >
+      {isSendingRequest ? (
+        <span className="loading loading-spinner loading-xs" />
+      ) : (
+        <UserPlus className="size-4" />
+      )}
+      Connect
+    </button>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-      <div className="card bg-base-100 shadow-xl mb-6">
-        <div className="card-body p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
-              <div className="avatar shrink-0">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full ring-3 ring-primary ring-offset-base-100 ring-offset-2">
-                  <img
-                    src={userProfile.profilePic}
-                    alt={userProfile.fullName}
-                    className="object-cover"
-                  />
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="container mx-auto max-w-4xl">
+        {/* ---- identity ---- */}
+        <header className="pb-6 border-b border-base-300">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+            <img
+              src={userProfile.profilePic || "/blank-pp.png"}
+              alt=""
+              className="size-20 sm:size-24 rounded-full object-cover shrink-0"
+            />
+
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                    {userProfile.fullName}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-sm text-base-content/60">
+                    {userProfile.role && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Briefcase className="size-3.5" />
+                        {capitalize(userProfile.role)}
+                      </span>
+                    )}
+                    {userProfile.location && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="size-3.5" />
+                        {userProfile.location}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users className="size-3.5" />
+                      {userProfile.friends?.length || 0} connected
+                    </span>
+                  </div>
                 </div>
+                <div className="shrink-0">{relationshipAction}</div>
               </div>
 
-              <div className="text-center sm:text-left flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                  {userProfile.fullName}
-                </h1>
-                {userProfile.bio && (
-                  <p className="text-base-content/70 mb-3 text-sm sm:text-base">
-                    {userProfile.bio}
-                  </p>
-                )}
+              {userProfile.bio && (
+                <p className="text-sm text-base-content/75 mt-3 max-w-prose">
+                  {userProfile.bio}
+                </p>
+              )}
 
-                <div className="flex flex-wrap gap-3 sm:gap-4 justify-center sm:justify-start text-sm">
-                  {userProfile.location && (
-                    <div className="flex items-center gap-1.5 text-base-content/60">
-                      <MapPin className="size-4" />
-                      <span>{userProfile.location}</span>
-                    </div>
-                  )}
-                  {userProfile.nativeLanguage && (
-                    <div className="flex items-center gap-1.5 text-base-content/60">
-                      <Globe className="size-4" />
-                      <span>{capitalize(userProfile.nativeLanguage)}</span>
-                    </div>
-                  )}
-                  {userProfile.learningSkill && (
-                    <div className="flex items-center gap-1.5 text-base-content/60">
-                      <BookOpen className="size-4" />
-                      <span>{capitalize(userProfile.learningSkill)}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-center gap-2 justify-center sm:justify-start">
-                  <Users className="size-5 text-primary" />
-                  <span className="font-semibold">
-                    {userProfile.friends?.length || 0} Friends
+              {canViewDetails && liveSession && (
+                <p className="inline-flex items-center gap-2 mt-3 text-sm font-medium text-success">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+                    <span className="relative inline-flex size-2 rounded-full bg-success" />
                   </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 w-full lg:w-auto lg:ml-auto mt-4 lg:mt-0">
-              {isOwnProfile ? (
-                <Link to="/update-profile" className="btn btn-primary gap-2">
-                  <Edit className="size-4" />
-                  Edit Profile
-                </Link>
-              ) : (
-                <>
-                  {isFriend ? (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={handleUnfriend}
-                        className="btn btn-error btn-outline gap-2"
-                        disabled={isUnfriending}
-                      >
-                        {isUnfriending ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          <UserX className="size-4" />
-                        )}
-                        Unfriend
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigate(`/chats/${userProfile._id}`);
-                        }}
-                        className="btn btn-primary gap-2"
-                      >
-                        <MessageSquare className="size-4" />
-                        Message
-                      </button>
-                    </div>
-                  ) : incomingRequest ? (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={handleAcceptRequest}
-                        className="btn btn-success gap-2"
-                        disabled={isAccepting || isDeclining}
-                      >
-                        {isAccepting ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          <Check className="size-4" />
-                        )}
-                        Accept Request
-                      </button>
-                      <button
-                        onClick={handleDeclineRequest}
-                        className="btn btn-error btn-outline gap-2"
-                        disabled={isAccepting || isDeclining}
-                      >
-                        {isDeclining ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          <X className="size-4" />
-                        )}
-                        Decline
-                      </button>
-                    </div>
-                  ) : hasSentRequest ? (
-                    <button className="btn btn-disabled gap-2" disabled>
-                      <Clock className="size-4" />
-                      Request Sent
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleSendFriendRequest}
-                      className="btn btn-primary gap-2"
-                      disabled={isSendingRequest}
-                    >
-                      {isSendingRequest ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : (
-                        <UserPlus className="size-4" />
-                      )}
-                      Add Friend
-                    </button>
-                  )}
-                </>
+                  {liveSession.room?.name
+                    ? `At a desk in ${liveSession.room.name}`
+                    : "Working right now"}
+                  <span className="font-normal text-base-content/55">
+                    {liveSession.workTopic}
+                  </span>
+                </p>
               )}
             </div>
           </div>
-        </div>
-      </div>
+        </header>
 
-      {canViewDetails && statistics && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <CheckCircle className="size-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-base-content/60">
-                    Tasks Completed
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold">
-                    {statistics.totalTasksCompleted || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
+        {!canViewDetails ? (
+          <div className="py-12 text-center">
+            <h2 className="font-semibold mb-1.5">This profile is private</h2>
+            <p className="text-sm text-base-content/60 max-w-sm mx-auto">
+              Connect with {userProfile.fullName.split(" ")[0]} to see their
+              rooms, hours and what they are working on.
+            </p>
           </div>
-
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-secondary/10 rounded-lg">
-                  <Calendar className="size-6 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-base-content/60">
-                    Total Sessions
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold">
-                    {statistics.totalSessions || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-accent/10 rounded-lg">
-                  <Clock className="size-6 text-accent" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-base-content/60">
-                    Total Time
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold">
-                    {formatTime(statistics.totalTimeSpent || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-lg">
-            <div className="card-body p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-success/10 rounded-lg">
-                  <TrendingUp className="size-6 text-success" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-base-content/60">
-                    Avg Session
-                  </p>
-                  <p className="text-2xl sm:text-3xl font-bold">
-                    {formatTime(statistics.averageSessionDuration || 0)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {canViewDetails && spaces && spaces.length > 0 && (
-        <div className="card bg-base-100 shadow-xl mb-6">
-          <div className="card-body p-4 sm:p-6">
-            <h2 className="card-title text-xl sm:text-2xl mb-4 flex items-center gap-2">
-              <Shapes className="size-6" />
-              Spaces
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {spaces.map((space) => (
-                <Link
-                  key={space._id}
-                  to={`/spaces/${space._id}`}
-                  className="card bg-base-200 hover:bg-base-300 transition-colors cursor-pointer shadow-md hover:shadow-lg"
-                >
-                  <div className="card-body p-4">
-                    <h3 className="font-semibold text-base sm:text-lg truncate">
-                      {space.name}
-                    </h3>
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-base-content/60 mt-2">
-                      <Users className="size-3 sm:size-4" />
-                      <span>{space.members?.length || 0} members</span>
-                    </div>
-                    {space.skill && (
-                      <div className="badge badge-primary badge-sm mt-2">
-                        {space.skill}
-                      </div>
-                    )}
+        ) : (
+          <>
+            {statistics && (
+              <dl className="flex flex-wrap gap-8 sm:gap-12 py-6 border-b border-base-300">
+                {stats.map((stat) => (
+                  <div key={stat.label}>
+                    <dt className="text-[11px] uppercase tracking-wide text-base-content/50">
+                      {stat.label}
+                    </dt>
+                    <dd className="text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight mt-0.5">
+                      {stat.value}
+                    </dd>
                   </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+                ))}
+              </dl>
+            )}
 
-      {canViewDetails && sessions && sessions.length > 0 && (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body p-4 sm:p-6">
-            <h2 className="card-title text-xl sm:text-2xl mb-4">
-              Recent Completed Sessions
-            </h2>
-            <div className="space-y-3">
-              {sessions
-                .filter((session) => session.endTime)
-                .slice(0, 5)
-                .map((session) => (
-                <div
-                  key={session._id}
-                  className="p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base sm:text-lg truncate">
-                        {session.grindingTopic}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 sm:gap-3 mt-2 text-xs sm:text-sm text-base-content/60">
-                        <div className="flex items-center gap-1">
-                          <Clock className="size-3 sm:size-4" />
-                          <span>
-                            {formatTime(
-                              Math.floor(
-                                (new Date(session.endTime) -
-                                  new Date(session.startTime)) /
-                                  1000
-                              )
-                            )}
+            {rooms?.length > 0 && (
+              <section className="py-6 border-b border-base-300">
+                <h2 className="font-semibold mb-3">
+                  Rooms
+                  {!isOwnProfile && (
+                    <span className="font-normal text-sm text-base-content/55 ml-2">
+                      shared ones marked
+                    </span>
+                  )}
+                </h2>
+                <ul className="flex flex-wrap gap-2">
+                  {rooms.map((room) => {
+                    const shared = !isOwnProfile && sharedRoomIds.has(room._id);
+                    return (
+                      <li key={room._id}>
+                        <Link
+                          to={`/rooms/${room._id}`}
+                          className={`inline-flex items-center gap-2 rounded-field border px-3 py-1.5 text-sm transition-colors ${
+                            shared
+                              ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+                              : "border-base-300 hover:bg-base-200"
+                          }`}
+                        >
+                          {room.name}
+                          <span className="text-xs text-base-content/50">
+                            {room.members?.length ?? 0}
                           </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Target className="size-3 sm:size-4" />
-                          <span>{session.targetDuration}m goal</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="size-3 sm:size-4" />
-                          <span>
-                            {formatDistanceToNow(new Date(session.startTime), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            )}
+
+            {finished.length > 0 && (
+              <section className="py-6">
+                <h2 className="font-semibold mb-1">Recent sessions</h2>
+                <ul className="divide-y divide-base-300 border-t border-base-300">
+                  {finished.map((session) => (
+                    <li
+                      key={session._id}
+                      className="flex items-baseline gap-4 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">
+                          {session.workTopic}
+                        </p>
+                        <p className="text-xs text-base-content/55 mt-0.5">
+                          {formatDistanceToNow(new Date(session.startTime), {
+                            addSuffix: true,
+                          })}
+                          {session.room?.name ? ` · ${session.room.name}` : ""}
+                        </p>
                       </div>
-                    </div>
-                    {session.tasks && session.tasks.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="badge badge-primary">
+                      {session.tasks?.length > 0 && (
+                        <span className="text-xs text-base-content/55 shrink-0 tabular-nums">
                           {session.tasks.filter((t) => t.isCompleted).length}/
                           {session.tasks.length} tasks
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+                        </span>
+                      )}
+                      <span className="text-sm font-mono tabular-nums shrink-0">
+                        {formatTime(
+                          Math.floor(
+                            (new Date(session.endTime) -
+                              new Date(session.startTime)) /
+                              1000
+                          )
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </>
+        )}
 
-      {!canViewDetails && (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body p-6 sm:p-8 text-center">
-            <Users className="size-16 mx-auto text-base-content/30 mb-4" />
-            <h3 className="text-xl font-semibold mb-2">
-              Add as Friend to View More
-            </h3>
-            <p className="text-base-content/60 mb-4">
-              Become friends with {userProfile.fullName} to see their detailed
-              profile, statistics, and activity.
-            </p>
-            {incomingRequest ? (
-              <div className="flex gap-2 justify-center">
+        {showUnfriendModal && (
+          <div className="modal modal-open">
+            <div className="modal-box">
+              <h3 className="font-bold text-lg mb-2">
+                Remove {userProfile.fullName}?
+              </h3>
+              <p className="text-sm text-base-content/70 mb-4">
+                You&apos;ll stop seeing each other&apos;s sessions. Any rooms or
+                teams you share stay as they are.
+              </p>
+              <div className="modal-action">
                 <button
-                  onClick={handleAcceptRequest}
-                  className="btn btn-success gap-2"
-                  disabled={isAccepting || isDeclining}
+                  className="btn btn-ghost"
+                  onClick={() => setShowUnfriendModal(false)}
+                  disabled={isUnfriending}
                 >
-                  {isAccepting ? (
-                    <span className="loading loading-spinner loading-xs"></span>
-                  ) : (
-                    <Check className="size-4" />
-                  )}
-                  Accept Request
+                  Cancel
                 </button>
                 <button
-                  onClick={handleDeclineRequest}
-                  className="btn btn-error btn-outline gap-2"
-                  disabled={isAccepting || isDeclining}
+                  className="btn btn-error gap-2"
+                  onClick={() => unfriendMutation(targetUserId)}
+                  disabled={isUnfriending}
                 >
-                  {isDeclining ? (
-                    <span className="loading loading-spinner loading-xs"></span>
+                  {isUnfriending ? (
+                    <span className="loading loading-spinner loading-xs" />
                   ) : (
-                    <X className="size-4" />
+                    <UserX className="size-4" />
                   )}
-                  Decline
+                  Remove
                 </button>
               </div>
-            ) : hasSentRequest ? (
-              <button className="btn btn-disabled gap-2 mx-auto" disabled>
-                <Clock className="size-4" />
-                Request Sent
-              </button>
-            ) : (
-              <button 
-                onClick={handleSendFriendRequest}
-                className="btn btn-primary gap-2 mx-auto"
-                disabled={isSendingRequest}
-              >
-                {isSendingRequest ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  <UserPlus className="size-4" />
-                )}
-                Send Friend Request
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showUnfriendModal && (
-        <div className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">Unfriend {userProfile.fullName}?</h3>
-            <p className="py-4">
-              Are you sure you want to remove {userProfile.fullName} from your friends list?
-            </p>
-            <div className="modal-action">
-              <button
-                className="btn btn-ghost"
-                onClick={() => setShowUnfriendModal(false)}
-                disabled={isUnfriending}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-error"
-                onClick={confirmUnfriend}
-                disabled={isUnfriending}
-              >
-                {isUnfriending ? (
-                  <span className="loading loading-spinner loading-xs"></span>
-                ) : (
-                  "Unfriend"
-                )}
-              </button>
             </div>
+            <div
+              className="modal-backdrop"
+              onClick={() => !isUnfriending && setShowUnfriendModal(false)}
+            />
           </div>
-          <div className="modal-backdrop" onClick={() => !isUnfriending && setShowUnfriendModal(false)}></div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

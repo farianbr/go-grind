@@ -14,7 +14,7 @@ import {
 import useAuthUser from "../hooks/useAuthUser";
 import { completeOnboarding, uploadPhoto } from "../lib/api";
 import { getRandomAvatarUrl } from "../lib/avatar";
-import { LANGUAGES, SKILLS } from "../constants";
+import { ROLES } from "../constants";
 
 const UpdateProfilePage = () => {
   const { authUser } = useAuthUser();
@@ -24,8 +24,7 @@ const UpdateProfilePage = () => {
   const [formState, setFormState] = useState({
     fullName: authUser?.fullName || "",
     bio: authUser?.bio || "",
-    nativeLanguage: authUser?.nativeLanguage || "",
-    learningSkill: authUser?.learningSkill || "",
+    role: authUser?.role || "",
     location: authUser?.location || "",
     profilePic: authUser?.profilePic || "/blank-pp.png",
   });
@@ -39,7 +38,9 @@ const UpdateProfilePage = () => {
     },
 
     onError: (error) => {
-      toast.error(error.response.data.message);
+      toast.error(
+        error?.response?.data?.message ?? "Something went wrong. Try again."
+      );
     },
   });
 
@@ -160,56 +161,32 @@ const UpdateProfilePage = () => {
                   setFormState({ ...formState, bio: e.target.value })
                 }
                 className="textarea h-24 w-full"
-                placeholder="Tell others about yourself and your focus goals"
+                placeholder="Tell others what you're working on"
               />
             </fieldset>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <fieldset className="fieldset">
-                <label className="label" htmlFor="nativeLanguage">
-                  Native Language
-                </label>
-                <select
-                  id="nativeLanguage"
-                  name="nativeLanguage"
-                  value={formState.nativeLanguage}
-                  onChange={(e) =>
-                    setFormState({
-                      ...formState,
-                      nativeLanguage: e.target.value,
-                    })
-                  }
-                  className="select w-full"
-                >
-                  <option value="">Select your native language</option>
-                  {LANGUAGES.map((lang) => (
-                    <option key={`native-${lang}`} value={lang.toLowerCase()}>
-                      {lang}
-                    </option>
-                  ))}
-                </select>
-              </fieldset>
+            <div className="grid grid-cols-1 gap-4">
 
               <fieldset className="fieldset">
-                <label className="label" htmlFor="focusSkill">
-                  Focus Skill
+                <label className="label" htmlFor="role">
+                  What do you do?
                 </label>
                 <select
-                  id="focusSkill"
-                  name="focusSkill"
-                  value={formState.learningSkill}
+                  id="role"
+                  name="role"
+                  value={formState.role}
                   onChange={(e) =>
                     setFormState({
                       ...formState,
-                      learningSkill: e.target.value,
+                      role: e.target.value,
                     })
                   }
                   className="select w-full"
                 >
-                  <option value="">Select skill you're focusing on</option>
-                  {SKILLS.map((skill) => (
-                    <option key={`focusing-${skill}`} value={skill.toLowerCase()}>
-                      {skill}
+                  <option value="">Select your role</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
                     </option>
                   ))}
                 </select>
@@ -243,7 +220,7 @@ const UpdateProfilePage = () => {
             >
               {!isPending ? (
                 <>
-                  <img src="/go-grind.png" alt="GoGrind" className="w-5 h-5 mr-2" />
+                  <img src="/logo.svg" alt="Kendro" className="w-5 h-5 mr-2" />
                   Save Update
                 </>
               ) : (

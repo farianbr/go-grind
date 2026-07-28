@@ -83,7 +83,8 @@ export async function login(req, res) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const user = await User.findOne({ email });
+    // password is select:false on the schema, so opt back in for the compare.
+    const user = await User.findOne({ email }).select("+password");
     if (!user)
       return res.status(401).json({ message: "Invalid email or password" });
 
@@ -117,16 +118,26 @@ export async function onboard(req, res) {
   try {
     const userId = req.user._id;
 
-    const { fullName, bio, nativeLanguage, learningSkill, location } = req.body;
+    const { fullName } = req.body;
 
-    if (!fullName || !bio || !nativeLanguage || !learningSkill || !location) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Only a display name is required. Everything else is optional so a new user
+    // can reach the product immediately and fill in their profile later.
+    if (!fullName || !fullName.trim()) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a name so others can recognise you" });
     }
+
+    const { bio, role, location, profilePic } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        ...req.body,
+        fullName: fullName.trim(),
+        ...(bio !== undefined && { bio }),
+        ...(role !== undefined && { role }),
+        ...(location !== undefined && { location }),
+        ...(profilePic !== undefined && { profilePic }),
         isOnboarded: true,
       },
       { new: true }

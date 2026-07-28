@@ -19,27 +19,29 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "friend_request",
         "friend_request_accepted",
-        "space_join_request",
-        "space_join_approved",
-        "space_join_rejected",
+        "room_join_request",
+        "room_join_approved",
+        "room_join_rejected",
         "session_started",
         "session_reminder",
         "removed_from_stream",
         "announcement",
         "encouragement",
+        "team_invite",
+        "team_joined",
       ],
     },
     message: {
       type: String,
       required: true,
     },
-    relatedSpace: {
+    relatedRoom: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Space",
+      ref: "Room",
     },
     relatedSession: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Space.sessions",
+      ref: "Room.sessions",
     },
     read: {
       type: Boolean,

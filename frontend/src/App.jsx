@@ -1,210 +1,152 @@
-import { Navigate, Route, Routes } from "react-router";
+import { lazy, Suspense } from "react";
+import { Navigate, Route, Routes, useSearchParams } from "react-router";
 import { Toaster } from "react-hot-toast";
 
-import SignUpPage from "./pages/SignUpPage.jsx";
-import LoginPage from "./pages/LoginPage.jsx";
-import NotificationsPage from "./pages/NotificationsPage.jsx";
-import CallPage from "./pages/CallPage.jsx";
-import OnboardingPage from "./pages/OnboardingPage.jsx";
 import PageLoader from "./components/PageLoader.jsx";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import useAuthUser from "./hooks/useAuthUser.js";
 import Layout from "./components/Layout.jsx";
 import { useThemeStore } from "./store/useThemeStore.js";
-import HomePage from "./pages/HomePage.jsx";
-import UpdateProfilePage from "./pages/UpdateProfilePage.jsx";
-import ChatsPage from "./pages/ChatsPage.jsx";
-import FriendsPage from "./pages/FriendsPage.jsx";
-import SpacesPage from "./pages/SpacesPage.jsx";
-import SpaceDetailPage from "./pages/SpaceDetailPage.jsx";
-import StreamRoomPage from "./pages/StreamRoomPage.jsx";
-import ProfilePage from "./pages/ProfilePage.jsx";
+
+// Entry routes stay in the main chunk so the first paint needs no extra request.
+import LandingPage from "./pages/LandingPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
+import SignUpPage from "./pages/SignUpPage.jsx";
+
+// Everything behind auth is split out. The Stream chat and video SDKs are the
+// bulk of the bundle and are only needed on the chat and call routes.
+const HomePage = lazy(() => import("./pages/HomePage.jsx"));
+const FocusPage = lazy(() => import("./pages/FocusPage.jsx"));
+const NotificationsPage = lazy(() => import("./pages/NotificationsPage.jsx"));
+const CallPage = lazy(() => import("./pages/CallPage.jsx"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage.jsx"));
+const UpdateProfilePage = lazy(() => import("./pages/UpdateProfilePage.jsx"));
+const ChatsPage = lazy(() => import("./pages/ChatsPage.jsx"));
+const FriendsPage = lazy(() => import("./pages/FriendsPage.jsx"));
+const RoomsPage = lazy(() => import("./pages/RoomsPage.jsx"));
+const RoomDetailPage = lazy(() => import("./pages/RoomDetailPage.jsx"));
+const StreamRoomPage = lazy(() => import("./pages/StreamRoomPage.jsx"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage.jsx"));
+const LegalPage = lazy(() => import("./pages/LegalPage.jsx"));
+const TeamsPage = lazy(() => import("./pages/TeamsPage.jsx"));
+const TeamDetailPage = lazy(() => import("./pages/TeamDetailPage.jsx"));
+const InviteAcceptPage = lazy(() => import("./pages/InviteAcceptPage.jsx"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage.jsx"));
+
+// Only same-origin paths, so `?next=` can never be pointed at another site.
+const safeNext = (value) =>
+  value && value.startsWith("/") && !value.startsWith("//") ? value : null;
 
 const App = () => {
   const { isLoading, authUser } = useAuthUser();
-
   const { theme } = useThemeStore();
+  const [searchParams] = useSearchParams();
 
   const isAuthenticated = Boolean(authUser);
   const isOnboarded = authUser?.isOnboarded;
 
   if (isLoading) return <PageLoader />;
 
+  // Signed in and onboarded -> render it. Otherwise send them where they need
+  // to go, rather than assuming everyone belongs at /login.
+  const guard = (element, { withSidebar = true } = {}) => {
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!isOnboarded) return <Navigate to="/onboarding" replace />;
+    return withSidebar ? <Layout showSidebar>{element}</Layout> : element;
+  };
+
+  // Signing in lands you where you were headed. "Take a desk" on the landing
+  // page means the session page, not the dashboard.
+  const publicOnly = (element) =>
+    isAuthenticated ? (
+      <Navigate
+        to={isOnboarded ? safeNext(searchParams.get("next")) ?? "/" : "/onboarding"}
+        replace
+      />
+    ) : (
+      element
+    );
+
   return (
     <div className="min-h-screen" data-theme={theme}>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <HomePage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            !isAuthenticated ? (
-              <SignUpPage />
-            ) : (
-              <Navigate to={isOnboarded ? "/" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            !isAuthenticated ? (
-              <LoginPage />
-            ) : (
-              <Navigate to={isOnboarded ? "/" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/friends"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <FriendsPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/spaces"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <SpacesPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/spaces/:id"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <SpaceDetailPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/spaces/:id/stream"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <StreamRoomPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-         <Route
-          path="/chats"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <ChatsPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/chats/:id"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <ChatsPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <NotificationsPage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/call/:id"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <CallPage />
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/onboarding"
-          element={
-            isAuthenticated ? (
-              !isOnboarded ? (
-                <OnboardingPage />
-              ) : (
-                <Navigate to="/" />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/update-profile"
-          element={
-            isAuthenticated ? <UpdateProfilePage/> : (
-              <Navigate to="/login" />
-            )
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <ProfilePage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-        <Route
-          path="/profile/:userId"
-          element={
-            isAuthenticated && isOnboarded ? (
-              <Layout showSidebar={true}>
-                <ProfilePage />
-              </Layout>
-            ) : (
-              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
-            )
-          }
-        />
-      </Routes>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Anonymous visitors get a real front door, not a password field. */}
+            <Route
+              path="/"
+              element={
+                isAuthenticated && isOnboarded ? (
+                  <Layout showSidebar>
+                    <HomePage />
+                  </Layout>
+                ) : isAuthenticated ? (
+                  <Navigate to="/onboarding" replace />
+                ) : (
+                  <LandingPage />
+                )
+              }
+            />
+
+            <Route path="/signup" element={publicOnly(<SignUpPage />)} />
+            <Route path="/login" element={publicOnly(<LoginPage />)} />
+            <Route path="/terms" element={<LegalPage kind="terms" />} />
+            <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+
+            <Route path="/focus" element={guard(<FocusPage />)} />
+            <Route path="/teams" element={guard(<TeamsPage />)} />
+            <Route path="/teams/:id" element={guard(<TeamDetailPage />)} />
+            <Route path="/invite/:token" element={guard(<InviteAcceptPage />)} />
+            <Route path="/friends" element={guard(<FriendsPage />)} />
+            <Route path="/rooms" element={guard(<RoomsPage />)} />
+            <Route path="/rooms/:id" element={guard(<RoomDetailPage />)} />
+            <Route
+              path="/rooms/:id/stream"
+              element={guard(<StreamRoomPage />)}
+            />
+            <Route path="/chats" element={guard(<ChatsPage />)} />
+            <Route path="/chats/:id" element={guard(<ChatsPage />)} />
+            <Route
+              path="/notifications"
+              element={guard(<NotificationsPage />)}
+            />
+            <Route path="/settings" element={guard(<SettingsPage />)} />
+            <Route path="/profile" element={guard(<ProfilePage />)} />
+            <Route path="/profile/:userId" element={guard(<ProfilePage />)} />
+            <Route
+              path="/call/:id"
+              element={guard(<CallPage />, { withSidebar: false })}
+            />
+
+            <Route
+              path="/onboarding"
+              element={
+                isAuthenticated ? (
+                  !isOnboarded ? (
+                    <OnboardingPage />
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/update-profile"
+              element={
+                isAuthenticated ? (
+                  <UpdateProfilePage />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
       <Toaster />
     </div>
   );
